@@ -142,7 +142,10 @@ final class RecordImportAnalyzer {
         private final String typeLabel;
         private int count;
         private long totalAmount;
+        /** 예산을 연결하는 항목에서만 쓴다. */
         private Long targetId;
+        /** 관계자를 연결하는 항목에서만 쓴다. 수입의 이름 하나는 여러 명에 연결할 수 있다. */
+        private List<Long> targetIds = List.of();
         /** 구분을 연결하는 항목에서만 쓴다. */
         private FinancialRecordType targetType;
         private String targetLabel = "";
@@ -616,7 +619,7 @@ final class RecordImportAnalyzer {
                 if (mapping == null) {
                     boolean blank = row.contactNames.isEmpty();
                     mapping = new Mapping(key, blank ? "" : row.contactNames.get(i), row.type.getLabel());
-                    resolveContact(mapping, blank ? null : row.contactNames.get(i));
+                    resolveContact(mapping, row.type, blank ? null : row.contactNames.get(i));
                     contactMappings.put(key, mapping);
                 }
                 mapping.count++;
@@ -628,10 +631,10 @@ final class RecordImportAnalyzer {
     /**
      * @param name 파일에 적힌 이름. 빈 칸 항목이면 null
      */
-    private void resolveContact(Mapping mapping, String name) {
-        Contact manual = contactsById.get(request.getContactMappings().get(mapping.key));
-        if (manual != null) {
-            setTarget(mapping, manual.getId(), labelOf(manual), true);
+    private void resolveContact(Mapping mapping, FinancialRecordType type, String name) {
+        List<Contact> manual = manualContactsOf(mapping.key, type);
+        if (!manual.isEmpty()) {
+            setContactTargets(mapping, manual, true);
             return;
         }
         if (name == null) {
@@ -646,7 +649,7 @@ final class RecordImportAnalyzer {
                 .sorted(Comparator.comparing(Contact::getId).reversed())
                 .toList();
         if (!visible.isEmpty()) {
-            setTarget(mapping, visible.getFirst().getId(), labelOf(visible.getFirst()), false);
+            setContactTargets(mapping, List.of(visible.getFirst()), false);
             if (visible.size() > 1) {
                 mapping.note = "동명이인 " + visible.size() + "명 중 가장 최근에 등록된 관계자입니다.";
             }
@@ -655,6 +658,37 @@ final class RecordImportAnalyzer {
         } else {
             mapping.note = "등록되지 않은 이름입니다.";
         }
+    }
+
+    /**
+     * 직접 한 관계자 매핑의 대상을 찾는다. 대상이 하나라도 삭제되었거나, 지출 항목인데 한 명이 아니면 따르지 않는다.
+     *
+     * @return 매핑할 관계자들. 직접 한 매핑이 없거나 따를 수 없으면 빈 목록
+     */
+    private List<Contact> manualContactsOf(String key, FinancialRecordType type) {
+        List<Long> contactIds = request.getContactMappings().getOrDefault(key, List.of());
+        if (contactIds.isEmpty() || (type == FinancialRecordType.EXPENSE && contactIds.size() != 1)) {
+            return List.of();
+        }
+        List<Contact> contacts = new ArrayList<>();
+        for (Long contactId : contactIds) {
+            Contact contact = contactsById.get(contactId);
+            if (contact == null) {
+                return List.of();
+            }
+            contacts.add(contact);
+        }
+        return contacts;
+    }
+
+    private void setContactTargets(Mapping mapping, List<Contact> contacts, boolean manual) {
+        mapping.targetIds = contacts.stream()
+                .map(Contact::getId)
+                .toList();
+        mapping.targetLabel = contacts.stream()
+                .map(this::labelOf)
+                .collect(Collectors.joining(", "));
+        mapping.manual = manual;
     }
 
     private String labelOf(Contact contact) {
@@ -678,11 +712,15 @@ final class RecordImportAnalyzer {
             List<String> contactNames = new ArrayList<>();
             for (String key : row.contactKeys) {
                 Mapping contactMapping = contactMappings.get(key);
-                if (contactMapping.targetId == null) {
+                if (contactMapping.targetIds.isEmpty()) {
                     row.fail("관계자가 지정되지 않았습니다: " + contactMapping.label);
                     contactNames.add(contactMapping.label);
-                } else if (contactIds.add(contactMapping.targetId)) {
-                    contactNames.add(contactsById.get(contactMapping.targetId).getName());
+                    continue;
+                }
+                for (Long contactId : contactMapping.targetIds) {
+                    if (contactIds.add(contactId)) {
+                        contactNames.add(contactsById.get(contactId).getName());
+                    }
                 }
             }
             if (!row.contactKeys.isEmpty()) {
@@ -795,6 +833,7 @@ final class RecordImportAnalyzer {
                         .count(mapping.count)
                         .totalAmount(mapping.totalAmount)
                         .targetId(mapping.targetId)
+                        .targetIds(mapping.targetIds)
                         .targetType(mapping.targetType)
                         .targetLabel(mapping.targetLabel)
                         .manual(mapping.manual)
@@ -816,7 +855,8 @@ final class RecordImportAnalyzer {
                 + "\n--\n"
                 + mappingLists.stream()
                         .flatMap(List::stream)
-                        .map(mapping -> mapping.getKey() + "|" + mapping.getTargetId() + "|" + mapping.getTargetType())
+                        .map(mapping -> mapping.getKey() + "|" + mapping.getTargetId() + "|" + mapping.getTargetIds()
+                                + "|" + mapping.getTargetType())
                         .collect(Collectors.joining("\n"));
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

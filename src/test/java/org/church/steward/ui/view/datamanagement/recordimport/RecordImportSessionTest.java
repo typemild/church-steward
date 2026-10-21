@@ -68,6 +68,16 @@ class RecordImportSessionTest {
                 .build();
     }
 
+    private ImportMappingDto contactMapping(String key, List<Long> targetIds, boolean manual) {
+        return ImportMappingDto.builder()
+                .key(key)
+                .label(key)
+                .targetIds(targetIds)
+                .manual(manual)
+                .note("")
+                .build();
+    }
+
     private RecordImportAnalysisDto analysisOf(List<RecordImportItemDto> items,
             List<ImportMappingDto> budgetMappings, List<ImportMappingDto> contactMappings) {
         return RecordImportAnalysisDto.builder()
@@ -236,7 +246,8 @@ class RecordImportSessionTest {
             RecordImportSession session = createSessionWithExportedFile();
             session.guessMappingIfNeeded();
             session.setBudgetMapping(List.of(BUDGET_KEY), 3L);
-            session.setContactMapping(List.of("INCOME:", "INCOME:무명씨"), 13L);
+            session.setContactMapping(List.of("INCOME:", "INCOME:무명씨"), List.of(13L));
+            session.setContactMapping(List.of("INCOME:홍길동 가정"), List.of(10L, 11L));
 
             // When
             RecordImportRequestDto request = session.toRequest();
@@ -244,7 +255,8 @@ class RecordImportSessionTest {
             // Then
             assertThat(request)
                     .extracting(RecordImportRequestDto::getBudgetMappings, RecordImportRequestDto::getContactMappings)
-                    .containsExactly(Map.of(BUDGET_KEY, 3L), Map.of("INCOME:", 13L, "INCOME:무명씨", 13L));
+                    .containsExactly(Map.of(BUDGET_KEY, 3L), Map.of("INCOME:", List.of(13L), "INCOME:무명씨",
+                            List.of(13L), "INCOME:홍길동 가정", List.of(10L, 11L)));
         }
     }
 
@@ -298,6 +310,25 @@ class RecordImportSessionTest {
 
             // Then
             assertThat(session.getBudgetMappings()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("setContactMapping 테스트")
+    class SetContactMappingTest {
+
+        @Test
+        @DisplayName("관계자를 빈 목록으로 주면 직접 한 매핑을 해제한다")
+        void setContactMapping_EmptyTargets_RemovesMapping() {
+            // Given
+            RecordImportSession session = new RecordImportSession();
+            session.setContactMapping(List.of("INCOME:홍길동 가정"), List.of(10L, 11L));
+
+            // When
+            session.setContactMapping(List.of("INCOME:홍길동 가정"), List.of());
+
+            // Then
+            assertThat(session.getContactMappings()).isEmpty();
         }
     }
 
@@ -399,15 +430,32 @@ class RecordImportSessionTest {
         void applyAnalysis_ManualMappingApplied_KeepsMapping() {
             // Given
             RecordImportSession session = new RecordImportSession();
-            session.setContactMapping(List.of("INCOME:"), 13L);
+            session.setContactMapping(List.of("INCOME:"), List.of(10L, 11L));
             RecordImportAnalysisDto analysis = analysisOf(List.of(), List.of(),
-                    List.of(mapping("INCOME:", 13L, true)));
+                    List.of(contactMapping("INCOME:", List.of(10L, 11L), true)));
 
             // When
             session.applyAnalysis(analysis);
 
             // Then
-            assertThat(session.getContactMappings()).containsEntry("INCOME:", 13L);
+            assertThat(session.getContactMappings()).containsEntry("INCOME:", List.of(10L, 11L));
+        }
+
+        @Test
+        @DisplayName("여러 관계자에 직접 한 매핑을 서비스가 따르지 않았으면(그중 한 명이 삭제됨 등) 그 매핑을 해제한다")
+        void applyAnalysis_ManualContactMappingIgnoredByService_ReleasesMapping() {
+            // Given
+            RecordImportSession session = new RecordImportSession();
+            session.setContactMapping(List.of("INCOME:홍길동 가정"), List.of(10L, 11L));
+            RecordImportAnalysisDto analysis = analysisOf(List.of(), List.of(),
+                    List.of(contactMapping("INCOME:홍길동 가정", List.of(), false)));
+
+            // When
+            AnalysisChange change = session.applyAnalysis(analysis);
+
+            // Then
+            assertThat(change.releasedMappingCount()).isEqualTo(1);
+            assertThat(session.getContactMappings()).isEmpty();
         }
     }
 

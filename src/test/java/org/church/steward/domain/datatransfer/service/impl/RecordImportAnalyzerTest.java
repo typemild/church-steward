@@ -535,10 +535,10 @@ class RecordImportAnalyzerTest {
 
             // Then
             assertThat(analysis.getContactMappings())
-                    .extracting(ImportMappingDto::getLabel, ImportMappingDto::getCount, ImportMappingDto::getTargetId)
+                    .extracting(ImportMappingDto::getLabel, ImportMappingDto::getCount, ImportMappingDto::getTargetIds)
                     .containsExactly(
-                            tuple("홍길동", 2, 10L),
-                            tuple("김철수", 1, 11L));
+                            tuple("홍길동", 2, List.of(10L)),
+                            tuple("김철수", 1, List.of(11L)));
         }
 
         @Test
@@ -556,8 +556,8 @@ class RecordImportAnalyzerTest {
 
             // Then
             assertThat(analysis.getContactMappings().getFirst())
-                    .extracting(ImportMappingDto::getTargetId, ImportMappingDto::getNote)
-                    .containsExactly(21L, "동명이인 2명 중 가장 최근에 등록된 관계자입니다.");
+                    .extracting(ImportMappingDto::getTargetIds, ImportMappingDto::getNote)
+                    .containsExactly(List.of(21L), "동명이인 2명 중 가장 최근에 등록된 관계자입니다.");
         }
 
         @Test
@@ -601,7 +601,7 @@ class RecordImportAnalyzerTest {
             RecordImportRequestDto request = standardRequest(List.of(
                     row("수입", LocalDate.of(2026, 3, 5), "십일조", 1000L, null, null, null),
                     row("지출", LocalDate.of(2026, 3, 5), "운영비", 500L, null, null, null)))
-                    .contactMappings(Map.of("INCOME:", 13L))
+                    .contactMappings(Map.of("INCOME:", List.of(13L)))
                     .build();
 
             // When
@@ -610,10 +610,10 @@ class RecordImportAnalyzerTest {
             // Then
             assertThat(analysis.getContactMappings())
                     .extracting(ImportMappingDto::getKey, ImportMappingDto::getLabel, ImportMappingDto::isBlank,
-                            ImportMappingDto::getTypeLabel, ImportMappingDto::getTargetId, ImportMappingDto::isManual)
+                            ImportMappingDto::getTypeLabel, ImportMappingDto::getTargetIds, ImportMappingDto::isManual)
                     .containsExactly(
-                            tuple("INCOME:", "(빈 칸)", true, "수입", 13L, true),
-                            tuple("EXPENSE:", "(빈 칸)", true, "지출", null, false));
+                            tuple("INCOME:", "(빈 칸)", true, "수입", List.of(13L), true),
+                            tuple("EXPENSE:", "(빈 칸)", true, "지출", List.of(), false));
         }
 
         @Test
@@ -623,7 +623,7 @@ class RecordImportAnalyzerTest {
             RecordImportRequestDto request = standardRequest(List.of(
                     row("수입", LocalDate.of(2026, 3, 5), "십일조", 1000L, null, "박민수", null),
                     row("지출", LocalDate.of(2026, 3, 6), "운영비", 300L, null, "박민수", null)))
-                    .contactMappings(Map.of("EXPENSE:박민수", 12L))
+                    .contactMappings(Map.of("EXPENSE:박민수", List.of(12L)))
                     .build();
 
             // When
@@ -632,10 +632,101 @@ class RecordImportAnalyzerTest {
             // Then
             assertThat(analysis.getContactMappings())
                     .extracting(ImportMappingDto::getKey, ImportMappingDto::getLabel, ImportMappingDto::getTypeLabel,
-                            ImportMappingDto::getTotalAmount, ImportMappingDto::getTargetId, ImportMappingDto::isManual)
+                            ImportMappingDto::getTotalAmount, ImportMappingDto::getTargetIds,
+                            ImportMappingDto::isManual)
                     .containsExactly(
-                            tuple("INCOME:박민수", "박민수", "수입", 1000L, null, false),
-                            tuple("EXPENSE:박민수", "박민수", "지출", 300L, 12L, true));
+                            tuple("INCOME:박민수", "박민수", "수입", 1000L, List.of(), false),
+                            tuple("EXPENSE:박민수", "박민수", "지출", 300L, List.of(12L), true));
+        }
+
+        @Test
+        @DisplayName("수입의 이름 하나를 여러 관계자에 직접 매핑하면, 그 이름을 쓰는 행에 매핑한 관계자가 모두 연결된다")
+        void analyze_IncomeNameManuallyMappedToMultipleContacts_LinksAllContacts() {
+            // Given
+            RecordImportRequestDto request = standardRequest(List.of(
+                    row("수입", LocalDate.of(2026, 3, 5), "십일조", 1000L, null, "홍길동 가정", null)))
+                    .contactMappings(Map.of("INCOME:홍길동 가정", List.of(10L, 11L)))
+                    .build();
+
+            // When
+            RecordImportAnalysisDto analysis = analyze(request);
+
+            // Then
+            assertThat(firstItem(analysis))
+                    .extracting(RecordImportItemDto::getContactIds, RecordImportItemDto::getContactLabel,
+                            RecordImportItemDto::getStatus)
+                    .containsExactly(List.of(10L, 11L), "홍길동, 김철수", ImportItemStatus.OK);
+        }
+
+        @Test
+        @DisplayName("여러 관계자에 매핑한 항목은 대상에 매핑한 관계자를 모두 이어 적는다")
+        void analyze_MappingToMultipleContacts_JoinsTargetLabels() {
+            // Given
+            RecordImportRequestDto request = standardRequest(List.of(
+                    row("수입", LocalDate.of(2026, 3, 5), "십일조", 1000L, null, "홍길동 가정", null)))
+                    .contactMappings(Map.of("INCOME:홍길동 가정", List.of(10L, 11L)))
+                    .build();
+
+            // When
+            RecordImportAnalysisDto analysis = analyze(request);
+
+            // Then
+            assertThat(analysis.getContactMappings().getFirst())
+                    .extracting(ImportMappingDto::getTargetIds, ImportMappingDto::getTargetLabel,
+                            ImportMappingDto::isManual)
+                    .containsExactly(List.of(10L, 11L), "[개인] 홍길동, [개인] 김철수", true);
+        }
+
+        @Test
+        @DisplayName("다른 이름이나 여러 관계자 매핑으로 같은 관계자가 겹치면 한 명으로 센다")
+        void analyze_OverlappingContactsFromMappings_CountsOnce() {
+            // Given
+            RecordImportRequestDto request = standardRequest(List.of(
+                    row("수입", LocalDate.of(2026, 3, 5), "십일조", 1000L, null, "홍길동 가정, 홍길동", null)))
+                    .contactMappings(Map.of("INCOME:홍길동 가정", List.of(10L, 11L)))
+                    .build();
+
+            // When
+            RecordImportAnalysisDto analysis = analyze(request);
+
+            // Then
+            assertThat(firstItem(analysis).getContactIds()).containsExactly(10L, 11L);
+        }
+
+        @Test
+        @DisplayName("여러 관계자에 직접 매핑했는데 그중 한 명이라도 삭제되었으면 매핑을 따르지 않는다")
+        void analyze_ManualMappingWithDeletedContact_Ignored() {
+            // Given
+            RecordImportRequestDto request = standardRequest(List.of(
+                    row("수입", LocalDate.of(2026, 3, 5), "십일조", 1000L, null, "홍길동 가정", null)))
+                    .contactMappings(Map.of("INCOME:홍길동 가정", List.of(10L, 999L)))
+                    .build();
+
+            // When
+            RecordImportAnalysisDto analysis = analyze(request);
+
+            // Then
+            assertThat(analysis.getContactMappings().getFirst())
+                    .extracting(ImportMappingDto::isMapped, ImportMappingDto::isManual)
+                    .containsExactly(false, false);
+        }
+
+        @Test
+        @DisplayName("지출의 이름을 여러 관계자에 직접 매핑하면 매핑을 따르지 않는다")
+        void analyze_ExpenseNameManuallyMappedToMultipleContacts_Ignored() {
+            // Given
+            RecordImportRequestDto request = standardRequest(List.of(
+                    row("지출", LocalDate.of(2026, 3, 5), "운영비", 500L, null, "OO상사", null)))
+                    .contactMappings(Map.of("EXPENSE:OO상사", List.of(12L, 10L)))
+                    .build();
+
+            // When
+            RecordImportAnalysisDto analysis = analyze(request);
+
+            // Then
+            assertThat(analysis.getContactMappings().getFirst())
+                    .extracting(ImportMappingDto::getTargetIds, ImportMappingDto::isManual)
+                    .containsExactly(List.of(12L), false);
         }
 
         @Test

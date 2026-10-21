@@ -1,5 +1,7 @@
 package org.church.steward.domain.datatransfer.dto;
 
+import java.util.List;
+
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
 
 import lombok.AllArgsConstructor;
@@ -35,8 +37,15 @@ public class ImportMappingDto {
     /** 이 값을 쓰는 행의 금액 합계 */
     private long totalAmount;
 
-    /** 연결된 예산 또는 관계자의 ID. 연결되지 않았거나 구분을 연결하는 항목이면 null */
+    /** 연결된 예산의 ID. 연결되지 않았거나 구분·관계자를 연결하는 항목이면 null */
     private Long targetId;
+
+    /**
+     * 연결된 관계자들의 ID. 수입의 이름 하나는 여러 명(예: "홍길동 가정" → 가족 구성원)에 연결할 수 있다.
+     * 연결되지 않았거나 구분·예산을 연결하는 항목이면 빈 목록
+     */
+    @Builder.Default
+    private List<Long> targetIds = List.of();
 
     /** 구분을 연결하는 항목에서, 파일의 값을 읽을 구분. 연결되지 않았거나 예산·관계자를 연결하는 항목이면 null */
     private FinancialRecordType targetType;
@@ -51,7 +60,7 @@ public class ImportMappingDto {
     private String note;
 
     public boolean isMapped() {
-        return targetId != null || targetType != null;
+        return targetId != null || targetType != null || !targetIds.isEmpty();
     }
 
 }
