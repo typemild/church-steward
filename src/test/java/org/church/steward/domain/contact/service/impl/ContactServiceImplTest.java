@@ -24,6 +24,7 @@ import org.church.steward.domain.contact.dto.GroupInfoDto;
 import org.church.steward.domain.contact.entity.Contact;
 import org.church.steward.domain.contact.entity.ContactGroup;
 import org.church.steward.domain.contact.entity.ContactGroupMember;
+import org.church.steward.domain.contact.entity.ContactType;
 import org.church.steward.domain.contact.mapper.ContactMapper;
 import org.church.steward.domain.contact.repository.ContactGroupMemberRepository;
 import org.church.steward.domain.contact.repository.ContactGroupRepository;
@@ -219,6 +220,7 @@ class ContactServiceImplTest {
             Long id = 1L;
             Contact contact = Contact.builder()
                     .id(id)
+                    .type(ContactType.INDIVIDUAL)
                     .name("Old")
                     .remarks("Old Remarks")
                     .build();
@@ -226,9 +228,10 @@ class ContactServiceImplTest {
             when(entitySnapshotCapturer.capture(contact)).thenReturn(null);
 
             // When
-            contactService.updateContact(id, "New", "New Remarks", false);
+            contactService.updateContact(id, ContactType.OTHER, "New", "New Remarks", false);
 
             // Then
+            assertThat(contact.getType()).isEqualTo(ContactType.OTHER);
             assertThat(contact.getName()).isEqualTo("New");
             assertThat(contact.getRemarks()).isEqualTo("New Remarks");
             assertThat(contact.isHidden()).isFalse();
@@ -247,7 +250,7 @@ class ContactServiceImplTest {
             when(entitySnapshotCapturer.capture(contact)).thenReturn(snapshot);
 
             // When
-            contactService.updateContact(id, "New", "New Remarks", false);
+            contactService.updateContact(id, ContactType.INDIVIDUAL, "New", "New Remarks", false);
 
             // Then
             verify(activityLogService).logUpdate(snapshot, contact);
@@ -261,7 +264,8 @@ class ContactServiceImplTest {
             when(contactRepository.findById(id)).thenReturn(Optional.empty());
 
             // When & Then
-            assertThatThrownBy(() -> contactService.updateContact(id, "New", "New Remarks", false))
+            assertThatThrownBy(
+                    () -> contactService.updateContact(id, ContactType.INDIVIDUAL, "New", "New Remarks", false))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("해당 관계자를 찾을 수 없습니다.");
         }

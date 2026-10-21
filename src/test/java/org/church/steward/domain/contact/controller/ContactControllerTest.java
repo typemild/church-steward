@@ -10,6 +10,7 @@ import org.church.steward.domain.contact.dto.ContactAutocompleteDto;
 import org.church.steward.domain.contact.dto.ContactDto;
 import org.church.steward.domain.contact.dto.ContactSearchRequestDto;
 import org.church.steward.domain.contact.dto.ContactSummaryDto;
+import org.church.steward.domain.contact.entity.ContactType;
 import org.church.steward.domain.contact.service.ContactService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -116,15 +117,16 @@ class ContactControllerTest {
         void updateContact_validParams_callsService() {
             // Given
             Long id = 1L;
+            ContactType type = ContactType.OTHER;
             String name = "수정된 이름";
             String remarks = "수정된 비고";
             boolean isHidden = false;
 
             // When
-            contactController.updateContact(id, name, remarks, isHidden);
+            contactController.updateContact(id, type, name, remarks, isHidden);
 
             // Then
-            verify(contactService).updateContact(id, name, remarks, isHidden);
+            verify(contactService).updateContact(id, type, name, remarks, isHidden);
         }
     }
 

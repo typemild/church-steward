@@ -178,7 +178,8 @@ public class HierarchicalContactSuggester implements ContactSuggester, ContactAu
     private void updateContact(ContactDto dto) {
         AsyncTask.run(popup,
                 () -> {
-                    contactController.updateContact(dto.getId(), dto.getName(), dto.getRemarks(), dto.isHidden());
+                    contactController.updateContact(dto.getId(), dto.getType(), dto.getName(), dto.getRemarks(),
+                            dto.isHidden());
                     return null;
                 },
                 _ -> field.requestInputFocus(),

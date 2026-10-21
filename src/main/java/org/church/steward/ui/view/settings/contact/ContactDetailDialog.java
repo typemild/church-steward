@@ -140,9 +140,6 @@ public class ContactDetailDialog extends JDialog {
             remarksArea.setText(dto.getRemarks());
             hiddenCheck.setSelected(dto.isHidden());
         }
-        // 구분은 등록할 때만 정하고 수정으로 바꿀 수 없다(ContactService#updateContact가 구분을 받지 않는다).
-        typeCombo.setEnabled(mode == Mode.ADD);
-
         // 비고는 여러 줄 입력란이지만 다른 입력란처럼 Tab과 Enter로 옮기고, 줄바꿈은 Shift+Enter로 한다.
         DialogKeyHandler.install(this)
                 .setButtons(cancelBtn, saveBtn)

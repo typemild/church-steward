@@ -269,8 +269,8 @@ public class ContactManagementPanelView extends JPanel implements MenuActivatabl
                 dto,
                 newDto -> {
                     AsyncTask.run(this, () -> {
-                        contactController.updateContact(newDto.getId(), newDto.getName(), newDto.getRemarks(),
-                                newDto.isHidden());
+                        contactController.updateContact(newDto.getId(), newDto.getType(), newDto.getName(),
+                                newDto.getRemarks(), newDto.isHidden());
                         return null;
                     }, _ -> loadContacts(null),
                             ex -> JOptionPane.showMessageDialog(this, "수정 실패: " + ex.getMessage(), "오류",
