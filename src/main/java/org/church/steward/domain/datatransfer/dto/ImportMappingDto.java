@@ -41,11 +41,23 @@ public class ImportMappingDto {
     private Long targetId;
 
     /**
-     * 연결된 관계자들의 ID. 수입의 이름 하나는 여러 명(예: "홍길동 가정" → 가족 구성원)에 연결할 수 있다.
+     * 연결된 관계자들의 ID. 관계자 칸 전체("홍길동, 김철수")가 한 항목이며, 칸에 적힌 이름마다 찾은 관계자가 순서대로 담긴다.
+     * 수입은 이름 하나도 여러 명(예: "홍길동 가정" → 가족 구성원)에 연결할 수 있다.
      * 연결되지 않았거나 구분·예산을 연결하는 항목이면 빈 목록
      */
     @Builder.Default
     private List<Long> targetIds = List.of();
+
+    /**
+     * 관계자 칸의 이름 중 일부만 자동으로 찾아 연결되지 않은 항목에서, 찾은 관계자들의 ID.
+     * 직접 매핑할 때 미리 넣어 두는 데 쓴다. 그 밖의 항목이면 빈 목록
+     */
+    @Builder.Default
+    private List<Long> suggestedTargetIds = List.of();
+
+    /** 관계자 칸의 이름 중 자동으로 찾지 못한 이름들. 모두 찾았거나 직접 매핑했거나 관계자 항목이 아니면 빈 목록 */
+    @Builder.Default
+    private List<String> unresolvedNames = List.of();
 
     /** 구분을 연결하는 항목에서, 파일의 값을 읽을 구분. 연결되지 않았거나 예산·관계자를 연결하는 항목이면 null */
     private FinancialRecordType targetType;

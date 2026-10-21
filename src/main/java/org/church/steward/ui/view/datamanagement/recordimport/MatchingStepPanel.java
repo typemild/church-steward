@@ -238,13 +238,14 @@ class MatchingStepPanel extends JPanel {
 
     private void mapContacts(List<ImportMappingDto> mappings) {
         ImportMappingDto first = mappings.getFirst();
-        // 고른 항목이 모두 같은 관계자들에 매핑되어 있으면 그 관계자들을 칩으로 넣어 두고, 아니면 이름을 입력해 찾게 한다.
-        // 빈 칸 항목은 찾을 이름이 없으므로 자동완성란을 비워 둔다.
+        // 고른 항목이 모두 같은 관계자들에 매핑되어 있으면 그 관계자들을 칩으로 넣어 둔다. 아니면 첫 항목에서 자동으로 찾은
+        // 관계자를 칩으로 넣고, 찾지 못한 첫 이름을 자동완성란에 채워 찾게 한다. 빈 칸 항목은 찾을 이름이 없으므로 비워 둔다.
         List<Long> currentContactIds = first.getTargetIds();
-        boolean sameTarget = mappings.stream()
+        boolean sameTarget = !currentContactIds.isEmpty() && mappings.stream()
                 .allMatch(mapping -> currentContactIds.equals(mapping.getTargetIds()));
-        List<Long> initialContactIds = sameTarget ? currentContactIds : List.of();
-        String initialName = first.isBlank() ? null : first.getLabel();
+        List<Long> initialContactIds = sameTarget ? currentContactIds : first.getSuggestedTargetIds();
+        String initialName = sameTarget || first.getUnresolvedNames().isEmpty() ? null
+                : first.getUnresolvedNames().getFirst();
         // 수입의 봉헌자는 여러 명일 수 있지만 지출의 수취인은 한 명이므로, 지출 항목이 섞여 있으면 한 명만 고르게 한다.
         boolean incomeOnly = mappings.stream()
                 .allMatch(mapping -> FinancialRecordType.INCOME.getLabel().equals(mapping.getTypeLabel()));
