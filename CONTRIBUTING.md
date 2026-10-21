@@ -135,14 +135,24 @@ README의 화면은 `docs/screenshots/`에 있고, 예시 데이터(가상의 �
    ```
    ./gradlew generateH2DumpFixture
    ```
-3. 커밋하고 같은 버전의 태그를 push합니다.
+3. 커밋하고 같은 버전의 서명된 태그를 push합니다. 커밋과 태그는 GitHub에 서명 키(Signing Key)로 등록한 키로 서명해, GitHub에서 Verified로 표시되게 합니다.
    ```
-   git tag v1.1.0
+   git tag -s v1.1.0 -m "청지기 1.1.0"
    git push origin v1.1.0
    ```
 4. GitHub Actions의 "릴리스" 워크플로(`.github/workflows/release.yml`)가 Windows에서 테스트한 뒤 다음 두 파일을 Releases에 **초안**으로 올립니다. 태그와 `version`이 다르면 실패합니다.
    - `church-steward-<버전>.jar`
    - `ChurchSteward-<버전>-windows.zip` (jpackage로 만든, Java 런타임이 포함된 실행 폴더)
-5. 초안의 릴리스 노트를 확인하고 게시합니다.
+
+   워크플로가 실패하면 태그를 지우고, 고친 내용을 커밋해 push한 뒤 3번부터 다시 합니다.
+   ```
+   git push origin :v1.1.0
+   git tag -d v1.1.0
+   ```
+5. 초안의 Windows용 zip을 Windows PC에 내려받아 확인합니다. OneDrive와 동기화되지 않는 폴더(예: `C:\ChurchSteward`)에 압축을 풀고 다음을 봅니다.
+   - `ChurchSteward.exe`가 실행되고 아이콘이 붙는지, "프로그램 정보"의 버전이 새 버전인지
+   - README의 "새 버전으로 바꾸기" 두 방법(이전 버전의 백업에서 복원, `data/`와 `application.yml` 복사)으로 이전 버전의 데이터를 옮겼을 때 데이터가 그대로인지
+   - 보고서의 PDF 저장과 인쇄, CSV(MS949) 가져오기, 백업과 복원 예약
+6. 초안의 릴리스 노트를 정리하고 게시합니다. 게시하기 전까지 초안은 다른 사람에게 보이지 않습니다.
 
 Windows용 zip은 Windows PC에서 직접 만들 수도 있습니다(`gradlew.bat packageWindows`, 결과는 `build/distributions`). jpackage는 실행하는 OS용 결과물만 만들기 때문에 다른 OS에서는 이 태스크가 실패합니다.
