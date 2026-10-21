@@ -1,0 +1,6 @@
+# 보안 취약점은 공개 이슈 대신 비공개로 제보받는다(Settings > Advanced Security의 Private vulnerability reporting을 켜야 한다).
+blank_issues_enabled: true
+contact_links:
+  - name: 보안 취약점 제보
+    url: https://github.com/typemild/church-steward/security/advisories/new
+    about: 보안 취약점은 공개 이슈로 올리지 말고 이 링크로 비공개 제보해 주세요.

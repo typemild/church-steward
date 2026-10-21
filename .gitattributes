@@ -1,0 +1,5 @@
+/gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
+# H2 덤프 호환성 테스트의 고정 덤프. 확장자는 sql이지만 암호화된 파일이다.
+/src/test/resources/h2-dump-fixtures/** binary

@@ -1,0 +1,24 @@
+spring:
+  # 스키마는 Flyway(src/main/resources/db/migration)로 만들고 올린다.
+  # 실행 환경에서는 DatabaseManager#migrate가 컨텍스트를 띄우기 전에 마치므로 여기서는 할 일이 없고, 테스트(@DataJpaTest)에서는 이 설정으로 스키마를 만든다.
+  flyway:
+    enabled: true
+
+  # JPA/Hibernate 설정
+  jpa:
+    hibernate:
+      # 엔터티와 스키마가 어긋나면 기동할 때 실패한다. 스키마를 바꾸려면 마이그레이션을 추가해야 한다.
+      ddl-auto: validate
+    properties:
+      # 지연 로딩되는 연관 엔터티와 컬렉션을 하나씩 조회하지 않고 IN 조건으로 묶어서 조회한다(N+1 방지).
+      "[hibernate.default_batch_fetch_size]": 100
+
+# --- 프로그램 정보 설정 ---
+program:
+  info:
+    version: "${version}"
+    license: "MIT License"
+    download-url: "https://github.com/typemild/church-steward/releases"
+    author: "typemild@gmail.com"
+
+# 로깅 설정은 logback.xml에 있다(Spring 컨텍스트를 띄우기 전의 로그도 같은 설정으로 남기기 위함).

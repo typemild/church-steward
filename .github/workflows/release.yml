@@ -1,0 +1,53 @@
+# 릴리스: v1.0.0 같은 태그를 push하면 Windows에서 테스트하고 배포 파일을 만들어 GitHub Releases에 초안으로 올린다.
+# 초안의 내용을 확인한 뒤 Releases 화면에서 직접 게시한다.
+# Windows용 실행 폴더는 jpackage로 만드는데 jpackage는 실행하는 OS용 결과물만 만들 수 있으므로 Windows 러너를 쓴다.
+name: 릴리스
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: 태그와 프로그램 버전 확인
+        shell: pwsh
+        run: |
+          $line = .\gradlew.bat -q properties | Select-String '^version: '
+          $version = $line.ToString().Substring('version: '.Length).Trim()
+          if ("v$version" -ne $env:GITHUB_REF_NAME) {
+            Write-Error "태그($env:GITHUB_REF_NAME)가 build.gradle의 버전(v$version)과 다릅니다."
+            exit 1
+          }
+
+      - name: 테스트
+        shell: pwsh
+        run: .\gradlew.bat test
+
+      - name: 배포 파일 만들기
+        shell: pwsh
+        run: .\gradlew.bat bootJar packageWindows
+
+      - name: Releases에 초안 올리기
+        uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            build/libs/church-steward-*.jar
+            build/distributions/ChurchSteward-*-windows.zip

@@ -1,0 +1,24 @@
+{
+  "properties": [
+    {
+      "name": "program.info.version",
+      "type": "java.lang.String",
+      "description": "프로그램 버전. 빌드할 때 build.gradle의 version이 기록된다."
+    },
+    {
+      "name": "program.info.license",
+      "type": "java.lang.String",
+      "description": "프로그램의 라이선스 이름."
+    },
+    {
+      "name": "program.info.download-url",
+      "type": "java.lang.String",
+      "description": "프로그램을 내려받을 수 있는 주소."
+    },
+    {
+      "name": "program.info.author",
+      "type": "java.lang.String",
+      "description": "프로그램 작성자의 연락처."
+    }
+  ]
+}

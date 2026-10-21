@@ -1,0 +1,198 @@
+import com.github.jk1.license.render.JsonReportRenderer
+
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.1.1'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'com.diffplug.spotless' version '8.8.0'
+	id 'com.github.jk1.dependency-license-report' version '3.1.4'
+}
+
+group = 'org.church.steward'
+// jpackage는 숫자로만 된 버전을 받으므로 "-SNAPSHOT" 같은 접미어를 붙이지 않는다. 릴리스 태그(v1.0.0)와 같아야 한다.
+version = '1.0.0'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+}
+
+// --- UTF-8 인코딩 설정 ---
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+tasks.withType(Test) {
+    systemProperty "file.encoding", "UTF-8"
+    useJUnitPlatform()
+}
+tasks.withType(ProcessResources) {
+    filteringCharset = 'UTF-8'
+}
+// ----------------------------
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-flyway'
+	implementation 'org.springframework.boot:spring-boot-starter-json'
+	implementation 'org.springframework.security:spring-security-crypto'
+	implementation 'org.bouncycastle:bcprov-jdk18on:1.85.2'
+	implementation 'com.formdev:flatlaf:3.7.2'
+	implementation 'org.kordamp.ikonli:ikonli-core:12.4.0'
+	implementation 'org.kordamp.ikonli:ikonli-fontawesome5-pack:12.4.0'
+	implementation 'org.kordamp.ikonli:ikonli-swing:12.4.0'
+	implementation 'com.github.lgooddatepicker:LGoodDatePicker:11.2.1'
+	implementation 'org.apache.pdfbox:pdfbox:3.0.8'
+	implementation 'org.apache.poi:poi-ooxml:5.5.1'
+	compileOnly 'org.projectlombok:lombok'
+	runtimeOnly 'com.h2database:h2'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+	testCompileOnly 'org.projectlombok:lombok'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+// H2 덤프 호환성 테스트(H2DumpCompatibilityTest)가 되살릴 고정 덤프를 지금의 H2로 만든다.
+// 릴리스할 때 실행하고, src/test/resources/h2-dump-fixtures에 새 파일이 생기면 커밋한다(이미 있으면 만들지 않는다).
+tasks.register('generateH2DumpFixture', Test) {
+	group = 'verification'
+	description = '지금의 H2로 H2 덤프 호환성 테스트용 고정 덤프를 만든다.'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	filter {
+		includeTestsMatching 'org.church.steward.infrastructure.config.H2DumpFixtureGenerator'
+	}
+	systemProperty 'h2DumpFixture.generate', 'true'
+	// 파일을 만드는 것이 목적이므로 이전 실행 결과로 건너뛰지 않는다.
+	outputs.upToDateWhen { false }
+}
+
+spotless {
+    java {
+        target 'src/**/*.java'
+        eclipse().configFile('preserve-wrap-formatter(eclipse).xml')
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+// 라이선스 리포트를 JSON 형식으로 생성하도록 설정
+licenseReport {
+	renderers = [new JsonReportRenderer()]
+}
+
+// 라이선스 리포트를 클래스패스에 포함시키기 위해 리소스 폴더로 복사하는 태스크
+task copyLicenseReportToResources(type: Copy) {
+    dependsOn 'generateLicenseReport'
+    from layout.buildDirectory.dir("reports/dependency-license/index.json")
+    into "${projectDir}/src/main/resources/META-INF/resources"
+    rename { 'license-report.json' }
+}
+
+processResources {
+    // LICENSE 파일을 클래스패스 루트에 포함
+    from('LICENSE') {
+        into ''
+    }
+
+    // LICENSE-ko 파일을 클래스패스 루트에 포함
+    from('LICENSE-ko') {
+        into ''
+    }
+
+    // 창 아이콘(AppIcons)을 클래스패스의 icons/에 포함. 원본은 실행 파일 아이콘과 같은 src/main/packaging에 둔다.
+    from('src/main/packaging') {
+        include 'ChurchSteward.png', 'ChurchSteward-*.png'
+        into 'icons'
+    }
+
+    // application.yml의 변수 치환
+    filesMatching("**/application.yml") {
+        expand(project.properties)
+    }
+
+    // 라이선스 리포트 복사 태스크 의존성 추가
+    dependsOn copyLicenseReportToResources
+}
+
+// --- 배포 ---
+// 배포 파일은 실행 가능한 jar(bootJar)와 Windows용 zip이다. plain jar는 배포하지 않으므로 만들지 않는다.
+tasks.named('jar') {
+    enabled = false
+}
+
+def appName = 'ChurchSteward'
+def appVersion = version.toString()
+def jpackageDir = layout.buildDirectory.dir('jpackage')
+
+// jpackage는 입력 폴더의 jar를 모두 프로그램에 넣으므로 bootJar 하나만 둔 폴더를 따로 만든다.
+def prepareJpackageInput = tasks.register('prepareJpackageInput', Sync) {
+    from tasks.named('bootJar')
+    into jpackageDir.map { it.dir('input') }
+}
+
+// Java 런타임을 포함한 실행 폴더(app-image)를 만든다. jpackage는 실행하는 OS용 결과물만 만들 수 있다.
+def jpackageImage = tasks.register('jpackageImage', Exec) {
+    group = 'distribution'
+    description = 'Java 런타임을 포함한 Windows용 실행 폴더를 만든다. Windows에서만 실행할 수 있다.'
+    dependsOn prepareJpackageInput
+
+    def inputDir = jpackageDir.map { it.dir('input') }
+    def imageDir = jpackageDir.map { it.dir('image') }
+    def bootJarName = tasks.named('bootJar').flatMap { it.archiveFileName }
+    def launcher = javaToolchains.launcherFor { languageVersion = java.toolchain.languageVersion }
+    // 실행 파일의 아이콘. src/main/packaging에 OS별 형식(ico, icns, png)이 있다.
+    def iconFile = layout.projectDirectory.file('src/main/packaging/ChurchSteward.ico')
+    inputs.dir(inputDir)
+    inputs.file(iconFile)
+    outputs.dir(imageDir)
+
+    doFirst {
+        if (!System.getProperty('os.name').toLowerCase().contains('windows')) {
+            throw new GradleException('Windows용 배포 파일은 Windows에서만 만들 수 있습니다.')
+        }
+        // jpackage는 결과 폴더가 이미 있으면 실패한다.
+        imageDir.get().asFile.deleteDir()
+
+        executable launcher.get().metadata.installationPath.file('bin/jpackage.exe').asFile
+        args '--type', 'app-image',
+                '--name', appName,
+                '--app-version', appVersion,
+                '--vendor', 'typemild',
+                '--description', 'Church Steward - church finance management',
+                '--icon', iconFile.asFile,
+                '--input', inputDir.get().asFile,
+                '--main-jar', bootJarName.get(),
+                // 런타임에 넣을 모듈을 모두 직접 적는다. ALL-DEFAULT는 JMOD 파일이 없는 JDK(Temurin 25 등)에서
+                // 아무 모듈로도 풀리지 않아 java.base만 들어가고 실행 파일이 뜨지 않는다.
+                // java.se: Java SE 표준 모듈 전체(Swing, JDBC 등). jdk.unsupported부터 jdk.accessibility까지는
+                // 라이브러리가 쓸 수 있는 JDK 모듈이다(예: sun.misc.Unsafe).
+                // jpackage는 서비스로만 쓰이는 모듈을 넣지 않으므로 직접 더한다.
+                // jdk.charsets: CSV를 MS949로 읽을 때, jdk.localedata: 한국어 요일 표기("(일)")에 필요하다.
+                '--add-modules', 'java.se,jdk.unsupported,jdk.zipfs,jdk.management,jdk.crypto.cryptoki,jdk.accessibility,jdk.charsets,jdk.localedata',
+                '--dest', imageDir.get().asFile
+    }
+}
+
+// 배포용 zip. 압축을 풀면 ChurchSteward 폴더 하나가 나오고, 그 안의 ChurchSteward.exe로 실행한다.
+// 데이터도 그 폴더 안에 생긴다(AppHome).
+tasks.register('packageWindows', Zip) {
+    group = 'distribution'
+    description = 'Windows용 배포 파일(zip)을 만든다. Windows에서만 실행할 수 있다.'
+    dependsOn jpackageImage
+
+    from(jpackageDir.map { it.dir("image/${appName}") }) {
+        into appName
+    }
+    archiveFileName = "${appName}-${appVersion}-windows.zip"
+}
