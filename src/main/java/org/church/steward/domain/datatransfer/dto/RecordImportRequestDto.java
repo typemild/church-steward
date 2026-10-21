@@ -75,10 +75,10 @@ public class RecordImportRequestDto {
     private Map<String, Long> budgetMappings = Map.of();
 
     /**
-     * 사용자가 직접 한 관계자 매핑. 매핑 항목의 식별자({@link ImportMappingDto#getKey()}) -> 관계자 ID.
-     * 자동 매핑보다 우선한다.
+     * 사용자가 직접 한 관계자 매핑. 매핑 항목의 식별자({@link ImportMappingDto#getKey()}) -> 관계자 ID 목록.
+     * 자동 매핑보다 우선한다. 수입 항목은 여러 명에 매핑할 수 있고, 지출 항목은 한 명이어야 한다.
      */
     @Builder.Default
-    private Map<String, Long> contactMappings = Map.of();
+    private Map<String, List<Long>> contactMappings = Map.of();
 
 }

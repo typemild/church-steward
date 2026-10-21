@@ -53,6 +53,7 @@ final class RecordImportAnalyzer {
 
     private static final String BLANK_LABEL = "(빈 칸)";
     private static final String CONTACT_SEPARATOR = ",";
+    private static final String CONTACT_LABEL_SEPARATOR = ", ";
     private static final String PATH_SEPARATOR = ">";
     private static final String LABEL_SEPARATOR = " > ";
 
@@ -108,7 +109,8 @@ final class RecordImportAnalyzer {
         private String description;
         private String remarks;
         private List<String> contactNames = List.of();
-        private List<String> contactKeys = List.of();
+        /** 관계자 칸 전체에 대한 매핑 항목의 식별자. 구분을 읽지 못했으면 null */
+        private String contactKey;
         private Long budgetId;
         private String budgetLabel = "";
         private List<Long> contactIds = List.of();
@@ -142,7 +144,14 @@ final class RecordImportAnalyzer {
         private final String typeLabel;
         private int count;
         private long totalAmount;
+        /** 예산을 연결하는 항목에서만 쓴다. */
         private Long targetId;
+        /** 관계자를 연결하는 항목에서만 쓴다. 칸에 적힌 이름들(또는 빈 칸)에 연결한 관계자들이다. */
+        private List<Long> targetIds = List.of();
+        /** 관계자를 연결하는 항목에서, 일부 이름만 자동으로 찾았을 때 찾은 관계자들 */
+        private List<Long> suggestedTargetIds = List.of();
+        /** 관계자를 연결하는 항목에서, 자동으로 찾지 못한 이름들 */
+        private List<String> unresolvedNames = List.of();
         /** 구분을 연결하는 항목에서만 쓴다. */
         private FinancialRecordType targetType;
         private String targetLabel = "";
@@ -489,6 +498,8 @@ final class RecordImportAnalyzer {
 
     /**
      * 한 칸에 쉼표로 구분해 적힌 이름들을 읽는다. 같은 이름은 한 번만 센다.
+     * 칸 전체가 매핑 항목 하나이며, 앞뒤 공백과 중복을 정리한 값이 같으면 같은 항목이다. 이름의 순서는 내역에 저장되는
+     * 관계자의 순서이므로, 순서만 다른 값은 다른 항목이다.
      */
     private void readContacts(Row row, List<Object> values) {
         Set<String> names = new LinkedHashSet<>();
@@ -498,15 +509,12 @@ final class RecordImportAnalyzer {
             }
         }
         row.contactNames = List.copyOf(names);
-        row.contactLabel = String.join(", ", names);
+        row.contactLabel = String.join(CONTACT_LABEL_SEPARATOR, names);
         if (row.type == null) {
             return;
         }
         // 이름이 없는 행은 구분마다 하나씩 있는 "(빈 칸)" 항목을 쓴다. "무명" 같은 관계자를 여기에 매핑한다.
-        row.contactKeys = names.isEmpty() ? List.of(keyOf(row.type, ""))
-                : names.stream()
-                        .map(name -> keyOf(row.type, name))
-                        .toList();
+        row.contactKey = keyOf(row.type, row.contactLabel);
     }
 
     /**
@@ -610,51 +618,106 @@ final class RecordImportAnalyzer {
 
     private void resolveContacts() {
         for (Row row : rows) {
-            for (int i = 0; i < row.contactKeys.size(); i++) {
-                String key = row.contactKeys.get(i);
-                Mapping mapping = contactMappings.get(key);
-                if (mapping == null) {
-                    boolean blank = row.contactNames.isEmpty();
-                    mapping = new Mapping(key, blank ? "" : row.contactNames.get(i), row.type.getLabel());
-                    resolveContact(mapping, blank ? null : row.contactNames.get(i));
-                    contactMappings.put(key, mapping);
-                }
-                mapping.count++;
-                mapping.totalAmount += row.amount == null ? 0 : row.amount;
+            if (row.contactKey == null) {
+                continue;
             }
+            Mapping mapping = contactMappings.get(row.contactKey);
+            if (mapping == null) {
+                mapping = new Mapping(row.contactKey, row.contactLabel, row.type.getLabel());
+                resolveContact(mapping, row.type, row.contactNames);
+                contactMappings.put(row.contactKey, mapping);
+            }
+            mapping.count++;
+            mapping.totalAmount += row.amount == null ? 0 : row.amount;
         }
     }
 
     /**
-     * @param name 파일에 적힌 이름. 빈 칸 항목이면 null
+     * 칸에 적힌 이름마다 관계자를 찾는다. 모든 이름을 찾았을 때만 연결하고, 일부만 찾았으면 찾은 관계자와 찾지 못한 이름을
+     * 남겨 직접 매핑할 때 쓰게 한다.
+     *
+     * @param names 칸에 적힌 이름들. 빈 칸 항목이면 빈 목록
      */
-    private void resolveContact(Mapping mapping, String name) {
-        Contact manual = contactsById.get(request.getContactMappings().get(mapping.key));
-        if (manual != null) {
-            setTarget(mapping, manual.getId(), labelOf(manual), true);
+    private void resolveContact(Mapping mapping, FinancialRecordType type, List<String> names) {
+        List<Contact> manual = manualContactsOf(mapping.key, type);
+        if (!manual.isEmpty()) {
+            setContactTargets(mapping, manual, true);
             return;
         }
-        if (name == null) {
+        if (names.isEmpty()) {
             mapping.note = "빈 칸에 쓸 관계자를 지정해주세요.";
             return;
         }
 
-        List<Contact> sameName = contactsByName.getOrDefault(name, List.of());
-        // 동명이인이면 숨김 처리되지 않은 관계자 중 가장 최근에 등록된(ID가 가장 큰) 관계자에 연결한다.
-        List<Contact> visible = sameName.stream()
-                .filter(contact -> !contact.isHidden())
-                .sorted(Comparator.comparing(Contact::getId).reversed())
-                .toList();
-        if (!visible.isEmpty()) {
-            setTarget(mapping, visible.getFirst().getId(), labelOf(visible.getFirst()), false);
-            if (visible.size() > 1) {
-                mapping.note = "동명이인 " + visible.size() + "명 중 가장 최근에 등록된 관계자입니다.";
+        List<Contact> found = new ArrayList<>();
+        List<String> unresolved = new ArrayList<>();
+        List<String> notes = new ArrayList<>();
+        for (String name : names) {
+            List<Contact> sameName = contactsByName.getOrDefault(name, List.of());
+            // 동명이인이면 숨김 처리되지 않은 관계자 중 가장 최근에 등록된(ID가 가장 큰) 관계자에 연결한다.
+            List<Contact> visible = sameName.stream()
+                    .filter(contact -> !contact.isHidden())
+                    .sorted(Comparator.comparing(Contact::getId).reversed())
+                    .toList();
+            String note = null;
+            if (!visible.isEmpty()) {
+                found.add(visible.getFirst());
+                if (visible.size() > 1) {
+                    note = "동명이인 " + visible.size() + "명 중 가장 최근에 등록된 관계자입니다.";
+                }
+            } else {
+                unresolved.add(name);
+                note = sameName.isEmpty() ? "등록되지 않은 이름입니다." : "숨김 처리된 관계자만 있습니다.";
             }
-        } else if (!sameName.isEmpty()) {
-            mapping.note = "숨김 처리된 관계자만 있습니다.";
-        } else {
-            mapping.note = "등록되지 않은 이름입니다.";
+            // 이름이 여럿이면 어느 이름에 대한 설명인지 앞에 적는다.
+            if (note != null) {
+                notes.add(names.size() == 1 ? note : name + ": " + note);
+            }
         }
+
+        if (unresolved.isEmpty()) {
+            setContactTargets(mapping, found, false);
+            if (type == FinancialRecordType.EXPENSE && found.size() > 1) {
+                notes.add("지출의 수취인은 한 명이어야 합니다.");
+            }
+        } else {
+            mapping.suggestedTargetIds = found.stream()
+                    .map(Contact::getId)
+                    .toList();
+            mapping.unresolvedNames = List.copyOf(unresolved);
+        }
+        mapping.note = String.join(" ", notes);
+    }
+
+    /**
+     * 직접 한 관계자 매핑의 대상을 찾는다. 대상이 하나라도 삭제되었거나, 지출 항목인데 한 명이 아니면 따르지 않는다.
+     *
+     * @return 매핑할 관계자들. 직접 한 매핑이 없거나 따를 수 없으면 빈 목록
+     */
+    private List<Contact> manualContactsOf(String key, FinancialRecordType type) {
+        List<Long> contactIds = request.getContactMappings().getOrDefault(key, List.of());
+        if (contactIds.isEmpty() || (type == FinancialRecordType.EXPENSE && contactIds.size() != 1)) {
+            return List.of();
+        }
+        List<Contact> contacts = new ArrayList<>();
+        for (Long contactId : contactIds) {
+            Contact contact = contactsById.get(contactId);
+            if (contact == null) {
+                return List.of();
+            }
+            contacts.add(contact);
+        }
+        return contacts;
+    }
+
+    private void setContactTargets(Mapping mapping, List<Contact> contacts, boolean manual) {
+        mapping.targetIds = contacts.stream()
+                .map(Contact::getId)
+                .toList();
+        mapping.targetLabel = contacts.stream()
+                .map(this::labelOf)
+                .collect(Collectors.joining(", "));
+        mapping.manual = manual;
     }
 
     private String labelOf(Contact contact) {
@@ -673,25 +736,20 @@ final class RecordImportAnalyzer {
                 row.fail("예산이 지정되지 않았습니다: " + budgetMapping.label);
             }
 
-            // 서로 다른 이름이 같은 관계자에 매핑되었으면 한 명으로 센다.
-            Set<Long> contactIds = new LinkedHashSet<>();
-            List<String> contactNames = new ArrayList<>();
-            for (String key : row.contactKeys) {
-                Mapping contactMapping = contactMappings.get(key);
-                if (contactMapping.targetId == null) {
-                    row.fail("관계자가 지정되지 않았습니다: " + contactMapping.label);
-                    contactNames.add(contactMapping.label);
-                } else if (contactIds.add(contactMapping.targetId)) {
-                    contactNames.add(contactsById.get(contactMapping.targetId).getName());
-                }
-            }
-            if (!row.contactKeys.isEmpty()) {
-                row.contactLabel = String.join(", ", contactNames);
-            }
-            if (row.error == null) {
-                row.contactIds = List.copyOf(contactIds);
-                if (row.type == FinancialRecordType.EXPENSE && contactIds.size() != 1) {
-                    row.fail("지출의 수취인은 한 명이어야 합니다.");
+            Mapping contactMapping = row.contactKey == null ? null : contactMappings.get(row.contactKey);
+            if (contactMapping != null && contactMapping.targetIds.isEmpty()) {
+                row.fail("관계자가 지정되지 않았습니다: " + contactMapping.label);
+                row.contactLabel = contactMapping.label;
+            } else if (contactMapping != null) {
+                // 연결된 관계자의 현재 이름으로 보여준다. 연결되지 않았으면 파일에 적힌 대로(빈 칸이면 "(빈 칸)") 둔다.
+                row.contactLabel = contactMapping.targetIds.stream()
+                        .map(contactId -> contactsById.get(contactId).getName())
+                        .collect(Collectors.joining(CONTACT_LABEL_SEPARATOR));
+                if (row.error == null) {
+                    row.contactIds = contactMapping.targetIds;
+                    if (row.type == FinancialRecordType.EXPENSE && row.contactIds.size() != 1) {
+                        row.fail("지출의 수취인은 한 명이어야 합니다.");
+                    }
                 }
             }
         }
@@ -795,6 +853,9 @@ final class RecordImportAnalyzer {
                         .count(mapping.count)
                         .totalAmount(mapping.totalAmount)
                         .targetId(mapping.targetId)
+                        .targetIds(mapping.targetIds)
+                        .suggestedTargetIds(mapping.suggestedTargetIds)
+                        .unresolvedNames(mapping.unresolvedNames)
                         .targetType(mapping.targetType)
                         .targetLabel(mapping.targetLabel)
                         .manual(mapping.manual)
@@ -816,7 +877,8 @@ final class RecordImportAnalyzer {
                 + "\n--\n"
                 + mappingLists.stream()
                         .flatMap(List::stream)
-                        .map(mapping -> mapping.getKey() + "|" + mapping.getTargetId() + "|" + mapping.getTargetType())
+                        .map(mapping -> mapping.getKey() + "|" + mapping.getTargetId() + "|" + mapping.getTargetIds()
+                                + "|" + mapping.getTargetType())
                         .collect(Collectors.joining("\n"));
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -116,10 +117,10 @@ public class RecordImportSession extends ImportSession {
     /** 지금의 파일과 머리글 행에 대해 열을 자동으로 추측했는지 여부 */
     private boolean mappingGuessed;
 
-    // ---- 사용자가 직접 한 매핑 (매핑 항목의 식별자 -> 구분 또는 대상 ID)
+    // ---- 사용자가 직접 한 매핑 (매핑 항목의 식별자 -> 구분, 예산 ID 또는 관계자 ID 목록)
     private final Map<String, FinancialRecordType> typeMappings = new LinkedHashMap<>();
     private final Map<String, Long> budgetMappings = new LinkedHashMap<>();
-    private final Map<String, Long> contactMappings = new LinkedHashMap<>();
+    private final Map<String, List<Long>> contactMappings = new LinkedHashMap<>();
 
     // ---- 분석
     private RecordImportAnalysisDto analysis;
@@ -363,16 +364,17 @@ public class RecordImportSession extends ImportSession {
     }
 
     /**
-     * 파일의 관계자 이름들(또는 빈 칸)을 관계자 한 명에 직접 매핑한다. 다시 분석해야 행에 적용된다.
+     * 파일의 관계자 이름들(또는 빈 칸)을 관계자들에 직접 매핑한다. 다시 분석해야 행에 적용된다.
+     * 수입 항목은 여러 명에 매핑할 수 있고, 지출 항목은 한 명이어야 한다(아니면 다시 분석할 때 해제된다).
      *
-     * @param keys      매핑 항목의 식별자들
-     * @param contactId 매핑할 관계자의 ID. null이면 직접 한 매핑을 해제한다.
+     * @param keys       매핑 항목의 식별자들
+     * @param contactIds 매핑할 관계자들의 ID. 비어 있으면 직접 한 매핑을 해제한다.
      */
-    public void setContactMapping(Collection<String> keys, Long contactId) {
-        setMapping(contactMappings, keys, contactId);
+    public void setContactMapping(Collection<String> keys, List<Long> contactIds) {
+        setMapping(contactMappings, keys, contactIds.isEmpty() ? null : List.copyOf(contactIds));
     }
 
-    private void setMapping(Map<String, Long> mappings, Collection<String> keys, Long targetId) {
+    private <T> void setMapping(Map<String, T> mappings, Collection<String> keys, T targetId) {
         for (String key : keys) {
             if (targetId == null) {
                 mappings.remove(key);
@@ -412,8 +414,10 @@ public class RecordImportSession extends ImportSession {
             typeKeys.add(mapping.getKey());
         }
         typeMappings.keySet().retainAll(typeKeys);
-        int releasedMappingCount = releaseIgnoredMappings(budgetMappings, newAnalysis.getBudgetMappings())
-                + releaseIgnoredMappings(contactMappings, newAnalysis.getContactMappings());
+        int releasedMappingCount = releaseIgnoredMappings(budgetMappings, newAnalysis.getBudgetMappings(),
+                ImportMappingDto::getTargetId)
+                + releaseIgnoredMappings(contactMappings, newAnalysis.getContactMappings(),
+                        ImportMappingDto::getTargetIds);
         analysis = newAnalysis;
         recomputeSelection();
         return new AnalysisChange(changedItemCount, releasedMappingCount);
@@ -443,22 +447,24 @@ public class RecordImportSession extends ImportSession {
     /**
      * 직접 한 매핑 중에서, 분석 결과에 직접 한 매핑으로 반영되지 않은 것을 지운다.
      *
+     * @param targetOf 분석 결과의 매핑 항목에서 직접 한 매핑과 비교할 대상(예산 ID 또는 관계자 ID 목록)을 꺼내는 함수
      * @return 대상을 쓸 수 없어 해제된 매핑의 수. 파일에 더는 나오지 않는 값의 매핑은 세지 않고 지우기만 한다.
      */
-    private int releaseIgnoredMappings(Map<String, Long> mappings, List<ImportMappingDto> analyzedMappings) {
+    private <T> int releaseIgnoredMappings(Map<String, T> mappings, List<ImportMappingDto> analyzedMappings,
+            Function<ImportMappingDto, T> targetOf) {
         Map<String, ImportMappingDto> analyzed = new HashMap<>();
         for (ImportMappingDto mapping : analyzedMappings) {
             analyzed.put(mapping.getKey(), mapping);
         }
 
         int releasedCount = 0;
-        Iterator<Map.Entry<String, Long>> iterator = mappings.entrySet().iterator();
+        Iterator<Map.Entry<String, T>> iterator = mappings.entrySet().iterator();
         while (iterator.hasNext()) {
-            Map.Entry<String, Long> entry = iterator.next();
+            Map.Entry<String, T> entry = iterator.next();
             ImportMappingDto mapping = analyzed.get(entry.getKey());
             if (mapping == null) {
                 iterator.remove();
-            } else if (!mapping.isManual() || !entry.getValue().equals(mapping.getTargetId())) {
+            } else if (!mapping.isManual() || !entry.getValue().equals(targetOf.apply(mapping))) {
                 iterator.remove();
                 releasedCount++;
             }

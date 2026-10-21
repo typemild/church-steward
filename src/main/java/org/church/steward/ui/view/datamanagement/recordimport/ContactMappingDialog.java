@@ -6,7 +6,9 @@ import java.awt.FlowLayout;
 import java.awt.Window;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
@@ -31,9 +33,11 @@ import org.church.steward.ui.view.financialrecord.contact.HierarchicalContactSug
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 수입/지출 가져오기에서 파일의 이름(또는 빈 칸)을 매핑할 관계자를 고르는 다이얼로그.
+ * 수입/지출 가져오기에서 파일의 관계자 칸 값("홍길동, 김철수" 또는 빈 칸)을 매핑할 관계자들을 고르는 다이얼로그.
  * 수입/지출 입력 다이얼로그와 같은 자동완성란을 쓰므로, 목록의 "신규 추가"로 그 자리에서 관계자를 등록하거나
- * 수정, 삭제할 수 있다. 파일의 이름 하나는 관계자 한 명에 매핑하므로 그룹 기능은 쓰지 않는다.
+ * 수정, 삭제할 수 있다. 입력 다이얼로그와 같이 수입 항목은 여러 명을 고를 수 있고 그룹 기능을 쓰며("홍길동 가정"을
+ * 가족 구성원에 매핑하는 경우 등), 지출 항목은 그룹 기능 없이 한 명만 고른다. 칩의 순서가 내역에 저장되는 관계자의
+ * 순서다.
  * <p>
  * 여기서 한 관계자의 변경은 가져오기와 무관하게 즉시 저장되므로, 이 다이얼로그를 닫은 뒤에는 선택된 관계자가 없더라도
  * 다시 분석해야 한다.
@@ -46,19 +50,18 @@ class ContactMappingDialog extends JDialog {
     private final ContactController contactController;
     private final ContactChipField contactField = new ContactChipField();
 
-    private Long selectedContactId;
+    private List<Long> selectedContactIds = List.of();
 
     /**
      * @param sourceDescription 매핑하려는 파일의 값에 대한 설명 (예: "파일의 값: 홍길동 (12건)")
-     * @param initialContactId  이미 매핑된 관계자의 ID. 있으면 그 관계자를 칩으로 넣어 두고 자동 완성 목록은 띄우지
-     *                          않는다.
-     *                          매핑되지 않았으면 null
-     * @param initialName       매핑된 관계자가 없을 때 자동완성란에 미리 채워 둘 이름. 빈 칸 항목처럼 찾을 이름이 없으면
-     *                          null
+     * @param multiple          여러 명을 고를 수 있는지 여부. 수입 항목만 매핑할 때 true이며 이때 그룹 기능도 쓴다.
+     * @param initialContactIds 미리 칩으로 넣어 둘 관계자들의 ID. 이미 매핑된 관계자들이거나, 파일의 이름 중 일부만
+     *                          찾았을 때 찾은 관계자들이다. 없으면 빈 목록
+     * @param initialName       자동완성란에 미리 채워 자동 완성 목록을 띄울 이름(아직 찾지 못한 이름). 없으면 null
      */
     ContactMappingDialog(Window owner, ContactController contactController,
-            ContactGroupController contactGroupController, String sourceDescription, Long initialContactId,
-            String initialName) {
+            ContactGroupController contactGroupController, String sourceDescription, boolean multiple,
+            List<Long> initialContactIds, String initialName) {
         super(owner, "관계자 매핑", ModalityType.APPLICATION_MODAL);
         this.contactController = contactController;
 
@@ -66,14 +69,16 @@ class ContactMappingDialog extends JDialog {
 
         HierarchicalContactSuggester suggester = new HierarchicalContactSuggester(contactController,
                 contactGroupController, contactField);
-        suggester.setGroupEnabled(false);
+        suggester.setGroupEnabled(multiple);
         contactField.setSuggester(suggester);
-        contactField.setMaxContacts(1);
+        contactField.setMaxContacts(multiple ? 0 : 1);
 
         JPanel mainPanel = new JPanel(new BorderLayout(0, 12));
         mainPanel.setBackground(UIColors.BACKGROUND);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(25, 25, 10, 25));
-        mainPanel.add(new DescriptionLabel(sourceDescription + "\n매핑할 관계자의 이름을 입력해 목록에서 선택해주세요.\n"
+        String guide = multiple ? "매핑할 관계자의 이름을 입력해 목록에서 선택해주세요. 여러 명을 선택할 수 있습니다.\n"
+                : "매핑할 관계자의 이름을 입력해 목록에서 선택해주세요.\n";
+        mainPanel.add(new DescriptionLabel(sourceDescription + "\n" + guide
                 + "등록되지 않은 관계자는 목록의 \"신규 추가\"로 바로 등록할 수 있습니다."), BorderLayout.NORTH);
 
         JPanel fieldPanel = new JPanel(new BorderLayout(0, 8));
@@ -112,42 +117,57 @@ class ContactMappingDialog extends JDialog {
             @Override
             public void windowOpened(WindowEvent e) {
                 contactField.requestInputFocus();
-                if (initialContactId != null) {
-                    showCurrentContact(initialContactId);
-                } else if (initialName != null && !initialName.isBlank()) {
-                    // 창이 열려 입력란이 포커스를 가진 뒤에 이름을 채워야 자동 완성 목록이 뜬다.
-                    SwingUtilities.invokeLater(() -> contactField.setInputText(initialName));
+                if (!initialContactIds.isEmpty()) {
+                    showCurrentContacts(initialContactIds, initialName);
+                } else {
+                    fillInitialName(initialName);
                 }
             }
         });
     }
 
     /**
-     * 이미 매핑된 관계자를 현재 정보(구분, 이름, 비고)로 조회해 칩으로 넣어 둔다. 다른 관계자로 바꾸려면 칩을 지우고
-     * 이름을 입력하면 된다. 그 사이에 관계자가 삭제되었으면 아무것도 넣지 않는다.
+     * 관계자들을 현재 정보(구분, 이름, 비고)로 조회해 주어진 순서대로 칩으로 넣어 두고, 찾지 못한 이름이 있으면 이어서
+     * 자동완성란에 채운다. 칩의 순서가 내역에 저장되는 관계자의 순서이므로 조회 결과의 순서를 따르지 않는다.
+     * 다른 관계자로 바꾸려면 칩을 지우고 이름을 입력하면 된다. 그 사이에 삭제된 관계자는 넣지 않는다.
      */
-    private void showCurrentContact(Long contactId) {
+    private void showCurrentContacts(List<Long> contactIds, String initialName) {
         AsyncTask.run(contactField,
-                () -> contactController.getContactsByIds(List.of(contactId)),
+                () -> contactController.getContactsByIds(contactIds),
                 contacts -> {
+                    Map<Long, ContactDto> contactsById = new HashMap<>();
                     for (ContactDto contact : contacts) {
-                        contactField.addContact(contact.getId(), contact.getType(), contact.getName(),
-                                contact.getRemarks());
+                        contactsById.put(contact.getId(), contact);
+                    }
+                    for (Long contactId : contactIds) {
+                        ContactDto contact = contactsById.get(contactId);
+                        if (contact != null) {
+                            contactField.addContact(contact.getId(), contact.getType(), contact.getName(),
+                                    contact.getRemarks());
+                        }
                     }
                     contactField.requestInputFocus();
+                    fillInitialName(initialName);
                 },
-                err -> log.error("Failed to load mapped contact", err));
+                err -> log.error("Failed to load mapped contacts", err));
+    }
+
+    private void fillInitialName(String initialName) {
+        if (initialName != null && !initialName.isBlank()) {
+            // 창이 열려 입력란이 포커스를 가진 뒤에 이름을 채워야 자동 완성 목록이 뜬다.
+            SwingUtilities.invokeLater(() -> contactField.setInputText(initialName));
+        }
     }
 
     /**
      * 다이얼로그를 띄운다.
      *
-     * @return 선택된 관계자의 ID. 취소했으면 null
+     * @return 선택된 관계자들의 ID. 취소했으면 빈 목록
      */
-    Long showDialog() {
-        selectedContactId = null;
+    List<Long> showDialog() {
+        selectedContactIds = List.of();
         setVisible(true);
-        return selectedContactId;
+        return selectedContactIds;
     }
 
     private void confirm() {
@@ -157,7 +177,7 @@ class ContactMappingDialog extends JDialog {
             contactField.requestInputFocus();
             return;
         }
-        selectedContactId = contactIds.getFirst();
+        selectedContactIds = List.copyOf(contactIds);
         dispose();
     }
 
