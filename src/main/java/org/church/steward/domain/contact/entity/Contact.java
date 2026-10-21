@@ -38,10 +38,11 @@ public class Contact {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Setter
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(nullable = false, length = 30)
-    @LoggableField(name = "유형", isIdentifier = true, transformer = ContactTypeTransformer.class)
+    @LoggableField(name = "구분", isIdentifier = true, transformer = ContactTypeTransformer.class)
     private ContactType type;
 
     @Setter

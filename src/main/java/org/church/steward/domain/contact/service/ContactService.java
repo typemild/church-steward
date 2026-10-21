@@ -6,6 +6,7 @@ import org.church.steward.domain.contact.dto.ContactAutocompleteDto;
 import org.church.steward.domain.contact.dto.ContactDto;
 import org.church.steward.domain.contact.dto.ContactSearchRequestDto;
 import org.church.steward.domain.contact.dto.ContactSummaryDto;
+import org.church.steward.domain.contact.entity.ContactType;
 
 public interface ContactService {
     List<ContactDto> getContacts(ContactSearchRequestDto searchRequest);
@@ -17,7 +18,7 @@ public interface ContactService {
 
     ContactDto createContact(ContactDto dto);
 
-    void updateContact(Long id, String name, String remarks, boolean isHidden);
+    void updateContact(Long id, ContactType type, String name, String remarks, boolean isHidden);
 
     void deleteContact(Long id);
 

@@ -6,6 +6,7 @@ import org.church.steward.domain.contact.dto.ContactAutocompleteDto;
 import org.church.steward.domain.contact.dto.ContactDto;
 import org.church.steward.domain.contact.dto.ContactSearchRequestDto;
 import org.church.steward.domain.contact.dto.ContactSummaryDto;
+import org.church.steward.domain.contact.entity.ContactType;
 import org.church.steward.domain.contact.service.ContactService;
 import org.church.steward.infrastructure.annotation.UiController;
 
@@ -29,8 +30,8 @@ public class ContactController {
         return contactService.createContact(dto);
     }
 
-    public void updateContact(Long id, String name, String remarks, boolean isHidden) {
-        contactService.updateContact(id, name, remarks, isHidden);
+    public void updateContact(Long id, ContactType type, String name, String remarks, boolean isHidden) {
+        contactService.updateContact(id, type, name, remarks, isHidden);
     }
 
     public void deleteContact(Long id) {

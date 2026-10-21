@@ -14,6 +14,7 @@ import org.church.steward.domain.contact.dto.ContactSummaryDto;
 import org.church.steward.domain.contact.dto.GroupInfoDto;
 import org.church.steward.domain.contact.entity.Contact;
 import org.church.steward.domain.contact.entity.ContactGroupMember;
+import org.church.steward.domain.contact.entity.ContactType;
 import org.church.steward.domain.contact.mapper.ContactMapper;
 import org.church.steward.domain.contact.repository.ContactGroupMemberRepository;
 import org.church.steward.domain.contact.repository.ContactGroupRepository;
@@ -74,12 +75,14 @@ public class ContactServiceImpl implements ContactService {
     }
 
     @Override
-    public void updateContact(Long id, String name, String remarks, boolean isHidden) {
+    public void updateContact(Long id, ContactType type, String name, String remarks, boolean isHidden) {
         Contact contact = contactRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 관계자를 찾을 수 없습니다."));
 
         EntitySnapshot<Contact> oldSnapshot = entitySnapshotCapturer.capture(contact);
 
+        // 내역에는 관계자의 이름만 스냅샷으로 남으므로 구분을 바꿔도 과거 내역은 변하지 않는다.
+        contact.setType(type);
         contact.setName(name);
         contact.setRemarks(remarks);
         contact.setHidden(isHidden);
