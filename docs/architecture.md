@@ -21,9 +21,11 @@ org.church.steward
 
 기능 패키지: `activitylog`, `backup`, `budget`, `contact`, `dashboard`, `datatransfer`, `financialrecord`, `fiscalyear`, `programinfo`, `report`, `user`.
 
+enum은 그 값을 필드로 갖는 클래스와 같은 패키지에 둔다. 엔터티의 필드이면 `entity`(예: `ContactType`), DTO의 필드이면 `dto`(예: `ImportItemStatus`, `ReportType`. `datatransfer`와 `report`는 엔터티가 없다)다. 제약 클래스(`*Constraints`)는 제약하는 엔터티와 같은 패키지(`entity`)에 둔다.
+
 ### 호출 방향
 
-`ui/view` → `domain/*/controller` → `service` → `repository` 순서로만 호출한다. 화면은 서비스나 리포지토리를 직접 호출하지 않으며, 컨트롤러 경계를 넘는 것은 DTO뿐이다.
+`ui/view` → `domain/*/controller` → `service` → `repository` 순서로만 호출한다. 화면은 서비스나 리포지토리를 직접 호출하지 않으며, 컨트롤러 경계를 넘는 것은 DTO뿐이다. 화면은 `entity` 패키지의 enum과 `*Constraints`만 참조할 수 있고 엔터티 클래스는 참조하지 않는다.
 
 - `@UiView` / `@UiController`(`infrastructure/annotation`)는 `@Component` 스테레오타입이다. 화면은 생성자 주입을 받는 Spring 빈이다.
 - 컨트롤러는 권한을 검증한 뒤 서비스 인터페이스로 위임하는 얇은 계층이다. 관리자 전용 기능(사용자 관리, 백업/복원, 데이터 내보내기·가져오기)의 컨트롤러는 메서드마다 먼저 `AdminAccessChecker#checkAdmin()`을 호출하며, 로그인한 사용자가 관리자가 아니면 `AccessDeniedException`이 난다. 메뉴를 관리자에게만 보여주는 것과 별개로 컨트롤러 경계에서 한 번 더 막기 위함이다. 누구나 쓰는 기능(예: 본인 비밀번호 변경)은 확인하지 않는다. 관리자 전용 메서드를 새로 만들면 권한 확인을 넣고, 권한이 없을 때 막히는지 컨트롤러 테스트로 확인한다.
