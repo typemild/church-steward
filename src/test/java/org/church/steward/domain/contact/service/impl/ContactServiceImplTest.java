@@ -22,6 +22,7 @@ import org.church.steward.domain.contact.dto.ContactSearchRequestDto;
 import org.church.steward.domain.contact.dto.ContactSummaryDto;
 import org.church.steward.domain.contact.dto.GroupInfoDto;
 import org.church.steward.domain.contact.entity.Contact;
+import org.church.steward.domain.contact.entity.ContactConstraints;
 import org.church.steward.domain.contact.entity.ContactGroup;
 import org.church.steward.domain.contact.entity.ContactGroupMember;
 import org.church.steward.domain.contact.entity.ContactType;
@@ -158,7 +159,7 @@ class ContactServiceImplTest {
         @DisplayName("관계자 생성_성공 시_저장된 DTO를 반환한다")
         void createContact_success_returnsSavedDto() {
             // Given
-            ContactDto dto = ContactDto.builder().name("New").build();
+            ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("New").build();
             Contact contactToSave = Contact.builder().build();
             Contact savedContact = Contact.builder().id(1L).name("New").build();
             ContactDto savedDto = ContactDto.builder().id(1L).name("New").build();
@@ -178,7 +179,7 @@ class ContactServiceImplTest {
         @DisplayName("관계자 생성_성공 시_Repository를 호출한다")
         void createContact_success_callsRepository() {
             // Given
-            ContactDto dto = ContactDto.builder().name("New").build();
+            ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("New").build();
             Contact contactToSave = Contact.builder().build();
 
             when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
@@ -195,7 +196,7 @@ class ContactServiceImplTest {
         @DisplayName("관계자 생성_성공 시_ActivityLogService를 호출한다")
         void createContact_success_callsActivityLog() {
             // Given
-            ContactDto dto = ContactDto.builder().name("New").build();
+            ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("New").build();
             Contact contactToSave = Contact.builder().build();
 
             when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
@@ -206,6 +207,99 @@ class ContactServiceImplTest {
 
             // Then
             verify(activityLogService).logCreation(contactToSave);
+        }
+
+        @Test
+        @DisplayName("관계자 생성_실패 시_구분이 없으면 예외가 발생한다")
+        void createContact_nullType_throwsException() {
+            // Given
+            ContactDto dto = ContactDto.builder().name("New").build();
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.createContact(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("구분을 선택해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 생성_실패 시_이름이 공백뿐이면 예외가 발생한다")
+        void createContact_blankName_throwsException() {
+            // Given
+            ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("  ").build();
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.createContact(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("이름을 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 생성_실패 시_이름이 최대 길이를 넘으면 예외가 발생한다")
+        void createContact_nameTooLong_throwsException() {
+            // Given
+            ContactDto dto = ContactDto.builder()
+                    .type(ContactType.INDIVIDUAL)
+                    .name("가".repeat(ContactConstraints.NAME_MAX_LENGTH + 1))
+                    .build();
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.createContact(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("이름은 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 생성_성공 시_이름과 비고가 최대 길이와 같으면 저장한다")
+        void createContact_maxLengthTexts_callsRepository() {
+            // Given
+            ContactDto dto = ContactDto.builder()
+                    .type(ContactType.INDIVIDUAL)
+                    .name("가".repeat(ContactConstraints.NAME_MAX_LENGTH))
+                    .remarks("나".repeat(ContactConstraints.REMARKS_MAX_LENGTH))
+                    .build();
+            Contact contactToSave = Contact.builder().build();
+
+            when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
+            when(contactRepository.save(contactToSave)).thenReturn(contactToSave);
+
+            // When
+            contactService.createContact(dto);
+
+            // Then
+            verify(contactRepository).save(contactToSave);
+        }
+
+        @Test
+        @DisplayName("관계자 생성_실패 시_비고가 최대 길이를 넘으면 예외가 발생한다")
+        void createContact_remarksTooLong_throwsException() {
+            // Given
+            ContactDto dto = ContactDto.builder()
+                    .type(ContactType.INDIVIDUAL)
+                    .name("New")
+                    .remarks("나".repeat(ContactConstraints.REMARKS_MAX_LENGTH + 1))
+                    .build();
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.createContact(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("비고는 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 생성_실패 시_저장하지 않는다")
+        void createContact_invalidInput_doesNotSave() {
+            // Given
+            ContactDto dto = ContactDto.builder()
+                    .type(ContactType.INDIVIDUAL)
+                    .name("가".repeat(ContactConstraints.NAME_MAX_LENGTH + 1))
+                    .build();
+
+            // When
+            assertThatThrownBy(() -> contactService.createContact(dto))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            // Then
+            verify(contactRepository, never()).save(any());
         }
     }
 
@@ -268,6 +362,39 @@ class ContactServiceImplTest {
                     () -> contactService.updateContact(id, ContactType.INDIVIDUAL, "New", "New Remarks", false))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("해당 관계자를 찾을 수 없습니다.");
+        }
+
+        @Test
+        @DisplayName("관계자 수정_실패 시_이름이 최대 길이를 넘으면 예외가 발생한다")
+        void updateContact_nameTooLong_throwsException() {
+            // Given
+            String name = "가".repeat(ContactConstraints.NAME_MAX_LENGTH + 1);
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.updateContact(1L, ContactType.INDIVIDUAL, name, null, false))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("이름은 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 수정_실패 시_비고가 최대 길이를 넘으면 예외가 발생한다")
+        void updateContact_remarksTooLong_throwsException() {
+            // Given
+            String remarks = "나".repeat(ContactConstraints.REMARKS_MAX_LENGTH + 1);
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.updateContact(1L, ContactType.INDIVIDUAL, "New", remarks, false))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("비고는 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 수정_실패 시_이름이 비어 있으면 예외가 발생한다")
+        void updateContact_emptyName_throwsException() {
+            // When & Then
+            assertThatThrownBy(() -> contactService.updateContact(1L, ContactType.INDIVIDUAL, "", null, false))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("이름을 입력해주세요.");
         }
     }
 

@@ -1,22 +1,11 @@
 package org.church.steward.ui.component.field;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.Insets;
-import java.awt.Point;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
-import javax.swing.BorderFactory;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JPasswordField;
-import javax.swing.Popup;
-import javax.swing.PopupFactory;
-import javax.swing.border.Border;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
@@ -38,18 +27,17 @@ public class ValidatedPasswordField extends JPasswordField {
     private static final String PATTERN = "[a-zA-Z0-9!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]*";
     private static final String MESSAGE = "한/영 전환을 확인해 주세요.";
 
-    private final ComponentSize componentSize;
-    private Popup currentPopup;
+    private final InputHintPopup hintPopup;
 
     public ValidatedPasswordField(ComponentSize componentSize) {
         super();
-        this.componentSize = componentSize;
+        this.hintPopup = new InputHintPopup(this, componentSize);
         initialize(componentSize);
     }
 
     public ValidatedPasswordField(int columns, ComponentSize componentSize) {
         super(columns);
-        this.componentSize = componentSize;
+        this.hintPopup = new InputHintPopup(this, componentSize);
         initialize(componentSize);
     }
 
@@ -59,16 +47,10 @@ public class ValidatedPasswordField extends JPasswordField {
 
     private void initialize(ComponentSize componentSize) {
         setupPasswordFilter();
-        addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusLost(FocusEvent e) {
-                hideTooltip();
-            }
-        });
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyTyped(KeyEvent e) {
-                hideTooltip();
+                hintPopup.hide();
             }
         });
 
@@ -113,7 +95,7 @@ public class ValidatedPasswordField extends JPasswordField {
                 if (string.matches(PATTERN)) {
                     super.insertString(fb, offset, string, attr);
                 } else {
-                    showTooltip(MESSAGE);
+                    hintPopup.show(MESSAGE);
                 }
             }
 
@@ -123,48 +105,9 @@ public class ValidatedPasswordField extends JPasswordField {
                 if (text.matches(PATTERN)) {
                     super.replace(fb, offset, length, text, attrs);
                 } else {
-                    showTooltip(MESSAGE);
+                    hintPopup.show(MESSAGE);
                 }
             }
         });
-    }
-
-    private void showTooltip(String message) {
-        hideTooltip();
-
-        JPanel tipPanel = new JPanel(new BorderLayout());
-        tipPanel.setBackground(new Color(255, 243, 230)); // 아주 연한 주황색
-        tipPanel.setBorder(BorderFactory.createLineBorder(new Color(255, 193, 7), 1)); // 따뜻한 노란색
-
-        final int fontSize = switch (componentSize) {
-        case LARGE -> Math.round(UIFonts.FONT_SIZE_LARGE * 0.9f);
-        case MEDIUM -> Math.round(UIFonts.FONT_SIZE_BASE * 0.9f);
-        case SMALL -> Math.round(UIFonts.FONT_SIZE_SMALL * 0.9f);
-        };
-        final Font font = new Font(UIFonts.FONT_FAMILY, Font.PLAIN, fontSize);
-
-        final Border padding = BorderFactory.createEmptyBorder(
-                Math.round(fontSize * 0.38f),
-                Math.round(fontSize * 0.76f),
-                Math.round(fontSize * 0.38f),
-                Math.round(fontSize * 0.76f));
-
-        JLabel label = new JLabel(message);
-        label.setForeground(new Color(139, 69, 19)); // 갈색 글자
-        label.setBorder(padding);
-        label.setFont(font);
-        tipPanel.add(label, BorderLayout.CENTER);
-
-        Point loc = getLocationOnScreen();
-        currentPopup = PopupFactory.getSharedInstance()
-                .getPopup(this, tipPanel, loc.x, loc.y + getHeight());
-        currentPopup.show();
-    }
-
-    private void hideTooltip() {
-        if (currentPopup != null) {
-            currentPopup.hide();
-            currentPopup = null;
-        }
     }
 }

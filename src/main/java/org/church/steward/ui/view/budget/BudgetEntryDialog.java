@@ -14,6 +14,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import org.church.steward.domain.budget.entity.BudgetConstraints;
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.button.PrimaryButton;
 import org.church.steward.ui.component.button.SecondaryButton;
@@ -29,9 +30,6 @@ import org.church.steward.ui.util.UIColors;
 public class BudgetEntryDialog extends JDialog {
 
     private static final long serialVersionUID = 1L;
-
-    /** 예산명의 최대 길이. 서비스의 검증과 같은 값이다. */
-    private static final int NAME_MAX_LENGTH = 50;
 
     private final StyledTextField parentPathField;
     private final StyledTextField nameField;
@@ -84,6 +82,7 @@ public class BudgetEntryDialog extends JDialog {
         mainPanel.add(lblName, gbc);
 
         nameField = new StyledTextField(ComponentSize.MEDIUM);
+        nameField.setMaxLength(BudgetConstraints.NAME_MAX_LENGTH);
         nameField.setText(currentName);
         nameField.setColumns(20);
         gbc.insets = new Insets(10, 0, 10, 10);
@@ -130,13 +129,6 @@ public class BudgetEntryDialog extends JDialog {
 
             if (name.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "예산명을 입력해주세요.", "입력 오류", JOptionPane.ERROR_MESSAGE);
-                nameField.requestFocus();
-                return;
-            }
-
-            if (name.length() > NAME_MAX_LENGTH) {
-                JOptionPane.showMessageDialog(this, "예산명은 " + NAME_MAX_LENGTH + "자 이내로 입력해주세요.", "입력 오류",
-                        JOptionPane.ERROR_MESSAGE);
                 nameField.requestFocus();
                 return;
             }

@@ -13,6 +13,7 @@ import org.church.steward.domain.activitylog.util.EntitySnapshotCapturer;
 import org.church.steward.domain.budget.dto.BudgetAutocompleteDto;
 import org.church.steward.domain.budget.dto.BudgetDto;
 import org.church.steward.domain.budget.entity.Budget;
+import org.church.steward.domain.budget.entity.BudgetConstraints;
 import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.budget.mapper.BudgetMapper;
 import org.church.steward.domain.budget.repository.BudgetRepository;
@@ -31,9 +32,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class BudgetServiceImpl implements BudgetService {
-    /** 예산명의 최대 길이. {@code Budget.name} 칼럼의 길이와 같다. */
-    private static final int NAME_MAX_LENGTH = 50;
-
     private final BudgetRepository budgetRepository;
     private final FinancialRecordRepository financialRecordRepository;
     private final FiscalYearRepository fiscalYearRepository;
@@ -279,15 +277,15 @@ public class BudgetServiceImpl implements BudgetService {
     }
 
     /**
-     * 예산명은 비워 둘 수 없고 {@value #NAME_MAX_LENGTH}자 이내여야 한다.
+     * 예산명은 비워 둘 수 없고 {@value BudgetConstraints#NAME_MAX_LENGTH}자 이내여야 한다.
      * {@code <}와 {@code >}는 전체 예산명("예산A > 예산B")의 구분 문자와 섞이지 않도록 쓸 수 없다.
      */
     private void validateName(String name) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("예산명을 입력해주세요.");
         }
-        if (name.length() > NAME_MAX_LENGTH) {
-            throw new IllegalArgumentException("예산명은 " + NAME_MAX_LENGTH + "자 이내로 입력해주세요.");
+        if (name.length() > BudgetConstraints.NAME_MAX_LENGTH) {
+            throw new IllegalArgumentException("예산명은 " + BudgetConstraints.NAME_MAX_LENGTH + "자 이내로 입력해주세요.");
         }
         if (name.contains("<") || name.contains(">")) {
             throw new IllegalArgumentException("예산명에는 '<', '>' 문자를 사용할 수 없습니다.");

@@ -1,6 +1,7 @@
 package org.church.steward.domain.financialrecord.entity;
 
 import org.church.steward.domain.contact.entity.Contact;
+import org.church.steward.domain.contact.entity.ContactConstraints;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,7 +38,7 @@ public class FinancialRecordContact {
     @JoinColumn(name = "contact_id", nullable = false)
     private Contact contact;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = ContactConstraints.NAME_MAX_LENGTH)
     private String contactName; // 당시의 이름 저장 (이력 보존용)
 
 }

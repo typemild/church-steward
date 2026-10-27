@@ -30,6 +30,15 @@
 
 `AmountField`는 생성자 옵션으로 빈 값을 허용할 수 있으며, 이때 `getAmount()`는 `null`을 반환한다(검색 조건처럼 비워 둘 수 있는 금액에 쓴다).
 
+## 입력란의 최대 길이
+
+저장되는 글자를 받는 입력란(`StyledTextField`, `StyledTextArea`)은 `setMaxLength`로 최대 길이를 지정한다. 넘치면 저장할 때 쿼리 오류가 나기 때문이다(검색란처럼 저장하지 않는 입력란은 지정하지 않는다).
+
+- 길이 값은 화면에 직접 적지 않고 기능별 제약 클래스(`ContactConstraints`, `FinancialRecordConstraints`, `BudgetConstraints`, `FiscalYearConstraints`, `UserConstraints`)의 상수를 쓴다. 엔터티의 칼럼 길이와 서비스의 검증도 같은 상수를 쓴다.
+- 넘치는 글자는 거부하지 않고 남은 칸만큼만 잘라 넣으며(`MaxLengthDocumentFilter`), 잘리면 입력란 아래에 "최대 N자까지 입력할 수 있습니다." 안내를 3초 동안 띄운다(`InputHintPopup`). 입력기가 조합 중인 글자는 제한하지 않고 확정될 때 자른다.
+- `setText`로 넣은 값도 잘린다. 다만 입력란이 화면에 보이기 전이면 안내는 뜨지 않는다.
+- 입력란 아래에 잠깐 띄우는 안내는 `InputHintPopup`으로 통일한다(`ValidatedPasswordField`의 한/영 전환 안내도 이것을 쓴다).
+
 ## 레이아웃과 기타 스타일
 
 - 입력 폼은 `GridBagLayout`으로 레이블과 입력란을 정렬한다.

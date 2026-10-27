@@ -21,6 +21,7 @@ import javax.swing.table.DefaultTableModel;
 
 import org.church.steward.domain.user.controller.UserController;
 import org.church.steward.domain.user.dto.UserDto;
+import org.church.steward.domain.user.entity.UserConstraints;
 import org.church.steward.domain.user.entity.UserRole;
 import org.church.steward.infrastructure.annotation.UiView;
 import org.church.steward.infrastructure.security.PasswordPolicy;
@@ -164,6 +165,7 @@ public class UserManagementPanelView extends JPanel implements MenuActivatable {
         rightPanel.add(idLabel, gbc);
 
         idField = new StyledTextField(ComponentSize.MEDIUM);
+        idField.setMaxLength(UserConstraints.ID_MAX_LENGTH);
         gbc.gridx = 1;
         gbc.gridwidth = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -219,6 +221,7 @@ public class UserManagementPanelView extends JPanel implements MenuActivatable {
 
         // Row 6: Remarks Field
         remarksTextArea = new StyledTextArea(5, 20, ComponentSize.MEDIUM);
+        remarksTextArea.setMaxLength(UserConstraints.REMARKS_MAX_LENGTH);
         JScrollPane remarksScrollPane = new JScrollPane(remarksTextArea);
         remarksScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         gbc.gridx = 0;
@@ -326,7 +329,7 @@ public class UserManagementPanelView extends JPanel implements MenuActivatable {
         String id = idField.getText().trim();
         String password = PasswordPolicy.normalize(new String(passwordField.getPassword()));
         String confirmPassword = PasswordPolicy.normalize(new String(confirmPasswordField.getPassword()));
-        String remarks = remarksTextArea.getText();
+        String remarks = remarksTextArea.getText().trim();
 
         if (id.isEmpty()) {
             JOptionPane.showMessageDialog(this, "성명(ID)을 입력해주세요.");

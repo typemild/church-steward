@@ -22,6 +22,7 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 
 import org.church.steward.domain.contact.dto.ContactDto;
+import org.church.steward.domain.contact.entity.ContactConstraints;
 import org.church.steward.domain.contact.entity.ContactType;
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.button.PrimaryButton;
@@ -105,6 +106,7 @@ public class ContactDetailDialog extends JDialog {
         formPanel.add(new FieldLabel("이름:", ComponentSize.MEDIUM), gbc);
         gbc.gridx = 1;
         nameField = new StyledTextField(ComponentSize.MEDIUM);
+        nameField.setMaxLength(ContactConstraints.NAME_MAX_LENGTH);
         formPanel.add(nameField, gbc);
 
         // 비고. 마지막 입력란이므로 Enter를 누르면 저장한다.
@@ -113,6 +115,7 @@ public class ContactDetailDialog extends JDialog {
         formPanel.add(new FieldLabel("비고:", ComponentSize.MEDIUM), gbc);
         gbc.gridx = 1;
         remarksArea = new StyledTextArea(3, 20, ComponentSize.MEDIUM);
+        remarksArea.setMaxLength(ContactConstraints.REMARKS_MAX_LENGTH);
         formPanel.add(new JScrollPane(remarksArea), gbc);
 
         gbc.gridy = 3;

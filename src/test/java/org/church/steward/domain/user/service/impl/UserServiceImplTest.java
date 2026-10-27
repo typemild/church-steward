@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -15,6 +16,7 @@ import org.church.steward.domain.activitylog.util.EntitySnapshot;
 import org.church.steward.domain.activitylog.util.EntitySnapshotCapturer;
 import org.church.steward.domain.user.dto.UserDto;
 import org.church.steward.domain.user.entity.User;
+import org.church.steward.domain.user.entity.UserConstraints;
 import org.church.steward.domain.user.entity.UserRole;
 import org.church.steward.domain.user.mapper.UserMapper;
 import org.church.steward.domain.user.repository.UserRepository;
@@ -227,6 +229,102 @@ class UserServiceImplTest {
             assertThatThrownBy(() -> userService.createUser(id, "pw", "remarks"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("사용자 ID는 필수 입력 사항입니다");
+        }
+
+        @Test
+        @DisplayName("createUser_최대 길이와 같은 ID로 생성 시 성공해야 한다.")
+        void createUser_Success_MaxLengthId() {
+            // Given
+            String id = "a".repeat(UserConstraints.ID_MAX_LENGTH);
+            String rawPassword = "password123";
+
+            when(userRepository.existsById(id)).thenReturn(false);
+            when(passwordEncoder.encode(rawPassword)).thenReturn("encoded_password_abc");
+
+            // When
+            userService.createUser(id, rawPassword, "신규 사용자");
+
+            // Then
+            verify(userRepository).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("createUser_최대 길이를 넘는 ID로 생성 시 IllegalArgumentException이 발생해야 한다.")
+        void createUser_Fail_IdTooLong() {
+            // Given
+            String id = "a".repeat(UserConstraints.ID_MAX_LENGTH + 1);
+
+            // When & Then
+            assertThatThrownBy(() -> userService.createUser(id, "pw", "remarks"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("사용자 ID는 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("createAdmin_최대 길이를 넘는 ID로 생성 시 IllegalArgumentException이 발생해야 한다.")
+        void createAdmin_Fail_IdTooLong() {
+            // Given
+            String id = "a".repeat(UserConstraints.ID_MAX_LENGTH + 1);
+
+            // When & Then
+            assertThatThrownBy(() -> userService.createAdmin(id, "pw", "remarks"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("사용자 ID는 100자 이내로 입력해주세요.");
+        }
+    }
+
+    @Nested
+    @DisplayName("비고 검증 테스트")
+    class RemarksValidationTest {
+
+        @Test
+        @DisplayName("createUser_최대 길이를 넘는 비고로 생성 시 IllegalArgumentException이 발생해야 한다.")
+        void createUser_Fail_RemarksTooLong() {
+            // Given
+            String remarks = "가".repeat(UserConstraints.REMARKS_MAX_LENGTH + 1);
+
+            // When & Then
+            assertThatThrownBy(() -> userService.createUser("new_user", "pw", remarks))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("비고는 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("createAdmin_최대 길이를 넘는 비고로 생성 시 IllegalArgumentException이 발생해야 한다.")
+        void createAdmin_Fail_RemarksTooLong() {
+            // Given
+            String remarks = "가".repeat(UserConstraints.REMARKS_MAX_LENGTH + 1);
+
+            // When & Then
+            assertThatThrownBy(() -> userService.createAdmin("new_admin", "pw", remarks))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("비고는 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("updateUser_최대 길이를 넘는 비고로 수정 시 IllegalArgumentException이 발생해야 한다.")
+        void updateUser_Fail_RemarksTooLong() {
+            // Given
+            String remarks = "가".repeat(UserConstraints.REMARKS_MAX_LENGTH + 1);
+
+            // When & Then
+            assertThatThrownBy(() -> userService.updateUser("user1", null, remarks))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("비고는 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("updateUser_최대 길이를 넘는 비고로 수정 시 저장하지 않아야 한다.")
+        void updateUser_Fail_RemarksTooLong_NotSaved() {
+            // Given
+            String remarks = "가".repeat(UserConstraints.REMARKS_MAX_LENGTH + 1);
+
+            // When
+            assertThatThrownBy(() -> userService.updateUser("user1", null, remarks))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            // Then
+            verify(userRepository, never()).save(any(User.class));
         }
     }
 

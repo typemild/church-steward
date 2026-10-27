@@ -14,14 +14,25 @@ public class StyledTextField extends JTextField {
 
     private static final long serialVersionUID = 1L;
 
+    private final ComponentSize componentSize;
+
     public StyledTextField(ComponentSize componentSize) {
         super();
+        this.componentSize = componentSize;
         applyStyle(componentSize);
     }
 
     public StyledTextField(int columns, ComponentSize componentSize) {
         super(columns);
+        this.componentSize = componentSize;
         applyStyle(componentSize);
+    }
+
+    /**
+     * 입력할 수 있는 최대 글자 수를 정한다. 넘치는 글자는 잘리고 입력란 아래에 안내가 잠깐 뜬다.
+     */
+    public void setMaxLength(int maxLength) {
+        MaxLengthDocumentFilter.install(this, maxLength, new InputHintPopup(this, componentSize));
     }
 
     private void applyStyle(ComponentSize componentSize) {

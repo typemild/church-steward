@@ -29,6 +29,7 @@ import org.church.steward.domain.datatransfer.dto.RecordImportAnalysisDto;
 import org.church.steward.domain.datatransfer.dto.RecordImportItemDto;
 import org.church.steward.domain.datatransfer.dto.RecordImportRequestDto;
 import org.church.steward.domain.financialrecord.entity.FinancialRecord;
+import org.church.steward.domain.financialrecord.entity.FinancialRecordConstraints;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordContact;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
 
@@ -46,8 +47,6 @@ import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
  */
 final class RecordImportAnalyzer {
 
-    /** 내용과 비고의 최대 길이 */
-    private static final int TEXT_MAX_LENGTH = 100;
     /** 금액의 최대값. 수입/지출 서비스의 검증과 같다. */
     private static final long MAX_AMOUNT = 100_000_000_000L;
 
@@ -263,8 +262,10 @@ final class RecordImportAnalyzer {
             readTypeAndAmount(row, values);
             readDate(row, values);
             readBudget(row, values);
-            row.description = truncate(row, "내용", ImportCells.text(values, request.getDescriptionColumn()));
-            row.remarks = truncate(row, "비고", ImportCells.text(values, request.getRemarksColumn()));
+            row.description = truncate(row, "내용", ImportCells.text(values, request.getDescriptionColumn()),
+                    FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH);
+            row.remarks = truncate(row, "비고", ImportCells.text(values, request.getRemarksColumn()),
+                    FinancialRecordConstraints.REMARKS_MAX_LENGTH);
             readContacts(row, values);
             rows.add(row);
         }
@@ -529,12 +530,12 @@ final class RecordImportAnalyzer {
     /**
      * 내용과 비고는 최대 길이를 넘으면 잘라서 저장하고 경고로 알린다.
      */
-    private String truncate(Row row, String fieldName, String text) {
-        if (text.length() <= TEXT_MAX_LENGTH) {
+    private String truncate(Row row, String fieldName, String text, int maxLength) {
+        if (text.length() <= maxLength) {
             return text;
         }
-        row.warnings.add(fieldName + "이(가) " + TEXT_MAX_LENGTH + "자를 넘어 잘립니다.");
-        return text.substring(0, TEXT_MAX_LENGTH);
+        row.warnings.add(fieldName + "이(가) " + maxLength + "자를 넘어 잘립니다.");
+        return text.substring(0, maxLength);
     }
 
     // ------------------------------------------------------------------ 2. 예산 연결

@@ -35,6 +35,8 @@ org.church.steward
 
 입력값과 업무 규칙의 검증은 서비스가 최종적으로 책임진다. 필수 값과 글자 수, 이름 중복, 회계 연도 기간의 겹침, 마감된 회계 연도의 수정 금지 같은 규칙이 여기에 해당한다. 입력 다이얼로그가 같은 검사를 먼저 하기도 하지만 그것은 사용자를 빨리 돕기 위한 것이고, 화면을 거치지 않는 호출(가져오기 등)까지 막는 기준은 서비스다.
 
+글자 수의 상한은 칼럼 길이와 같으며, 기능마다 엔터티 옆의 제약 클래스(`ContactConstraints`, `FinancialRecordConstraints`, `BudgetConstraints`, `FiscalYearConstraints`, `UserConstraints`)에 상수로 둔다. 엔터티의 `@Column(length = …)`, 서비스의 검증, 가져오기 분석기, 화면 입력란의 최대 길이(`setMaxLength`)가 모두 이 상수를 쓴다. 칼럼 길이를 바꾸면 마이그레이션과 함께 이 상수를 고친다.
+
 규칙을 어긴 요청은 `IllegalArgumentException`으로 거절한다. 이 예외의 메시지는 개발자를 위한 진단 문구가 아니라 **사용자에게 그대로 보여 줄 문장**이다.
 
 1. 서비스가 `throw new IllegalArgumentException("마감된 회계 연도는 수정할 수 없습니다.")`처럼 던진다. 런타임 예외이므로 트랜잭션은 롤백되어 아무것도 바뀌지 않는다.

@@ -13,6 +13,7 @@ import org.church.steward.domain.contact.dto.ContactSearchRequestDto;
 import org.church.steward.domain.contact.dto.ContactSummaryDto;
 import org.church.steward.domain.contact.dto.GroupInfoDto;
 import org.church.steward.domain.contact.entity.Contact;
+import org.church.steward.domain.contact.entity.ContactConstraints;
 import org.church.steward.domain.contact.entity.ContactGroupMember;
 import org.church.steward.domain.contact.entity.ContactType;
 import org.church.steward.domain.contact.mapper.ContactMapper;
@@ -67,6 +68,7 @@ public class ContactServiceImpl implements ContactService {
 
     @Override
     public ContactDto createContact(ContactDto dto) {
+        validateContact(dto.getType(), dto.getName(), dto.getRemarks());
         Contact contact = contactMapper.toEntity(dto);
 
         contact = contactRepository.save(contact);
@@ -76,6 +78,7 @@ public class ContactServiceImpl implements ContactService {
 
     @Override
     public void updateContact(Long id, ContactType type, String name, String remarks, boolean isHidden) {
+        validateContact(type, name, remarks);
         Contact contact = contactRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 관계자를 찾을 수 없습니다."));
 
@@ -181,6 +184,24 @@ public class ContactServiceImpl implements ContactService {
         return contacts.stream()
                 .map(contactMapper::toSummaryDto)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 구분과 이름은 필수이고, 이름과 비고는 칼럼 길이 이내여야 한다.
+     */
+    private void validateContact(ContactType type, String name, String remarks) {
+        if (type == null) {
+            throw new IllegalArgumentException("구분을 선택해주세요.");
+        }
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("이름을 입력해주세요.");
+        }
+        if (name.length() > ContactConstraints.NAME_MAX_LENGTH) {
+            throw new IllegalArgumentException("이름은 " + ContactConstraints.NAME_MAX_LENGTH + "자 이내로 입력해주세요.");
+        }
+        if (remarks != null && remarks.length() > ContactConstraints.REMARKS_MAX_LENGTH) {
+            throw new IllegalArgumentException("비고는 " + ContactConstraints.REMARKS_MAX_LENGTH + "자 이내로 입력해주세요.");
+        }
     }
 
     private void validateDeletion(Long id) {

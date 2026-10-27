@@ -27,6 +27,7 @@ import org.church.steward.domain.contact.controller.ContactGroupController;
 import org.church.steward.domain.contact.dto.ContactDto;
 import org.church.steward.domain.financialrecord.dto.FinancialRecordRequestDto;
 import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
+import org.church.steward.domain.financialrecord.entity.FinancialRecordConstraints;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
 import org.church.steward.domain.fiscalyear.dto.FiscalYearDto;
 import org.church.steward.ui.component.ComponentSize;
@@ -136,6 +137,9 @@ public class FinancialRecordEntryDialog extends JDialog {
         datePicker.getComponentDateTextField()
                 .setToolTipText(periodText());
         datePicker.setDate(defaultDate());
+
+        descriptionField.setMaxLength(FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH);
+        remarksField.setMaxLength(FinancialRecordConstraints.REMARKS_MAX_LENGTH);
 
         applyFinancialRecordType(type);
     }

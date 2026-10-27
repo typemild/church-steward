@@ -27,6 +27,7 @@ import org.church.steward.domain.financialrecord.dto.FinancialRecordRequestDto;
 import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
 import org.church.steward.domain.financialrecord.dto.FinancialRecordSearchRequestDto;
 import org.church.steward.domain.financialrecord.entity.FinancialRecord;
+import org.church.steward.domain.financialrecord.entity.FinancialRecordConstraints;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordContact;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
 import org.church.steward.domain.financialrecord.mapper.FinancialRecordMapper;
@@ -594,6 +595,49 @@ class FinancialRecordServiceImplTest {
         }
 
         @Test
+        @DisplayName("내용이 최대 길이를 넘으면 예외가 발생한다")
+        void createFinancialRecord_descriptionTooLong_throwsException() {
+            // Given
+            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.INCOME, List.of(10L));
+            dto.setDescription("가".repeat(FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH + 1));
+
+            // When & Then
+            assertThatThrownBy(() -> financialRecordService.createFinancialRecord(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("내용은 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("비고가 최대 길이를 넘으면 예외가 발생한다")
+        void createFinancialRecord_remarksTooLong_throwsException() {
+            // Given
+            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.INCOME, List.of(10L));
+            dto.setRemarks("나".repeat(FinancialRecordConstraints.REMARKS_MAX_LENGTH + 1));
+
+            // When & Then
+            assertThatThrownBy(() -> financialRecordService.createFinancialRecord(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("비고는 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("내용과 비고가 최대 길이와 같으면 저장한다")
+        void createFinancialRecord_maxLengthTexts_savesRecord() {
+            // Given
+            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.EXPENSE, List.of(10L));
+            dto.setDescription("가".repeat(FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH));
+            dto.setRemarks("나".repeat(FinancialRecordConstraints.REMARKS_MAX_LENGTH));
+            givenFiscalYearAndBudgetExist();
+            when(contactRepository.findAllById(Set.of(10L))).thenReturn(List.of(createContact(10L, "Kim")));
+
+            // When
+            financialRecordService.createFinancialRecord(dto);
+
+            // Then
+            verify(financialRecordRepository).save(any(FinancialRecord.class));
+        }
+
+        @Test
         @DisplayName("수입의 봉헌자가 한 명도 없으면 예외가 발생한다")
         void createFinancialRecord_incomeWithNoContacts_throwsException() {
             // Given
@@ -982,6 +1026,32 @@ class FinancialRecordServiceImplTest {
             assertThatThrownBy(() -> financialRecordService.updateFinancialRecord(1L, dto))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("금액이 허용된 범위를 초과했습니다.");
+        }
+
+        @Test
+        @DisplayName("내용이 최대 길이를 넘으면 예외가 발생한다")
+        void updateFinancialRecord_descriptionTooLong_throwsException() {
+            // Given
+            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.EXPENSE, List.of(10L));
+            dto.setDescription("가".repeat(FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH + 1));
+
+            // When & Then
+            assertThatThrownBy(() -> financialRecordService.updateFinancialRecord(1L, dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("내용은 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("비고가 최대 길이를 넘으면 예외가 발생한다")
+        void updateFinancialRecord_remarksTooLong_throwsException() {
+            // Given
+            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.EXPENSE, List.of(10L));
+            dto.setRemarks("나".repeat(FinancialRecordConstraints.REMARKS_MAX_LENGTH + 1));
+
+            // When & Then
+            assertThatThrownBy(() -> financialRecordService.updateFinancialRecord(1L, dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("비고는 100자 이내로 입력해주세요.");
         }
 
         @Test
