@@ -2,6 +2,7 @@ package org.church.steward.ui.view.financialrecord.contact;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -24,7 +25,8 @@ import org.church.steward.ui.util.UIColors;
 
 /**
  * 계층형 관계자 자동 완성 팝업.
- * 메인 목록에는 관계자들과 "신규 추가" 항목을 보여주고, 메인 목록에서 포커스된 관계자가 속한 그룹이 있으면
+ * 메인 목록에는 관계자들과 "신규 추가" 항목(다 담지 못한 관계자가 있으면 그 아래에 누르면 모두 보여주는 안내 항목)을
+ * 보여주고, 메인 목록에서 포커스된 관계자가 속한 그룹이 있으면
  * 그 항목의 우측에 그룹들을 담은 서브 목록을 별도 팝업으로 보여준다.
  * 입력 필드가 포커스를 유지할 수 있도록 팝업 자신은 포커스를 받지 않으며, 키 조작은 외부에서 메서드로 전달받는다.
  */
@@ -42,6 +44,7 @@ public class ContactAutocompletePopup extends JPopupMenu {
     private final DefaultListModel<ContactAutocompleteItem> mainModel = new DefaultListModel<>();
     private final JList<ContactAutocompleteItem> mainList = new JList<>(mainModel);
     private final JScrollPane mainScrollPane = new JScrollPane(mainList);
+    private final ContactAutocompleteCellRenderer mainRenderer = new ContactAutocompleteCellRenderer();
 
     private final DefaultListModel<GroupInfoDto> subModel = new DefaultListModel<>();
     private final JList<GroupInfoDto> subList = new JList<>(subModel);
@@ -51,6 +54,8 @@ public class ContactAutocompletePopup extends JPopupMenu {
     private boolean groupEnabled = true;
     /** 키 조작 대상이 서브 목록인지 여부 */
     private boolean subActive = false;
+    /** 마우스가 안내 항목 위에 있는지 여부 */
+    private boolean moreResultsHovered = false;
 
     public ContactAutocompletePopup(ContactAutocompleteListener listener) {
         this.listener = listener;
@@ -59,11 +64,10 @@ public class ContactAutocompletePopup extends JPopupMenu {
         setFocusable(false);
         setBorder(BorderFactory.createLineBorder(UIColors.BORDER));
 
-        ContactAutocompleteCellRenderer mainRenderer = new ContactAutocompleteCellRenderer();
+        // 비고가 없는 항목과 안내 항목은 높이가 낮으므로 항목 높이를 고정하지 않는다.
         mainList.setFocusable(false);
         mainList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         mainList.setCellRenderer(mainRenderer);
-        mainList.setFixedCellHeight(mainRenderer.getPreferredSize().height);
 
         subList.setFocusable(false);
         subList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -94,6 +98,10 @@ public class ContactAutocompletePopup extends JPopupMenu {
     }
 
     private void setupEvents() {
+        // 모두 보여줘서 메인 목록이 스크롤되면 서브 목록을 포커스된 항목 옆으로 다시 옮긴다.
+        mainScrollPane.getViewport()
+                .addChangeListener(_ -> positionSubPopup());
+
         mainList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 refreshSubPopup();
@@ -104,11 +112,19 @@ public class ContactAutocompletePopup extends JPopupMenu {
             @Override
             public void mouseMoved(MouseEvent e) {
                 int index = indexAt(mainList, e);
-                if (index >= 0 && (subActive || index != mainList.getSelectedIndex())) {
+                // 안내 항목은 선택되지 않지만 누를 수 있으므로 손 모양 커서와 밑줄로 알린다.
+                setMoreResultsHovered(index >= 0 && !isSelectable(mainList, index));
+                if (index >= 0 && isSelectable(mainList, index)
+                        && (subActive || index != mainList.getSelectedIndex())) {
                     subActive = false;
                     subList.clearSelection();
                     mainList.setSelectedIndex(index);
                 }
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                setMoreResultsHovered(false);
             }
 
             @Override
@@ -156,7 +172,32 @@ public class ContactAutocompletePopup extends JPopupMenu {
         return (bounds != null && bounds.contains(e.getPoint())) ? index : -1;
     }
 
+    /**
+     * 안내 항목 위에 마우스가 있는지에 따라 커서와 안내 문구의 밑줄을 바꾼다.
+     */
+    private void setMoreResultsHovered(boolean hovered) {
+        if (hovered == moreResultsHovered) {
+            return;
+        }
+        moreResultsHovered = hovered;
+        mainList.setCursor(hovered ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : null);
+        mainRenderer.setMoreResultsHovered(hovered);
+        mainList.repaint();
+    }
+
+    /**
+     * 항목을 키보드나 마우스 이동으로 선택할 수 있는지 확인한다. 메인 목록의 안내 항목만 선택할 수 없다(누를 수는 있다).
+     */
+    private boolean isSelectable(JList<?> list, int index) {
+        return list != mainList || !mainModel.get(index)
+                .isMoreResults();
+    }
+
     private void handleMainPressed(ContactAutocompleteItem item, int cellX) {
+        if (item.isMoreResults()) {
+            listener.onShowAllRequested();
+            return;
+        }
         if (item.isNewEntry()) {
             listener.onNewContactRequested();
         } else if (ContactAutocompleteCellRenderer.isEditZone(cellX)) {
@@ -185,8 +226,9 @@ public class ContactAutocompletePopup extends JPopupMenu {
         subPopup.setVisible(false);
         subModel.clear();
 
+        // 안내 항목은 키보드로는 선택되지 않지만, 마우스로 누르면 JList가 선택하므로 관계자 항목인지로 확인한다.
         ContactAutocompleteItem selected = mainList.getSelectedValue();
-        if (!isVisible() || !groupEnabled || selected == null || selected.isNewEntry()) {
+        if (!isVisible() || !groupEnabled || selected == null || selected.getContact() == null) {
             return;
         }
 
@@ -210,10 +252,31 @@ public class ContactAutocompletePopup extends JPopupMenu {
         subScrollPane.getViewport()
                 .setViewPosition(new Point(0, 0));
 
+        positionSubPopup();
+    }
+
+    /**
+     * 서브 목록을 메인 목록에서 포커스된 항목의 우측에 둔다. 스크롤되어 그 항목이 보이지 않으면 서브 목록을 숨긴다.
+     * 보여줄 그룹이 없으면 아무것도 하지 않는다.
+     */
+    private void positionSubPopup() {
+        if (subModel.isEmpty() || !isShowing()) {
+            return;
+        }
+
+        int selectedIndex = mainList.getSelectedIndex();
+        Rectangle cell = mainList.getCellBounds(selectedIndex, selectedIndex);
+        Rectangle visible = mainList.getVisibleRect();
+        if (cell == null || !visible.intersects(cell)) {
+            subActive = false;
+            subList.clearSelection();
+            subPopup.setVisible(false);
+            return;
+        }
+
         // 두 팝업의 테두리가 겹치도록 1px 당겨서, 서브 목록의 윗변이 포커스된 메인 항목의 윗변과 같은 높이에 오게 한다.
         Point location = getLocationOnScreen();
-        subPopup.setLocation(location.x + getPreferredSize().width - 1,
-                location.y + mainList.getSelectedIndex() * mainList.getFixedCellHeight());
+        subPopup.setLocation(location.x + getPreferredSize().width - 1, location.y + cell.y - visible.y);
         subPopup.setVisible(true);
     }
 
@@ -222,6 +285,7 @@ public class ContactAutocompletePopup extends JPopupMenu {
      */
     public void setGroupEnabled(boolean groupEnabled) {
         this.groupEnabled = groupEnabled;
+        mainRenderer.setGroupEnabled(groupEnabled);
         if (!groupEnabled) {
             subPopup.setVisible(false);
         }
@@ -229,19 +293,28 @@ public class ContactAutocompletePopup extends JPopupMenu {
 
     /**
      * 관계자 목록과 맨 아래의 "신규 추가" 항목을 대상 컴포넌트 바로 아래에 보여준다.
+     * 목록에 담지 못한 관계자가 있으면 "신규 추가" 아래에 그 수를 안내하며, 안내를 누르면 모두 보여준다.
      */
-    public void showContacts(Component invoker, List<ContactAutocompleteDto> contacts) {
+    public void showContacts(Component invoker, List<ContactAutocompleteDto> contacts, long remainingCount) {
         setVisible(false);
+        // JList는 항목을 마우스로 누르면 놓을 때까지 선택을 "조정 중"으로 두고, 그동안의 선택 변경 이벤트는 서브 목록을
+        // 갱신하지 않는다. 누른 채로 팝업이 닫히면(안내를 눌러 모두 보여줄 때, 항목을 눌러 입력할 때) 놓는 이벤트가 목록에
+        // 오지 않아 조정 중 상태가 계속 남고, 이후로는 선택을 옮겨도 서브 목록이 바뀌지 않으므로 띄울 때마다 풀어 준다.
+        mainList.setValueIsAdjusting(false);
 
         mainModel.clear();
         for (ContactAutocompleteDto contact : contacts) {
             mainModel.addElement(ContactAutocompleteItem.ofContact(contact));
         }
         mainModel.addElement(ContactAutocompleteItem.newEntry());
+        if (remainingCount > 0) {
+            mainModel.addElement(ContactAutocompleteItem.moreResults(remainingCount));
+        }
         mainList.setSelectedIndex(0);
+        // 안내를 눌러 다시 띄울 때는 마우스가 나가지 않은 채라 손 모양 커서와 밑줄이 남아 있으므로 되돌린다.
+        setMoreResultsHovered(false);
 
-        int height = mainList.getFixedCellHeight() * mainModel.size();
-        mainScrollPane.setPreferredSize(new Dimension(Math.max(invoker.getWidth(), MIN_MAIN_WIDTH), height));
+        ContactSuggestions.fitToWidth(mainList, mainScrollPane, Math.max(invoker.getWidth(), MIN_MAIN_WIDTH));
 
         show(invoker, 0, invoker.getHeight());
         // 서브 목록의 위치는 메인 목록이 화면에 뜬 뒤에야 정할 수 있다.
@@ -257,18 +330,23 @@ public class ContactAutocompletePopup extends JPopupMenu {
     }
 
     /**
-     * 키 조작 대상 목록의 선택 항목을 위(-1) 또는 아래(+1)로 이동한다.
+     * 키 조작 대상 목록의 선택 항목을 위(-1) 또는 아래(+1)로 이동한다. 고를 수 없는 안내 항목은 건너뛰며,
+     * 더 갈 곳이 없으면 그대로 둔다.
      */
     public void moveSelection(int delta) {
         JList<?> activeList = subActive ? subList : mainList;
         int size = activeList.getModel()
                 .getSize();
-        if (size == 0) {
+        int index = activeList.getSelectedIndex() + delta;
+        while (index >= 0 && index < size && !isSelectable(activeList, index)) {
+            index += delta;
+        }
+        if (index < 0 || index >= size) {
             return;
         }
-        int index = Math.clamp(activeList.getSelectedIndex() + delta, 0, size - 1);
-        activeList.setSelectedIndex(index);
+        // 먼저 스크롤해야 선택이 바뀔 때 서브 목록이 스크롤된 뒤의 항목 위치에 뜬다.
         activeList.ensureIndexIsVisible(index);
+        activeList.setSelectedIndex(index);
     }
 
     /**
@@ -312,7 +390,8 @@ public class ContactAutocompletePopup extends JPopupMenu {
         }
 
         ContactAutocompleteItem item = mainList.getSelectedValue();
-        if (item == null) {
+        // 안내 항목을 마우스로 누르면 JList가 선택하므로, 다시 띄우기 전에 Enter를 눌러도 무시한다.
+        if (item == null || item.isMoreResults()) {
             return;
         }
         if (item.isNewEntry()) {

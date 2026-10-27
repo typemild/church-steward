@@ -21,14 +21,13 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * 계층형 관계자 자동 완성. 수입/지출 입력 다이얼로그의 관계자 선택 박스에서 사용한다.
- * 관계자 목록(최대 9명)과 "신규 추가" 항목을 보여주고, 목록에서 바로 관계자를 수정/삭제하거나 그룹을 삭제할 수 있다.
+ * 관계자 목록(최대 {@link ContactSuggestions#LIMIT}명)과 "신규 추가" 항목을 보여주고, 목록에서 바로 관계자를
+ * 수정/삭제하거나 그룹을 삭제할 수 있다. 목록에 다 담지 못한 관계자가 있으면 "신규 추가" 아래에 그 수를 안내하고,
+ * 안내를 누르면 모두 보여준다.
  * 그룹 기능을 켜면 관계자가 속한 그룹을 골라 구성원 전체를 한 번에 입력할 수 있다.
  */
 @Slf4j
 public class HierarchicalContactSuggester implements ContactSuggester, ContactAutocompleteListener {
-
-    /** "신규 추가" 항목을 제외한 최대 항목 수 */
-    private static final int AUTOCOMPLETE_LIMIT = 9;
 
     private final ContactController contactController;
     private final ContactGroupController contactGroupController;
@@ -56,20 +55,28 @@ public class HierarchicalContactSuggester implements ContactSuggester, ContactAu
 
     @Override
     public void suggest(String keyword) {
+        suggest(keyword, ContactSuggestions.LIMIT);
+    }
+
+    @Override
+    public void onShowAllRequested() {
+        suggest(lastKeyword, ContactSuggestions.UNLIMITED);
+    }
+
+    private void suggest(String keyword, int limit) {
         lastKeyword = keyword;
 
         // 입력 중인 필드가 잠기지 않도록 팝업을 잠금 대상으로 지정한다.
+        // 이미 입력된 관계자는 조회에서 빼야 목록이 제한 수까지 채워지고 남은 건수도 맞는다.
+        List<Long> excludedIds = field.getContactIds();
         AsyncTask.run(popup,
-                () -> contactController.autocompleteContacts(keyword, AUTOCOMPLETE_LIMIT),
-                contacts -> {
+                () -> contactController.autocompleteContacts(keyword, excludedIds, limit),
+                result -> {
                     // 응답을 기다리는 동안 입력이 바뀌었거나 포커스를 잃었으면 결과를 버린다.
                     if (!field.isInputFocusOwner() || !keyword.equals(field.getInputText())) {
                         return;
                     }
-                    List<ContactAutocompleteDto> candidates = contacts.stream()
-                            .filter(contact -> !field.containsContact(contact.getId()))
-                            .toList();
-                    popup.showContacts(field, candidates);
+                    popup.showContacts(field, result.getContacts(), result.getRemainingCount());
                 },
                 err -> log.error("Failed to autocomplete contacts", err));
     }

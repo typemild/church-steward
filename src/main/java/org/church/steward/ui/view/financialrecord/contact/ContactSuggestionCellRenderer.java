@@ -1,7 +1,7 @@
 package org.church.steward.ui.view.financialrecord.contact;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.GridLayout;
 
 import javax.swing.BorderFactory;
 import javax.swing.JList;
@@ -18,7 +18,7 @@ import org.church.steward.ui.view.financialrecord.FinancialRecordFormats;
 /**
  * 단순 자동 완성 목록의 항목 렌더러.
  * {@link ContactAutocompleteCellRenderer}에서 아이콘을 뺀 형태로, "[구분] 성명"과 작은 글씨의 비고를 두
- * 줄로 표시한다.
+ * 줄로 표시한다. 비고가 없으면 비고 줄을 빼므로 항목마다 높이가 다르다.
  */
 public class ContactSuggestionCellRenderer extends JPanel implements ListCellRenderer<ContactSummaryDto> {
 
@@ -29,11 +29,12 @@ public class ContactSuggestionCellRenderer extends JPanel implements ListCellRen
     private final SubFieldLabel remarksLabel = new SubFieldLabel(" ", ComponentSize.SMALL);
 
     public ContactSuggestionCellRenderer() {
-        setLayout(new GridLayout(2, 1));
+        // BorderLayout은 숨긴 컴포넌트에 자리를 주지 않으므로, 비고 줄을 숨기면 항목이 한 줄 높이가 된다.
+        setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
-        add(nameLabel);
-        add(remarksLabel);
+        add(nameLabel, BorderLayout.CENTER);
+        add(remarksLabel, BorderLayout.SOUTH);
     }
 
     @Override
@@ -44,6 +45,7 @@ public class ContactSuggestionCellRenderer extends JPanel implements ListCellRen
 
         nameLabel.setText(FinancialRecordFormats.contactLabel(contact.getType(), contact.getName()));
         remarksLabel.setText(hasRemarks ? remarks : " ");
+        remarksLabel.setVisible(hasRemarks);
         setToolTipText(hasRemarks ? remarks : null);
 
         setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());

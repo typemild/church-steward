@@ -249,7 +249,7 @@ public class ContactChipField extends JPanel implements CompositeInputField {
         return inputField;
     }
 
-    public boolean containsContact(Long contactId) {
+    private boolean containsContact(Long contactId) {
         return chips.stream()
                 .anyMatch(chip -> chip.getContactId()
                         .equals(contactId));

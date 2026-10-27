@@ -20,76 +20,145 @@ class ContactRepositoryTest {
     private ContactRepository contactRepository;
 
     @Nested
-    @DisplayName("findByNameContainingOrderByNameAsc 테스트")
-    class FindByNameContainingOrderByNameAscTest {
+    @DisplayName("findAutocompleteCandidates 테스트")
+    class FindAutocompleteCandidatesTest {
 
         @Test
-        @DisplayName("이름에 특정 문자열이 포함된 연락처를 이름순으로 조회한다")
-        void findByNameContainingOrderByNameAsc_whenNameContains_returnsSortedContacts() {
+        @DisplayName("이름 일치, 이름이 검색어로 시작, 이름에 검색어 포함, 비고에 검색어 포함 순으로 정렬하고 같은 순위는 이름순으로 정렬한다")
+        void findAutocompleteCandidates_variousMatches_returnsSortedByPriorityThenName() {
             // Given
-            contactRepository.save(Contact.builder()
-                    .name("가나다")
-                    .type(ContactType.INDIVIDUAL)
-                    .isHidden(false)
-                    .build());
-            contactRepository.save(Contact.builder()
-                    .name("마바사")
-                    .type(ContactType.INDIVIDUAL)
-                    .isHidden(false)
-                    .build());
-            contactRepository.save(Contact.builder()
-                    .name("아자차")
-                    .type(ContactType.INDIVIDUAL)
-                    .isHidden(false)
-                    .build());
+            saveContact("홍길동", null, false);
+            saveContact("김철수", "길동 친구", false);
+            saveContact("길동이", null, false);
+            saveContact("가길동", null, false);
+            saveContact("길동", null, false);
 
             // When
-            List<Contact> result = contactRepository.findByNameContainingOrderByNameAsc("가", PageRequest.of(0, 10));
+            List<Contact> result = contactRepository.findAutocompleteCandidates("길동", List.of(),
+                    PageRequest.of(0, 10));
 
             // Then
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getName()).isEqualTo("가나다");
+            assertThat(result).extracting(Contact::getName)
+                    .containsExactly("길동", "길동이", "가길동", "홍길동", "김철수");
+        }
+
+        @Test
+        @DisplayName("숨긴 관계자와 이름과 비고 모두에 검색어가 없는 관계자는 제외한다")
+        void findAutocompleteCandidates_hiddenOrNotMatching_excludesThem() {
+            // Given
+            saveContact("길동", null, false);
+            saveContact("길동숨김", null, true);
+            saveContact("무관", null, false);
+            saveContact("무관비고", "다른 비고", false);
+
+            // When
+            List<Contact> result = contactRepository.findAutocompleteCandidates("길동", List.of(),
+                    PageRequest.of(0, 10));
+
+            // Then
+            assertThat(result).extracting(Contact::getName)
+                    .containsExactly("길동");
+        }
+
+        @Test
+        @DisplayName("제외 목록에 있는 관계자는 결과에서 뺀다")
+        void findAutocompleteCandidates_excludedIds_excludesThem() {
+            // Given
+            Contact excluded = saveContact("길동1", null, false);
+            saveContact("길동2", null, false);
+
+            // When
+            List<Contact> result = contactRepository.findAutocompleteCandidates("길동", List.of(excluded.getId()),
+                    PageRequest.of(0, 10));
+
+            // Then
+            assertThat(result).extracting(Contact::getName)
+                    .containsExactly("길동2");
+        }
+
+        @Test
+        @DisplayName("검색어의 %와 _는 패턴이 아닌 글자 그대로 찾는다")
+        void findAutocompleteCandidates_keywordWithWildcards_matchesLiterally() {
+            // Given
+            saveContact("100%회비", null, false);
+            saveContact("100원회비", null, false);
+            saveContact("A_B", null, false);
+            saveContact("AxB", null, false);
+
+            // When
+            List<Contact> percentResult = contactRepository.findAutocompleteCandidates("100%", List.of(),
+                    PageRequest.of(0, 10));
+            List<Contact> underscoreResult = contactRepository.findAutocompleteCandidates("A_B", List.of(),
+                    PageRequest.of(0, 10));
+
+            // Then
+            assertThat(percentResult).extracting(Contact::getName)
+                    .containsExactly("100%회비");
+            assertThat(underscoreResult).extracting(Contact::getName)
+                    .containsExactly("A_B");
+        }
+
+        @Test
+        @DisplayName("결과는 페이지 크기만큼 앞에서부터 담긴다")
+        void findAutocompleteCandidates_moreThanPageSize_returnsFirstPage() {
+            // Given
+            saveContact("길동다", null, false);
+            saveContact("길동가", null, false);
+            saveContact("길동나", null, false);
+
+            // When
+            List<Contact> result = contactRepository.findAutocompleteCandidates("길동", List.of(),
+                    PageRequest.of(0, 2));
+
+            // Then
+            assertThat(result).extracting(Contact::getName)
+                    .containsExactly("길동가", "길동나");
         }
     }
 
     @Nested
-    @DisplayName("findByNameContainingAndIsHiddenFalseOrderByNameAsc 테스트")
-    class FindByNameContainingAndIsHiddenFalseOrderByNameAscTest {
+    @DisplayName("countAutocompleteCandidates 테스트")
+    class CountAutocompleteCandidatesTest {
 
         @Test
-        @DisplayName("이름에 특정 문자열이 포함되고 숨김 상태가 아닌 연락처를 이름순으로 조회한다")
-        void findByNameContainingAndIsHiddenFalseOrderByNameAsc_whenNameContainsAndNotHidden_returnsSortedVisibleContacts() {
+        @DisplayName("조회와 같은 조건(숨김 제외, 제외 목록 제외, 이름이나 비고에 검색어 포함)으로 건수를 센다")
+        void countAutocompleteCandidates_sameConditionAsFind_returnsCount() {
             // Given
-            contactRepository.save(Contact.builder()
-                    .name("검색대상1")
-                    .type(ContactType.INDIVIDUAL)
-                    .isHidden(false)
-                    .build());
-            contactRepository.save(Contact.builder()
-                    .name("검색대상2")
-                    .type(ContactType.INDIVIDUAL)
-                    .isHidden(false)
-                    .build());
-            contactRepository.save(Contact.builder()
-                    .name("검색대상_숨김")
-                    .type(ContactType.INDIVIDUAL)
-                    .isHidden(true)
-                    .build());
-            contactRepository.save(Contact.builder()
-                    .name("기타")
-                    .type(ContactType.INDIVIDUAL)
-                    .isHidden(false)
-                    .build());
+            Contact excluded = saveContact("길동1", null, false);
+            saveContact("길동2", null, false);
+            saveContact("김철수", "길동 친구", false);
+            saveContact("길동숨김", null, true);
+            saveContact("무관", null, false);
 
             // When
-            List<Contact> result = contactRepository.findByNameContainingAndIsHiddenFalseOrderByNameAsc("검색대상",
-                    PageRequest.of(0, 10));
+            long count = contactRepository.countAutocompleteCandidates("길동", List.of(excluded.getId()));
 
             // Then
-            assertThat(result).hasSize(2);
-            assertThat(result).extracting(Contact::getName)
-                    .containsExactly("검색대상1", "검색대상2");
+            assertThat(count).isEqualTo(2);
         }
+
+        @Test
+        @DisplayName("제외 목록이 비어 있으면 조건에 맞는 관계자를 모두 센다")
+        void countAutocompleteCandidates_emptyExcludedIds_countsAll() {
+            // Given
+            saveContact("길동1", null, false);
+            saveContact("길동2", null, false);
+
+            // When
+            long count = contactRepository.countAutocompleteCandidates("길동", List.of());
+
+            // Then
+            assertThat(count).isEqualTo(2);
+        }
+    }
+
+    private Contact saveContact(String name, String remarks, boolean hidden) {
+        return contactRepository.save(Contact.builder()
+                .name(name)
+                .type(ContactType.INDIVIDUAL)
+                .remarks(remarks)
+                .isHidden(hidden)
+                .build());
     }
 
     @Nested

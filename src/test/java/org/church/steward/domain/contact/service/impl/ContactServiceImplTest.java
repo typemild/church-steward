@@ -17,6 +17,7 @@ import org.church.steward.domain.activitylog.service.ActivityLogService;
 import org.church.steward.domain.activitylog.util.EntitySnapshot;
 import org.church.steward.domain.activitylog.util.EntitySnapshotCapturer;
 import org.church.steward.domain.contact.dto.ContactAutocompleteDto;
+import org.church.steward.domain.contact.dto.ContactAutocompleteResultDto;
 import org.church.steward.domain.contact.dto.ContactDto;
 import org.church.steward.domain.contact.dto.ContactSearchRequestDto;
 import org.church.steward.domain.contact.dto.ContactSummaryDto;
@@ -690,7 +691,7 @@ class ContactServiceImplTest {
                     .contactGroup(group)
                     .build();
 
-            when(contactRepository.findByNameContainingAndIsHiddenFalseOrderByNameAsc(any(), any()))
+            when(contactRepository.findAutocompleteCandidates(any(), any(), any()))
                     .thenReturn(List.of(contact));
             when(contactGroupMemberRepository.findAllByContactId(1L))
                     .thenReturn(List.of(member));
@@ -709,11 +710,12 @@ class ContactServiceImplTest {
             when(contactMapper.toAutocompleteDto(any(), any())).thenReturn(expectedDto);
 
             // When
-            List<ContactAutocompleteDto> result = contactService.autocompleteContacts(keyword, limit);
+            ContactAutocompleteResultDto<ContactAutocompleteDto> result = contactService.autocompleteContacts(keyword,
+                    List.of(), limit);
 
             // Then
-            assertThat(result).hasSize(1);
-            ContactAutocompleteDto dto = result.get(0);
+            assertThat(result.getContacts()).hasSize(1);
+            ContactAutocompleteDto dto = result.getContacts().get(0);
             assertThat(dto.getId()).isEqualTo(1L);
             assertThat(dto.getName()).isEqualTo("홍길동");
             assertThat(dto.getGroups()).hasSize(1);
@@ -721,20 +723,88 @@ class ContactServiceImplTest {
         }
 
         @Test
-        @DisplayName("관계자 자동완성_결과 없음 시_빈 리스트를 반환한다")
-        void autocompleteContacts_noResult_returnsEmptyList() {
+        @DisplayName("관계자 자동완성_결과 없음 시_빈 목록과 0건을 반환한다")
+        void autocompleteContacts_noResult_returnsEmptyResult() {
             // Given
             String keyword = "없는이름";
             int limit = 10;
 
-            when(contactRepository.findByNameContainingAndIsHiddenFalseOrderByNameAsc(any(), any()))
+            when(contactRepository.findAutocompleteCandidates(any(), any(), any()))
                     .thenReturn(List.of());
 
             // When
-            List<ContactAutocompleteDto> result = contactService.autocompleteContacts(keyword, limit);
+            ContactAutocompleteResultDto<ContactAutocompleteDto> result = contactService.autocompleteContacts(keyword,
+                    List.of(), limit);
 
             // Then
-            assertThat(result).isEmpty();
+            assertThat(result.getContacts()).isEmpty();
+            assertThat(result.getTotalCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("관계자 자동완성_검색어와 제외 목록과 제한 수를 조회 조건으로 넘긴다")
+        void autocompleteContacts_validRequest_passesConditionsToRepository() {
+            // Given
+            String keyword = "홍길동";
+            List<Long> excludedIds = List.of(3L, 4L);
+            int limit = 5;
+
+            // When
+            contactService.autocompleteContacts(keyword, excludedIds, limit);
+
+            // Then
+            verify(contactRepository).findAutocompleteCandidates(keyword, excludedIds, PageRequest.of(0, limit));
+        }
+
+        @Test
+        @DisplayName("관계자 자동완성_조회 건수가 제한보다 적을 때_조회 건수를 전체 건수로 한다")
+        void autocompleteContacts_fewerThanLimit_totalCountIsFoundCount() {
+            // Given
+            Contact contact = Contact.builder().id(1L).name("홍길동").build();
+            when(contactRepository.findAutocompleteCandidates(any(), any(), any()))
+                    .thenReturn(List.of(contact));
+
+            // When
+            ContactAutocompleteResultDto<ContactAutocompleteDto> result = contactService.autocompleteContacts("홍",
+                    List.of(), 5);
+
+            // Then
+            assertThat(result.getTotalCount()).isEqualTo(1);
+            assertThat(result.getRemainingCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("관계자 자동완성_조회 건수가 제한보다 적을 때_건수를 따로 세지 않는다")
+        void autocompleteContacts_fewerThanLimit_doesNotCount() {
+            // Given
+            Contact contact = Contact.builder().id(1L).name("홍길동").build();
+            when(contactRepository.findAutocompleteCandidates(any(), any(), any()))
+                    .thenReturn(List.of(contact));
+
+            // When
+            contactService.autocompleteContacts("홍", List.of(), 5);
+
+            // Then
+            verify(contactRepository, never()).countAutocompleteCandidates(any(), any());
+        }
+
+        @Test
+        @DisplayName("관계자 자동완성_조회 건수가 제한에 이를 때_따로 센 건수를 전체 건수로 한다")
+        void autocompleteContacts_reachesLimit_totalCountFromCountQuery() {
+            // Given
+            Contact contact = Contact.builder().id(1L).name("홍길동").build();
+            List<Long> excludedIds = List.of(3L);
+            when(contactRepository.findAutocompleteCandidates(any(), any(), any()))
+                    .thenReturn(List.of(contact));
+            when(contactRepository.countAutocompleteCandidates("홍", excludedIds)).thenReturn(7L);
+
+            // When
+            ContactAutocompleteResultDto<ContactAutocompleteDto> result = contactService.autocompleteContacts("홍",
+                    excludedIds, 1);
+
+            // Then
+            assertThat(result.getTotalCount()).isEqualTo(7);
+            assertThat(result.getRemainingCount()).isEqualTo(6);
         }
     }
 
@@ -747,21 +817,42 @@ class ContactServiceImplTest {
         void autocompleteContactSummaries_success_returnsSummaryDtos() {
             // Given
             String keyword = "홍길동";
+            List<Long> excludedIds = List.of(3L);
             int limit = 10;
 
             Contact contact = Contact.builder().id(1L).name("홍길동").build();
             ContactSummaryDto summaryDto = ContactSummaryDto.builder().id(1L).name("홍길동").build();
 
-            when(contactRepository.findByNameContainingAndIsHiddenFalseOrderByNameAsc(keyword,
-                    PageRequest.of(0, limit)))
+            when(contactRepository.findAutocompleteCandidates(keyword, excludedIds, PageRequest.of(0, limit)))
                     .thenReturn(List.of(contact));
             when(contactMapper.toSummaryDto(contact)).thenReturn(summaryDto);
 
             // When
-            List<ContactSummaryDto> result = contactService.autocompleteContactSummaries(keyword, limit);
+            ContactAutocompleteResultDto<ContactSummaryDto> result = contactService
+                    .autocompleteContactSummaries(keyword, excludedIds, limit);
 
             // Then
-            assertThat(result).containsExactly(summaryDto);
+            assertThat(result.getContacts()).containsExactly(summaryDto);
+            assertThat(result.getTotalCount()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("관계자 요약 자동완성_조회 건수가 제한에 이를 때_따로 센 건수를 전체 건수로 한다")
+        void autocompleteContactSummaries_reachesLimit_totalCountFromCountQuery() {
+            // Given
+            Contact contact = Contact.builder().id(1L).name("홍길동").build();
+            List<Long> excludedIds = List.of();
+            when(contactRepository.findAutocompleteCandidates(any(), any(), any()))
+                    .thenReturn(List.of(contact));
+            when(contactRepository.countAutocompleteCandidates("홍", excludedIds)).thenReturn(12L);
+
+            // When
+            ContactAutocompleteResultDto<ContactSummaryDto> result = contactService
+                    .autocompleteContactSummaries("홍", excludedIds, 1);
+
+            // Then
+            assertThat(result.getTotalCount()).isEqualTo(12);
+            assertThat(result.getRemainingCount()).isEqualTo(11);
         }
     }
 }

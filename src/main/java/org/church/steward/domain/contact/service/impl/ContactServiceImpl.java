@@ -8,6 +8,7 @@ import org.church.steward.domain.activitylog.service.ActivityLogService;
 import org.church.steward.domain.activitylog.util.EntitySnapshot;
 import org.church.steward.domain.activitylog.util.EntitySnapshotCapturer;
 import org.church.steward.domain.contact.dto.ContactAutocompleteDto;
+import org.church.steward.domain.contact.dto.ContactAutocompleteResultDto;
 import org.church.steward.domain.contact.dto.ContactDto;
 import org.church.steward.domain.contact.dto.ContactSearchRequestDto;
 import org.church.steward.domain.contact.dto.ContactSummaryDto;
@@ -154,11 +155,12 @@ public class ContactServiceImpl implements ContactService {
     }
 
     @Override
-    public List<ContactAutocompleteDto> autocompleteContacts(String keyword, int limit) {
-        List<Contact> contacts = contactRepository.findByNameContainingAndIsHiddenFalseOrderByNameAsc(keyword,
-                PageRequest.of(0, limit));
+    @Transactional(readOnly = true)
+    public ContactAutocompleteResultDto<ContactAutocompleteDto> autocompleteContacts(String keyword,
+            List<Long> excludedIds, int limit) {
+        List<Contact> contacts = findAutocompleteCandidates(keyword, excludedIds, limit);
 
-        return contacts.stream().map(contact -> {
+        List<ContactAutocompleteDto> dtos = contacts.stream().map(contact -> {
             List<GroupInfoDto> groups = contactGroupMemberRepository.findAllByContactId(contact.getId()).stream()
                     .map(cm -> cm.getContactGroup())
                     .distinct()
@@ -174,16 +176,41 @@ public class ContactServiceImpl implements ContactService {
 
             return contactMapper.toAutocompleteDto(contact, groups);
         }).collect(Collectors.toList());
+
+        return ContactAutocompleteResultDto.<ContactAutocompleteDto>builder()
+                .contacts(dtos)
+                .totalCount(countAutocompleteCandidates(keyword, excludedIds, limit, contacts.size()))
+                .build();
     }
 
     @Override
-    public List<ContactSummaryDto> autocompleteContactSummaries(String keyword, int limit) {
-        List<Contact> contacts = contactRepository.findByNameContainingAndIsHiddenFalseOrderByNameAsc(keyword,
-                PageRequest.of(0, limit));
+    @Transactional(readOnly = true)
+    public ContactAutocompleteResultDto<ContactSummaryDto> autocompleteContactSummaries(String keyword,
+            List<Long> excludedIds, int limit) {
+        List<Contact> contacts = findAutocompleteCandidates(keyword, excludedIds, limit);
 
-        return contacts.stream()
+        List<ContactSummaryDto> dtos = contacts.stream()
                 .map(contactMapper::toSummaryDto)
                 .collect(Collectors.toList());
+
+        return ContactAutocompleteResultDto.<ContactSummaryDto>builder()
+                .contacts(dtos)
+                .totalCount(countAutocompleteCandidates(keyword, excludedIds, limit, contacts.size()))
+                .build();
+    }
+
+    private List<Contact> findAutocompleteCandidates(String keyword, List<Long> excludedIds, int limit) {
+        return contactRepository.findAutocompleteCandidates(keyword, excludedIds, PageRequest.of(0, limit));
+    }
+
+    /**
+     * 자동 완성 후보의 전체 건수를 구한다. 조회한 건수가 제한보다 적으면 그것이 전부이므로 다시 세지 않는다.
+     */
+    private long countAutocompleteCandidates(String keyword, List<Long> excludedIds, int limit, int foundCount) {
+        if (foundCount < limit) {
+            return foundCount;
+        }
+        return contactRepository.countAutocompleteCandidates(keyword, excludedIds);
     }
 
     /**

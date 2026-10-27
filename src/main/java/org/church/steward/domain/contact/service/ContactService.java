@@ -3,6 +3,7 @@ package org.church.steward.domain.contact.service;
 import java.util.List;
 
 import org.church.steward.domain.contact.dto.ContactAutocompleteDto;
+import org.church.steward.domain.contact.dto.ContactAutocompleteResultDto;
 import org.church.steward.domain.contact.dto.ContactDto;
 import org.church.steward.domain.contact.dto.ContactSearchRequestDto;
 import org.church.steward.domain.contact.dto.ContactSummaryDto;
@@ -26,7 +27,19 @@ public interface ContactService {
 
     void unhideContact(Long id);
 
-    List<ContactAutocompleteDto> autocompleteContacts(String keyword, int limit);
+    /**
+     * 수입/지출 입력의 자동 완성 후보를 소속 그룹과 함께 조회한다.
+     * 숨긴 관계자와 이미 입력된 관계자({@code excludedIds})는 빼고, 이름이나 비고에 검색어가 들어 있는 관계자를
+     * 이름 일치 → 이름이 검색어로 시작 → 이름에 검색어 포함 → 비고에 검색어 포함 순(같은 순위는 이름순)으로
+     * {@code limit}명까지 담는다.
+     */
+    ContactAutocompleteResultDto<ContactAutocompleteDto> autocompleteContacts(String keyword, List<Long> excludedIds,
+            int limit);
 
-    List<ContactSummaryDto> autocompleteContactSummaries(String keyword, int limit);
+    /**
+     * 검색 조건의 자동 완성 후보를 조회한다. 조건과 순서는
+     * {@link #autocompleteContacts(String, List, int)}와 같고 소속 그룹은 담지 않는다.
+     */
+    ContactAutocompleteResultDto<ContactSummaryDto> autocompleteContactSummaries(String keyword,
+            List<Long> excludedIds, int limit);
 }

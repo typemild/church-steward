@@ -17,6 +17,9 @@ public interface ContactAutocompleteListener {
     /** "신규 추가" 항목이 선택됨 */
     void onNewContactRequested();
 
+    /** 다 담지 못한 관계자가 있다는 안내 항목이 클릭됨. 같은 검색어로 모두 조회해 다시 보여줘야 한다. */
+    void onShowAllRequested();
+
     /** 관계자 항목의 연필(수정) 아이콘이 클릭됨 */
     void onContactEditRequested(ContactAutocompleteDto contact);
 
