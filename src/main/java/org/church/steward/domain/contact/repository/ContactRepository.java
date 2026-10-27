@@ -50,11 +50,19 @@ public interface ContactRepository extends JpaRepository<Contact, Long> {
     long countAutocompleteCandidates(@Param("keyword") String keyword,
             @Param("excludedIds") Collection<Long> excludedIds);
 
-    @Query("SELECT c FROM Contact c WHERE " +
-            "(:type IS NULL OR c.type = :type) AND " +
-            "(:name IS NULL OR c.name LIKE concat('%', :name, '%')) AND " +
-            "(:remarks IS NULL OR c.remarks LIKE concat('%', :remarks, '%')) AND " +
-            "(:includeHidden = true OR c.isHidden = false) ORDER BY c.name ASC")
+    /**
+     * 관계자 관리 목록을 조건으로 조회한다. 조건이 null이면 적용하지 않는다.
+     * 이름과 비고는 검색어를 LIKE 패턴이 아닌 글자 그대로 찾도록 LOCATE를 쓴다.
+     */
+    @Query("""
+            SELECT c
+              FROM Contact c
+             WHERE (:type IS NULL OR c.type = :type)
+               AND (:name IS NULL OR LOCATE(:name, c.name) > 0)
+               AND (:remarks IS NULL OR LOCATE(:remarks, c.remarks) > 0)
+               AND (:includeHidden = true OR c.isHidden = false)
+             ORDER BY c.name ASC
+            """)
     List<Contact> searchContacts(@Param("type") ContactType type,
             @Param("name") String name,
             @Param("remarks") String remarks,

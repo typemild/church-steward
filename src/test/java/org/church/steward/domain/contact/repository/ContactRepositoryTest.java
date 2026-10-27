@@ -271,5 +271,23 @@ class ContactRepositoryTest {
             assertThat(result).extracting(Contact::getName)
                     .containsExactly("가나", "다라", "마바");
         }
+
+        @Test
+        @DisplayName("이름과 비고 검색어의 %와 _는 패턴이 아닌 글자 그대로 찾는다")
+        void searchContacts_keywordWithWildcards_matchesLiterally() {
+            // Given
+            saveContact("A_B", "100%회비", false);
+            saveContact("AxB", "100원회비", false);
+
+            // When
+            List<Contact> nameResult = contactRepository.searchContacts(null, "A_B", null, true);
+            List<Contact> remarksResult = contactRepository.searchContacts(null, null, "100%", true);
+
+            // Then
+            assertThat(nameResult).extracting(Contact::getName)
+                    .containsExactly("A_B");
+            assertThat(remarksResult).extracting(Contact::getName)
+                    .containsExactly("A_B");
+        }
     }
 }
