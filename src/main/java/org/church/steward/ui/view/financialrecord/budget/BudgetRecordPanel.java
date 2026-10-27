@@ -212,6 +212,16 @@ public class BudgetRecordPanel extends JPanel {
     }
 
     /**
+     * 내역이 표에 있으면 그 예산 행을 펼치고 내역 행을 선택해 보이도록 스크롤한다.
+     */
+    public void revealRecord(Long recordId) {
+        int modelRow = tableModel.revealRecord(recordId);
+        if (modelRow >= 0) {
+            table.selectAndScrollToModelRow(modelRow);
+        }
+    }
+
+    /**
      * 선택된 행들을 반환한다. 예산 행과 내역 행이 섞여 있을 수 있다.
      */
     public List<BudgetRecordRow> getSelectedRows() {

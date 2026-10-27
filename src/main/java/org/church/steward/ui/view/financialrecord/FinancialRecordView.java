@@ -166,6 +166,16 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     }
 
     private void search() {
+        search(null);
+    }
+
+    /**
+     * 조회한 뒤 지정한 내역이 결과에 있으면 두 탭에서 그 내역을 선택하고 보이도록 스크롤한다.
+     * 새로 추가한 내역은 정렬에 따라 목록의 아래쪽에 놓일 수 있기 때문이다.
+     *
+     * @param revealRecordId 보여줄 내역의 ID. null이면 조회만 한다.
+     */
+    private void search(Long revealRecordId) {
         final FinancialRecordSearchRequestDto request = searchPanel.getSearchRequest();
         final long sequence = ++searchSequence;
 
@@ -178,6 +188,10 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
                     summaryPanel.update(result.records());
                     budgetTabPanel.setRecords(result.records(), result.budgetPositions());
                     itemizedTabPanel.setRecords(result.records());
+                    if (revealRecordId != null) {
+                        budgetTabPanel.revealRecord(revealRecordId);
+                        itemizedTabPanel.revealRecord(revealRecordId);
+                    }
                 },
                 err -> {
                     if (sequence != searchSequence) {
@@ -229,8 +243,8 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
 
         AsyncTask.run(tabbedPane,
                 () -> financialRecordController.createFinancialRecord(request),
-                _ -> {
-                    search();
+                created -> {
+                    search(created.getId());
                     if (continueRequested) {
                         // 연속 입력: 추가에 성공한 뒤에만 방금 확정한 구분, 날짜, 예산으로 다이얼로그를 다시 연다.
                         // 구분과 날짜는 lastAddInput으로 이어지고, 예산은 호출한 쪽이 처음 지정한 것 대신 방금 확정한 것을 쓴다.

@@ -147,9 +147,50 @@ public abstract class AbstractTreeTableModel<T> extends AbstractTableModel {
         return -1;
     }
 
+    /**
+     * 키가 같은 노드가 보이도록 그 노드의 상위 노드를 모두 펼치고, 그 노드의 행을 반환한다. 없으면 -1을 반환한다.
+     */
+    public int reveal(Object key) {
+        if (key == null) {
+            return -1;
+        }
+        List<TreeTableNode<T>> path = new ArrayList<>();
+        if (!findPath(roots, key, path)) {
+            return -1;
+        }
+
+        boolean changed = false;
+        for (TreeTableNode<T> ancestor : path.subList(0, path.size() - 1)) {
+            if (!isExpanded(ancestor)) {
+                if (!toggledKeys.remove(ancestor.key())) {
+                    toggledKeys.add(ancestor.key());
+                }
+                changed = true;
+            }
+        }
+        if (changed) {
+            setRoots(roots);
+        }
+        return indexOfKey(key);
+    }
+
     @Override
     public int getRowCount() {
         return rows.size();
+    }
+
+    /**
+     * 키가 같은 노드까지의 경로(최상위 노드부터 그 노드까지)를 path에 담는다. 찾지 못하면 path를 비워 두고 false를 반환한다.
+     */
+    private static <N> boolean findPath(List<TreeTableNode<N>> nodes, Object key, List<TreeTableNode<N>> path) {
+        for (TreeTableNode<N> node : nodes) {
+            path.add(node);
+            if (Objects.equals(node.key(), key) || findPath(node.children(), key, path)) {
+                return true;
+            }
+            path.removeLast();
+        }
+        return false;
     }
 
     private boolean isExpanded(TreeTableNode<T> node) {

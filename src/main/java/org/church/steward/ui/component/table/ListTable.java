@@ -211,6 +211,18 @@ public class ListTable extends JTable {
     }
 
     /**
+     * 모델 기준 행 하나만 선택하고, 그 행이 보이도록 스크롤한다.
+     */
+    public void selectAndScrollToModelRow(int modelRow) {
+        int viewRow = convertRowIndexToView(modelRow);
+        if (viewRow < 0) {
+            return;
+        }
+        setRowSelectionInterval(viewRow, viewRow);
+        scrollRectToVisible(getCellRect(viewRow, 0, true));
+    }
+
+    /**
      * 행 선택을 해제한다. 선택만 지우면 마지막으로 누른 셀에 포커스 테두리가 남으므로 기준 위치도 함께 지운다.
      */
     public void clearRowSelection() {
