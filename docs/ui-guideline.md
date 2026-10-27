@@ -84,7 +84,7 @@
 - 여러 컴포넌트로 된 입력란(날짜 피커, `BudgetSelectBox`, `ContactChipField`)은 `CompositeInputField`로 포커스 받을 컴포넌트를 알려 준다.
 - 콤보박스 목록이나 자동 완성 목록이 떠 있으면 Enter와 Esc는 목록이 먼저 처리한다. 관계자 입력란은 칩으로 확정되지 않은 글자가 남아 있으면 Enter로 다음 입력란으로 옮기지 않고 자동 완성 목록을 다시 띄운다.
 - 다이얼로그가 띄운 창(메시지 창 제외)이 닫히면 마지막으로 쓰던 입력란에 포커스를 되돌린다.
-- 입력란 없이 표만 있는 선택 다이얼로그는 `pressPrimaryOnEnter`로 창 어디서든 Enter를 누르면 선택한 항목으로 확인한다.
+- 입력란 없이 표만 있는 선택 다이얼로그는 `pressPrimaryOnEnter`로 창 어디서든 Enter를 누르면 선택한 항목으로 확인한다. 표의 행을 더블클릭해도 그 항목으로 확인한다(예산 선택/매핑 다이얼로그는 `BudgetTreePanel#setRowDoubleClickHandler`로 편집 모드의 더블클릭 수정을 대신한다).
 - 조회만 하는 다이얼로그는 Esc만 붙인다.
 - 기동 화면(`DatabaseInitView`, `DatabaseRestoreView`)에는 붙이지 않는다. Esc로 초기화나 복원이 취소되지 않게 하기 위함이다. 대신 두 화면은 작업하는 동안 창의 닫기 버튼을 무시한다(작업 중에 닫히면 작업이 끝나기 전에 취소로 반환되어 기동 절차가 이어지기 때문이다).
 

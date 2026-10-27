@@ -95,6 +95,8 @@ class BudgetMappingDialog extends JDialog {
         setLocationRelativeTo(owner);
 
         okButton.addActionListener(_ -> confirm());
+        // 행을 더블클릭하면 수정하지 않고 그 예산에 매핑한다. 수정은 툴바의 수정 버튼으로 한다.
+        budgetPanel.setRowDoubleClickHandler(this::confirm);
 
         // 입력란 없이 예산 표만 있으므로, 표에서든 다른 곳에서든 Enter를 누르면 선택한 예산으로 매핑한다.
         DialogKeyHandler.install(this)
