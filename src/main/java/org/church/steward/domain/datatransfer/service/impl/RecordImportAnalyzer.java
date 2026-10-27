@@ -62,6 +62,11 @@ final class RecordImportAnalyzer {
             "지출", FinancialRecordType.EXPENSE,
             "출금", FinancialRecordType.EXPENSE);
 
+    /** 매핑 항목의 순서. {@link #toDtos} 참조 */
+    private static final Comparator<Mapping> MAPPING_ORDER = Comparator.comparing((Mapping mapping) -> !mapping.blank)
+            .thenComparing(mapping -> mapping.label)
+            .thenComparing(mapping -> mapping.type, Comparator.nullsFirst(Comparator.naturalOrder()));
+
     private static final Pattern DATE_FULL = Pattern
             .compile("^(\\d{4})\\s*[-./년]\\s*(\\d{1,2})\\s*[-./월]\\s*(\\d{1,2})\\s*[.일]?$");
     private static final Pattern DATE_COMPACT = Pattern.compile("^(\\d{4})(\\d{2})(\\d{2})$");
@@ -140,6 +145,8 @@ final class RecordImportAnalyzer {
         private final String key;
         private final String label;
         private final boolean blank;
+        /** 예산·관계자를 연결하는 항목의 구분. 구분을 연결하는 항목이면 null */
+        private final FinancialRecordType type;
         private final String typeLabel;
         private int count;
         private long totalAmount;
@@ -159,12 +166,14 @@ final class RecordImportAnalyzer {
 
         /**
          * @param value 파일에 적힌 값. 빈 문자열이면 빈 칸 항목이다.
+         * @param type  예산·관계자를 연결하는 항목의 구분. 구분을 연결하는 항목이면 null
          */
-        private Mapping(String key, String value, String typeLabel) {
+        private Mapping(String key, String value, FinancialRecordType type) {
             this.key = key;
             this.blank = value.isEmpty();
             this.label = blank ? BLANK_LABEL : value;
-            this.typeLabel = typeLabel;
+            this.type = type;
+            this.typeLabel = type == null ? "" : type.getLabel();
         }
     }
 
@@ -360,7 +369,7 @@ final class RecordImportAnalyzer {
      * 없으면 "수입"/"입금"은 수입, "지출"/"출금"은 지출로 읽는다.
      */
     private Mapping resolveType(String text) {
-        Mapping mapping = new Mapping(text, text, "");
+        Mapping mapping = new Mapping(text, text, null);
         FinancialRecordType manual = request.getTypeMappings().get(text);
         FinancialRecordType type = manual != null ? manual : TYPE_NAMES.get(text);
         if (type == null) {
@@ -547,7 +556,7 @@ final class RecordImportAnalyzer {
             }
             Mapping mapping = budgetMappings.get(row.budgetKey);
             if (mapping == null) {
-                mapping = new Mapping(row.budgetKey, row.budgetSource, row.type.getLabel());
+                mapping = new Mapping(row.budgetKey, row.budgetSource, row.type);
                 resolveBudget(mapping, row);
                 budgetMappings.put(row.budgetKey, mapping);
             }
@@ -624,7 +633,7 @@ final class RecordImportAnalyzer {
             }
             Mapping mapping = contactMappings.get(row.contactKey);
             if (mapping == null) {
-                mapping = new Mapping(row.contactKey, row.contactLabel, row.type.getLabel());
+                mapping = new Mapping(row.contactKey, row.contactLabel, row.type);
                 resolveContact(mapping, row.type, row.contactNames);
                 contactMappings.put(row.contactKey, mapping);
             }
@@ -843,9 +852,14 @@ final class RecordImportAnalyzer {
                 .build();
     }
 
+    /**
+     * 매핑 항목을 화면에 보여줄 순서로 바꾼다. 빈 칸 항목을 맨 앞에 두고, 나머지는 파일의 값 오름차순이며,
+     * 값이 같으면 수입 항목을 지출 항목보다 앞에 둔다. 파일에 나온 순서로 두면 원하는 값을 찾기 어렵기 때문이다.
+     */
     private static List<ImportMappingDto> toDtos(Map<String, Mapping> mappings) {
         return mappings.values()
                 .stream()
+                .sorted(MAPPING_ORDER)
                 .map(mapping -> ImportMappingDto.builder()
                         .key(mapping.key)
                         .label(mapping.label)

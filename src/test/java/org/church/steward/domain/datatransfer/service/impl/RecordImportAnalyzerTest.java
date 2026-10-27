@@ -476,8 +476,8 @@ class RecordImportAnalyzerTest {
             assertThat(analysis.getBudgetMappings())
                     .extracting(ImportMappingDto::getLabel, ImportMappingDto::isMapped, ImportMappingDto::getNote)
                     .containsExactly(
-                            tuple("헌금", false, "하위 예산이 있는 예산입니다. 말단 예산을 지정해주세요."),
-                            tuple("운영비", false, "등록되지 않은 예산입니다."));
+                            tuple("운영비", false, "등록되지 않은 예산입니다."),
+                            tuple("헌금", false, "하위 예산이 있는 예산입니다. 말단 예산을 지정해주세요."));
         }
 
         @Test
@@ -538,8 +538,8 @@ class RecordImportAnalyzerTest {
             assertThat(analysis.getContactMappings())
                     .extracting(ImportMappingDto::getLabel, ImportMappingDto::getCount, ImportMappingDto::getTargetIds)
                     .containsExactly(
-                            tuple("홍길동, 김철수", 2, List.of(10L, 11L)),
-                            tuple("홍길동", 1, List.of(10L)));
+                            tuple("홍길동", 1, List.of(10L)),
+                            tuple("홍길동, 김철수", 2, List.of(10L, 11L)));
         }
 
         @Test
@@ -577,8 +577,8 @@ class RecordImportAnalyzerTest {
             assertThat(analysis.getContactMappings())
                     .extracting(ImportMappingDto::getLabel, ImportMappingDto::getTargetIds)
                     .containsExactly(
-                            tuple("홍길동, 김철수", List.of(10L, 11L)),
-                            tuple("김철수, 홍길동", List.of(11L, 10L)));
+                            tuple("김철수, 홍길동", List.of(11L, 10L)),
+                            tuple("홍길동, 김철수", List.of(10L, 11L)));
         }
 
         @Test
@@ -712,6 +712,54 @@ class RecordImportAnalyzerTest {
                     .containsExactly(
                             tuple("INCOME:박민수", "박민수", "수입", 1000L, List.of(), false),
                             tuple("EXPENSE:박민수", "박민수", "지출", 300L, List.of(12L), true));
+        }
+
+        @Test
+        @DisplayName("관계자 매핑 항목은 빈 칸 항목을 맨 앞에 두고 파일의 값 오름차순으로 정렬하며, 값이 같으면 수입 항목이 먼저다")
+        void analyze_ContactMappings_SortedByBlankThenLabelThenType() {
+            // Given
+            RecordImportRequestDto request = standardRequest(List.of(
+                    row("지출", LocalDate.of(2026, 3, 5), "운영비", 300L, null, "홍길동", null),
+                    row("수입", LocalDate.of(2026, 3, 5), "십일조", 1000L, null, "홍길동", null),
+                    row("수입", LocalDate.of(2026, 3, 6), "십일조", 2000L, null, "김철수", null),
+                    row("지출", LocalDate.of(2026, 3, 6), "운영비", 500L, null, null, null),
+                    row("수입", LocalDate.of(2026, 3, 7), "십일조", 3000L, null, "OO상사", null)))
+                    .build();
+
+            // When
+            RecordImportAnalysisDto analysis = analyze(request);
+
+            // Then
+            assertThat(analysis.getContactMappings())
+                    .extracting(ImportMappingDto::getLabel, ImportMappingDto::getTypeLabel)
+                    .containsExactly(
+                            tuple("(빈 칸)", "지출"),
+                            tuple("OO상사", "수입"),
+                            tuple("김철수", "수입"),
+                            tuple("홍길동", "수입"),
+                            tuple("홍길동", "지출"));
+        }
+
+        @Test
+        @DisplayName("구분 매핑 항목과 예산 매핑 항목도 파일의 값 오름차순으로 정렬한다")
+        void analyze_TypeAndBudgetMappings_SortedByLabel() {
+            // Given
+            RecordImportRequestDto request = standardRequest(List.of(
+                    row("출금", LocalDate.of(2026, 3, 5), "운영비", 300L, null, "OO상사", null),
+                    row("입금", LocalDate.of(2026, 3, 5), "헌금 > 십일조", 1000L, null, "홍길동", null),
+                    row("입금", LocalDate.of(2026, 3, 6), "헌금 > 감사헌금", 2000L, null, "홍길동", null)))
+                    .build();
+
+            // When
+            RecordImportAnalysisDto analysis = analyze(request);
+
+            // Then
+            assertThat(analysis.getTypeMappings())
+                    .extracting(ImportMappingDto::getLabel)
+                    .containsExactly("입금", "출금");
+            assertThat(analysis.getBudgetMappings())
+                    .extracting(ImportMappingDto::getLabel)
+                    .containsExactly("운영비", "헌금 > 감사헌금", "헌금 > 십일조");
         }
 
         @Test
