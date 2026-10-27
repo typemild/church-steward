@@ -6,6 +6,12 @@
 
 <p align="center">작은 교회를 위한 재정 관리 프로그램</p>
 
+<p align="center">
+  <a href="https://github.com/typemild/church-steward/releases/latest">
+    <img src="https://img.shields.io/github/v/release/typemild/church-steward?label=%EC%B5%9C%EC%8B%A0%20%EB%B2%84%EC%A0%84%20%EB%82%B4%EB%A0%A4%EB%B0%9B%EA%B8%B0&style=flat" alt="최신 버전 내려받기">
+  </a>
+</p>
+
 ---
 
 청지기는 교회의 수입(헌금)과 지출, 예산을 기록하고 주간·결산 보고서를 만드는 데스크톱 프로그램입니다.
@@ -14,6 +20,13 @@
 <p align="center">
   <img src="docs/screenshots/dashboard.png" alt="대시보드 화면" width="720">
 </p>
+
+## 평생 무료
+
+청지기는 **평생 무료**입니다. 사용료나 유료 기능이 없으며, 어느 교회든 자유롭게 내려받아 쓸 수 있습니다.
+
+청지기는 오픈 소스 프로그램입니다. 프로그램의 설계도에 해당하는 소스 코드가 이곳에 모두 공개되어 있어서, 누구나 보고 고칠 수 있습니다([라이선스](#라이선스)).
+그래서 혹시 제 신변에 문제(?)가 생겨도 다른 프로그래머가 이 소스 코드를 이어받아 유지보수할 수 있습니다.
 
 ## 주요 기능
 
