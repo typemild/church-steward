@@ -305,6 +305,58 @@ class ContactServiceImplTest {
     }
 
     @Nested
+    @DisplayName("createContactWithoutLog 테스트")
+    class CreateContactWithoutLogTest {
+
+        @Test
+        @DisplayName("관계자를 저장하고 저장된 엔터티를 반환한다")
+        void createContactWithoutLog_validInput_returnsSavedEntity() {
+            // Given
+            ContactDto dto = ContactDto.builder().type(ContactType.OTHER).name("무명").build();
+            Contact contactToSave = Contact.builder().build();
+            Contact savedContact = Contact.builder().id(1L).name("무명").build();
+
+            when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
+            when(contactRepository.save(contactToSave)).thenReturn(savedContact);
+
+            // When
+            Contact result = contactService.createContactWithoutLog(dto);
+
+            // Then
+            assertThat(result).isSameAs(savedContact);
+        }
+
+        @Test
+        @DisplayName("활동 기록을 남기지 않는다")
+        void createContactWithoutLog_validInput_doesNotLog() {
+            // Given
+            ContactDto dto = ContactDto.builder().type(ContactType.OTHER).name("무명").build();
+            Contact contactToSave = Contact.builder().build();
+
+            when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
+            when(contactRepository.save(contactToSave)).thenReturn(contactToSave);
+
+            // When
+            contactService.createContactWithoutLog(dto);
+
+            // Then
+            verify(activityLogService, never()).logCreation(any());
+        }
+
+        @Test
+        @DisplayName("일반 등록과 같이 검증하여 이름이 비어 있으면 예외가 발생한다")
+        void createContactWithoutLog_blankName_throwsException() {
+            // Given
+            ContactDto dto = ContactDto.builder().type(ContactType.OTHER).name("").build();
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.createContactWithoutLog(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("이름을 입력해주세요.");
+        }
+    }
+
+    @Nested
     @DisplayName("updateContact 테스트")
     class UpdateContactTest {
 

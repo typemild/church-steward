@@ -7,6 +7,7 @@ import org.church.steward.domain.contact.dto.ContactAutocompleteResultDto;
 import org.church.steward.domain.contact.dto.ContactDto;
 import org.church.steward.domain.contact.dto.ContactSearchRequestDto;
 import org.church.steward.domain.contact.dto.ContactSummaryDto;
+import org.church.steward.domain.contact.entity.Contact;
 import org.church.steward.domain.contact.entity.ContactType;
 
 public interface ContactService {
@@ -18,6 +19,14 @@ public interface ContactService {
     List<ContactDto> getContactsByIds(List<Long> ids);
 
     ContactDto createContact(ContactDto dto);
+
+    /**
+     * 활동 기록을 남기지 않고 관계자를 등록한다. 검증은 {@link #createContact}와 같다.
+     * 여러 관계자를 한꺼번에 처리하고 활동 기록을 한 건으로 남기는 가져오기에서만 쓴다.
+     *
+     * @return 등록된 관계자
+     */
+    Contact createContactWithoutLog(ContactDto dto);
 
     void updateContact(Long id, ContactType type, String name, String remarks, boolean isHidden);
 

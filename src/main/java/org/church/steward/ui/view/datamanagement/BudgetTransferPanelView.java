@@ -59,7 +59,7 @@ public class BudgetTransferPanelView extends AbstractTransferPanelView {
     }
 
     @Override
-    protected void onFiscalYearsReloaded(List<FiscalYearDto> fiscalYears) {
+    protected void onTabActivated(List<FiscalYearDto> fiscalYears) {
         budgetImportPanel.onReturned(fiscalYears);
     }
 

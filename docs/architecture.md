@@ -194,10 +194,12 @@ DB 비밀번호는 로그인한 뒤에야 알 수 있으므로, `ChurchStewardAp
 - **내보내기**: `DataExportController` → `DataExportService`(`domain/datatransfer`)가 표(`SpreadsheetTable`)를 만들고 `SpreadsheetWriter`가 엑셀(xlsx, Apache POI, 암호 선택) 또는 CSV(UTF-8 BOM)로 쓴다. CSV는 수식 주입을 막기 위해 수식으로 해석될 수 있는 글자(`SpreadsheetWriter.FORMULA_PREFIXES`)로 시작하는 값 앞에 작은따옴표를 붙이고, `SpreadsheetReader`는 작은따옴표 뒤가 그 글자일 때만 떼고 읽는다.
 - **파일 읽기**: `SpreadsheetReader`가 xlsx, xls, csv를 `SpreadsheetData`(머리글 구분 없는 행 목록)로 읽는다. 엑셀의 날짜 셀은 `LocalDate`, 정수는 `Long`, 소수는 `Double`로, CSV는 모두 글자로 읽는다. CSV 인코딩은 UTF-8로 해석되면 UTF-8, 아니면 MS949로 판별한다.
 - **머리글**: 내보낸 파일과 빈 양식의 머리글(`DataExportServiceImpl`의 `HEADER_*`)은 가져오기에서 열을 자동으로 알아보는 기준이므로, 바꿀 때는 가져오기의 자동 추측도 함께 고친다.
-- **가져오기 서비스는 상태를 보관하지 않는다**: 화면이 파일의 행과 열 지정을 보관하다가 `analyze`와 반영 메서드에 매번 넘긴다. 그래서 메뉴를 옮겼다 돌아와도 같은 입력으로 다시 분석하면 된다. 분석 규칙은 DB를 읽지 않는 순수 클래스(`BudgetImportAnalyzer`, `RecordImportAnalyzer`)에 모아 두었다.
+- **가져오기 서비스는 상태를 보관하지 않는다**: 화면이 파일의 행과 열 지정을 보관하다가 `analyze`와 반영 메서드에 매번 넘긴다. 그래서 메뉴를 옮겼다 돌아와도 같은 입력으로 다시 분석하면 된다. 분석 규칙은 DB를 읽지 않는 순수 클래스(`ContactImportAnalyzer`, `BudgetImportAnalyzer`, `RecordImportAnalyzer`)에 모아 두었다.
+- **회계 연도가 없는 대상**: 관계자는 회계 연도에 속하지 않는다. 탭과 가져오기 화면의 공용 틀(`AbstractTransferPanelView`, `AbstractImportPanel`, `ImportSession`)은 회계 연도를 선택 사항으로 다루며, 관계자 탭은 회계 연도 선택란이 없고 회계 연도 자리에 null을 넘긴다. 활동 기록(`ActivityLogService#logExport` / `logImport`)도 회계 연도가 null이면 그 항목을 남기지 않는다.
 - **반영 전 확인**: 반영할 때 다시 분석해서 화면이 본 결과와 요약 값(`signature`)이 다르면 `ImportStateChangedException`을 던지고 아무것도 반영하지 않는다. 반영 전 백업의 유효성은 활동 기록으로 판단한다. 백업이 돌려준 활동 기록 ID가 최신 로그 ID와 다르면(백업 뒤에 무언가 기록됨) `BackupOutdatedException`을 던진다.
-- **활동 기록은 한 건**: 예산과 내역은 `…WithoutLog` 메서드로 추가·갱신한다. 검증은 일반 추가·수정과 같고 활동 기록만 남기지 않는다. 가져오기 전체를 `ActivityLogService#logImport` 한 건으로 남기기 위함이다.
+- **활동 기록은 한 건**: 관계자, 예산, 내역은 `…WithoutLog` 메서드로 추가·갱신한다. 검증은 일반 추가·수정과 같고 활동 기록만 남기지 않는다. 가져오기 전체를 `ActivityLogService#logImport` 한 건으로 남기기 위함이다.
 - **수입/지출 가져오기**는 예산과 관계자를 자동으로 만들지 않고, 파일의 값을 등록된 말단 예산과 관계자에 연결만 한다. 매핑 항목의 식별자는 `INCOME:홍길동`처럼 구분과 값을 이은 것이다(같은 이름이라도 봉헌자와 수취인이 다른 대상일 수 있고, 항목의 금액 합계에 수입과 지출이 섞이지 않게 하기 위함이다). 분석 결과의 매핑 항목은 빈 칸 항목을 맨 앞에 두고 파일의 값 오름차순(값이 같으면 수입 먼저)으로 정렬해 내보낸다(`RecordImportAnalyzer#toDtos`). 직접 한 매핑이 자동 매핑보다 우선하지만, 대상을 쓸 수 없게 되었으면(삭제, 말단이 아님, 구분이 다름) 따르지 않는다. 관계자는 칸 전체가 한 항목이고(`INCOME:홍길동, 김철수`, 공백과 중복을 정리한 값. 순서는 내역에 저장되는 순서이므로 순서만 다른 값은 다른 항목이다) 매핑은 ID 목록이다. 자동 매핑은 이름마다 관계자를 찾아 모두 찾았을 때만 연결하고, 일부만 찾았으면 찾은 관계자(`suggestedTargetIds`)와 찾지 못한 이름(`unresolvedNames`)을 남겨 매핑 다이얼로그가 미리 채우게 한다. 수입 항목은 여러 명에 직접 매핑할 수 있으며, 지출 항목은 한 명이어야 하고 대상 중 한 명이라도 삭제되었으면 따르지 않는다. 관계자 자동 매핑에서 동명이인이면 숨김 처리되지 않은 관계자 중 ID가 가장 큰 관계자를 고른다(`Contact`에 등록 일시가 없어 ID로 판단한다).
+- **관계자 가져오기**는 추가만 한다. 구분, 이름, 비고가 모두 같은 관계자가 이미 있거나(건수로 비교) 파일의 앞쪽 행에 있으면 중복 의심으로 기본 선택에서 빼고, 이름만 같으면 동명이인 경고만 한다(`ContactImportAnalyzer`). 관계자는 `ContactService#createContactWithoutLog`로 등록한다. 수입/지출 가져오기는 관계자를 자동으로 만들지 않으므로 관계자 탭을 수입/지출 탭보다 앞에 둔다.
 
 ## 보고서
 

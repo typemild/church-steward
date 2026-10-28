@@ -13,7 +13,8 @@ import org.church.steward.ui.MenuActivatable;
 import org.church.steward.ui.util.UIColors;
 
 /**
- * 데이터 관리 화면. 전체 데이터 백업/복원, 예산과 수입/지출의 가져오기/내보내기를 탭으로 묶는다.
+ * 데이터 관리 화면. 전체 데이터 백업/복원, 관계자·예산·수입/지출의 가져오기/내보내기를 탭으로 묶는다.
+ * 수입/지출을 가져오려면 관계자와 예산이 먼저 있어야 하므로 그 순서로 탭을 둔다.
  */
 @UiView
 public class DataManagementView extends JPanel implements MenuActivatable {
@@ -23,6 +24,7 @@ public class DataManagementView extends JPanel implements MenuActivatable {
     private final JTabbedPane tabbedPane;
 
     public DataManagementView(BackupRestorePanelView backupRestorePanelView,
+            ContactTransferPanelView contactTransferPanelView,
             BudgetTransferPanelView budgetTransferPanelView,
             FinancialRecordTransferPanelView financialRecordTransferPanelView) {
         this.tabbedPane = new JTabbedPane();
@@ -35,6 +37,7 @@ public class DataManagementView extends JPanel implements MenuActivatable {
 
         tabbedPane.setBackground(UIColors.BACKGROUND);
         tabbedPane.addTab("백업/복원", backupRestorePanelView);
+        tabbedPane.addTab("관계자", contactTransferPanelView);
         tabbedPane.addTab("예산", budgetTransferPanelView);
         tabbedPane.addTab("수입/지출", financialRecordTransferPanelView);
         tabbedPane.addChangeListener(_ -> activateSelectedTab());

@@ -69,12 +69,15 @@ public class ContactServiceImpl implements ContactService {
 
     @Override
     public ContactDto createContact(ContactDto dto) {
-        validateContact(dto.getType(), dto.getName(), dto.getRemarks());
-        Contact contact = contactMapper.toEntity(dto);
-
-        contact = contactRepository.save(contact);
+        Contact contact = createContactWithoutLog(dto);
         activityLogService.logCreation(contact);
         return contactMapper.toDto(contact);
+    }
+
+    @Override
+    public Contact createContactWithoutLog(ContactDto dto) {
+        validateContact(dto.getType(), dto.getName(), dto.getRemarks());
+        return contactRepository.save(contactMapper.toEntity(dto));
     }
 
     @Override

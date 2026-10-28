@@ -47,11 +47,12 @@ import org.church.steward.ui.view.main.FiscalYearSelector;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 데이터 관리의 "예산" 탭과 "수입/지출" 탭이 함께 쓰는 틀.
+ * 데이터 관리의 "관계자", "예산", "수입/지출" 탭이 함께 쓰는 틀.
  * 회계 연도 선택란과 내보내기(파일로 내보내기, 빈 양식 내려받기)를 제공하고, 무엇을 내보낼지는 하위 클래스가 정한다.
  * <p>
  * 회계 연도는 사이드바의 선택과 독립이다. 처음 들어올 때의 초기값만 사이드바의 선택을 따르고, 그 뒤로는 이 탭에서
- * 고른 회계 연도를 유지한다.
+ * 고른 회계 연도를 유지한다. 관계자처럼 회계 연도에 속하지 않는 대상의 탭은 회계 연도 선택란을 두지 않으며, 이때
+ * 회계 연도를 받는 메서드에는 null이 넘어간다.
  */
 @Slf4j
 public abstract class AbstractTransferPanelView extends JPanel implements MenuActivatable {
@@ -65,6 +66,8 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
 
     private final String targetName;
     private final String fileNamePrefix;
+    /** 회계 연도에 속하는 대상인지 여부. false이면 회계 연도 선택란을 두지 않는다. */
+    private final boolean usesFiscalYear;
     private final FiscalYearController fiscalYearController;
     private final FiscalYearSelector fiscalYearSelector;
 
@@ -94,6 +97,8 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
     private File lastDirectory;
 
     /**
+     * 회계 연도에 속하는 대상의 탭을 만든다.
+     *
      * @param targetName        다루는 대상의 이름. 제목과 안내 문구에 쓴다 (예: "예산", "수입/지출")
      * @param fileNamePrefix    저장할 파일 이름의 앞부분. 파일 이름에 쓸 수 없는 글자를 넣지 않는다 (예: "수입지출")
      * @param exportDescription 내보내기 영역에 보여줄 설명
@@ -102,8 +107,29 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
     protected AbstractTransferPanelView(String targetName, String fileNamePrefix, String exportDescription,
             String importDescription, FiscalYearController fiscalYearController,
             FiscalYearSelector fiscalYearSelector) {
+        this(targetName, fileNamePrefix, exportDescription, importDescription, true, fiscalYearController,
+                fiscalYearSelector);
+    }
+
+    /**
+     * 회계 연도에 속하지 않는 대상(관계자)의 탭을 만든다. 회계 연도 선택란이 없다.
+     *
+     * @param targetName        다루는 대상의 이름. 제목과 안내 문구에 쓴다 (예: "관계자")
+     * @param fileNamePrefix    저장할 파일 이름의 앞부분. 파일 이름에 쓸 수 없는 글자를 넣지 않는다
+     * @param exportDescription 내보내기 영역에 보여줄 설명
+     * @param importDescription 가져오기 영역에 보여줄 설명
+     */
+    protected AbstractTransferPanelView(String targetName, String fileNamePrefix, String exportDescription,
+            String importDescription) {
+        this(targetName, fileNamePrefix, exportDescription, importDescription, false, null, null);
+    }
+
+    private AbstractTransferPanelView(String targetName, String fileNamePrefix, String exportDescription,
+            String importDescription, boolean usesFiscalYear, FiscalYearController fiscalYearController,
+            FiscalYearSelector fiscalYearSelector) {
         this.targetName = targetName;
         this.fileNamePrefix = fileNamePrefix;
+        this.usesFiscalYear = usesFiscalYear;
         this.fiscalYearController = fiscalYearController;
         this.fiscalYearSelector = fiscalYearSelector;
 
@@ -122,7 +148,8 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
         fiscalYearCombo.setRenderer(new FiscalYearComboRenderer());
         exportButton = new PrimaryButton("내보내기", ComponentSize.MEDIUM);
         templateButton = new SecondaryButton("양식 내려받기", ComponentSize.MEDIUM);
-        exportButton.setEnabled(false);
+        // 회계 연도를 쓰는 탭은 회계 연도 목록을 불러온 뒤에 켠다.
+        exportButton.setEnabled(!usesFiscalYear);
 
         JPanel contentPanel = new JPanel(new GridBagLayout());
         contentPanel.setOpaque(false);
@@ -144,10 +171,12 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
         importButtonPanel.add(importButton);
         importButtonPanel.add(Box.createHorizontalStrut(12));
         importButtonPanel.add(templateButton);
-        importButton.setEnabled(false);
+        importButton.setEnabled(!usesFiscalYear);
 
         int row = 0;
-        addRow(contentPanel, row++, fiscalYearPanel, 25);
+        if (usesFiscalYear) {
+            addRow(contentPanel, row++, fiscalYearPanel, 25);
+        }
         addRow(contentPanel, row++, new SectionHeaderLabel("내보내기"), 8);
         addRow(contentPanel, row++, new DescriptionLabel(exportDescription), 15);
         addRow(contentPanel, row++, exportButtonPanel, 25);
@@ -167,7 +196,7 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
 
         importButton.addActionListener(_ -> {
             FiscalYearDto fiscalYear = getSelectedFiscalYear();
-            if (fiscalYear != null) {
+            if (!usesFiscalYear || fiscalYear != null) {
                 startImport(fiscalYear);
             }
         });
@@ -192,6 +221,7 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
     /**
      * 선택한 회계 연도의 데이터를 파일로 내보낸다. 백그라운드 스레드에서 호출된다.
      *
+     * @param fiscalYearId 선택한 회계 연도의 ID. 회계 연도를 쓰지 않는 탭이면 null
      * @return 내보낸 건수
      */
     protected abstract int export(Long fiscalYearId, Path target, SpreadsheetFormat format, String password);
@@ -203,14 +233,17 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
 
     /**
      * 선택한 회계 연도로 가져오기를 시작한다. {@link #showImportPanel}로 가져오기 화면을 띄운다.
+     *
+     * @param fiscalYear 선택한 회계 연도. 회계 연도를 쓰지 않는 탭이면 null
      */
     protected abstract void startImport(FiscalYearDto fiscalYear);
 
     /**
-     * 이 탭에 들어올 때마다 회계 연도 목록을 다시 읽은 뒤에 호출된다.
-     * 가져오기를 진행하다가 다른 메뉴에 다녀온 경우, 하위 클래스가 여기서 현재 데이터로 다시 분석하게 한다.
+     * 이 탭에 들어올 때마다 호출된다. 회계 연도를 쓰는 탭은 회계 연도 목록을 다시 읽은 뒤에 호출되고, 쓰지 않는 탭은
+     * 빈 목록으로 바로 호출된다. 가져오기를 진행하다가 다른 메뉴에 다녀온 경우, 하위 클래스가 여기서 현재 데이터로 다시
+     * 분석하게 한다.
      */
-    protected abstract void onFiscalYearsReloaded(List<FiscalYearDto> fiscalYears);
+    protected abstract void onTabActivated(List<FiscalYearDto> fiscalYears);
 
     /**
      * 진행 중인 가져오기가 있는지 여부. 프로그램을 끝낼 때 확인을 받는 데 쓴다.
@@ -243,6 +276,10 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
      */
     @Override
     public void onMenuSelected() {
+        if (!usesFiscalYear) {
+            onTabActivated(List.of());
+            return;
+        }
         AsyncTask.run(fiscalYearCombo,
                 fiscalYearController::listFiscalYears,
                 this::applyFiscalYears,
@@ -268,7 +305,7 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
         fiscalYearCombo.setModel(new DefaultComboBoxModel<>(fiscalYears.toArray(new FiscalYearDto[0])));
         fiscalYearCombo.setSelectedItem(toSelect);
         onFiscalYearSelected();
-        onFiscalYearsReloaded(fiscalYears);
+        onTabActivated(fiscalYears);
     }
 
     private FiscalYearDto find(List<FiscalYearDto> fiscalYears, Long fiscalYearId) {
@@ -292,7 +329,7 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
     }
 
     /**
-     * 이 탭에서 선택된 회계 연도. 회계 연도가 하나도 없으면 null이다.
+     * 이 탭에서 선택된 회계 연도. 회계 연도가 하나도 없거나 회계 연도를 쓰지 않는 탭이면 null이다.
      */
     protected FiscalYearDto getSelectedFiscalYear() {
         return (FiscalYearDto) fiscalYearCombo.getSelectedItem();
@@ -300,7 +337,7 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
 
     private void startExport() {
         FiscalYearDto fiscalYear = getSelectedFiscalYear();
-        if (fiscalYear == null) {
+        if (usesFiscalYear && fiscalYear == null) {
             return;
         }
 
@@ -313,14 +350,14 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
         SpreadsheetFormat format = options.get().format();
         String password = options.get().password();
 
-        String defaultName = fileNamePrefix + "_" + toFileName(fiscalYear.getName()) + "_"
-                + LocalDate.now().format(FILE_NAME_DATE_FORMAT);
+        String fiscalYearPart = fiscalYear == null ? "" : toFileName(fiscalYear.getName()) + "_";
+        String defaultName = fileNamePrefix + "_" + fiscalYearPart + LocalDate.now().format(FILE_NAME_DATE_FORMAT);
         File file = chooseTargetFile(title, defaultName, format);
         if (file == null) {
             return;
         }
 
-        Long fiscalYearId = fiscalYear.getId();
+        Long fiscalYearId = fiscalYear == null ? null : fiscalYear.getId();
         AsyncTask.run(exportButton,
                 () -> export(fiscalYearId, file.toPath(), format, password),
                 count -> JOptionPane.showMessageDialog(this,
