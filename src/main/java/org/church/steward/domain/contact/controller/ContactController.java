@@ -3,6 +3,7 @@ package org.church.steward.domain.contact.controller;
 import java.util.List;
 
 import org.church.steward.domain.contact.dto.ContactAutocompleteDto;
+import org.church.steward.domain.contact.dto.ContactAutocompleteResultDto;
 import org.church.steward.domain.contact.dto.ContactDto;
 import org.church.steward.domain.contact.dto.ContactSearchRequestDto;
 import org.church.steward.domain.contact.dto.ContactSummaryDto;
@@ -46,12 +47,14 @@ public class ContactController {
         contactService.unhideContact(id);
     }
 
-    public List<ContactAutocompleteDto> autocompleteContacts(String keyword, int limit) {
-        return contactService.autocompleteContacts(keyword, limit);
+    public ContactAutocompleteResultDto<ContactAutocompleteDto> autocompleteContacts(String keyword,
+            List<Long> excludedIds, int limit) {
+        return contactService.autocompleteContacts(keyword, excludedIds, limit);
     }
 
-    public List<ContactSummaryDto> autocompleteContactSummaries(String keyword, int limit) {
-        return contactService.autocompleteContactSummaries(keyword, limit);
+    public ContactAutocompleteResultDto<ContactSummaryDto> autocompleteContactSummaries(String keyword,
+            List<Long> excludedIds, int limit) {
+        return contactService.autocompleteContactSummaries(keyword, excludedIds, limit);
     }
 
 }

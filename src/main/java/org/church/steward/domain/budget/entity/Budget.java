@@ -68,7 +68,7 @@ public class Budget {
     private Budget parent;
 
     @Setter
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = BudgetConstraints.NAME_MAX_LENGTH)
     @LoggableField(name = "예산명", isIdentifier = true)
     private String name;
 

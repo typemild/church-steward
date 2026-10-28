@@ -45,6 +45,7 @@ import lombok.extern.slf4j.Slf4j;
  * 예산 관리 화면에서는 예산마다 진행 현황(수입액/집행액, 달성률/집행률)을 함께 보여주고 툴바와 더블클릭으로 편집한다.
  * 마감된 회계 연도처럼 편집을 막아야 할 때는 {@link #setEditable}로 툴바와 더블클릭 수정을 끈다.
  * 읽기 전용 모드에서는 편집 툴바와 진행 현황 없이 예산 선택 용도로만 쓸 수 있다.
+ * 예산을 고르는 다이얼로그는 {@link #setRowDoubleClickHandler}로 더블클릭을 수정 대신 선택 확인으로 바꾼다.
  */
 @Slf4j
 public class BudgetTreePanel extends JPanel {
@@ -435,6 +436,18 @@ public class BudgetTreePanel extends JPanel {
 
     public void clearSelection() {
         table.clearRowSelection();
+    }
+
+    /**
+     * 행을 더블클릭했을 때 할 일을 정한다. 등록하면 편집 모드의 더블클릭 수정 대신 이 처리기를 부른다.
+     * 예산을 고르는 다이얼로그가 더블클릭한 예산으로 확인할 때 쓴다. 표가 더블클릭한 행을 선택한 뒤에 부르므로,
+     * 처리기는 {@link #getSelectedBudget()}을 그대로 쓰면 된다.
+     * <p>
+     * 표는 행을 고른 채 누른 Enter에도 같은 처리기를 부르므로, 다이얼로그가 Enter를 따로 다루려면 이 메서드를 부른 뒤에
+     * 표의 키 동작을 바꾼다.
+     */
+    public void setRowDoubleClickHandler(Runnable handler) {
+        table.setRowDoubleClickHandler(_ -> handler.run());
     }
 
     /**

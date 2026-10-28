@@ -6,6 +6,7 @@ import org.church.steward.ui.view.report.layout.ReportAlign;
 import org.church.steward.ui.view.report.layout.ReportCanvas;
 import org.church.steward.ui.view.report.layout.ReportDocument;
 import org.church.steward.ui.view.report.layout.ReportPaper;
+import org.church.steward.ui.view.report.layout.ReportStyle;
 import org.church.steward.ui.view.report.layout.ReportTable;
 import org.church.steward.ui.view.report.layout.ReportTable.Column;
 import org.church.steward.ui.view.report.layout.ReportTable.RowStyle;
@@ -24,16 +25,16 @@ public final class BudgetPlanReportComposer {
         // 인스턴스화 방지
     }
 
-    public static ReportDocument compose(BudgetPlanReportDto report) {
+    public static ReportDocument compose(BudgetPlanReportDto report, ReportStyle style) {
         String title = String.format("%s 회계 연도 %s 예산안", report.getFiscalYearName(), report.getType()
                 .getLabel());
 
-        ReportCanvas canvas = new ReportCanvas(title);
+        ReportCanvas canvas = new ReportCanvas(title, style);
         canvas.title(title, ReportStyles.ANNUAL_TITLE_SIZE);
         canvas.moveDown(ReportStyles.TITLE_GAP);
         ReportStyles.drawUnit(canvas, ReportStyles.BUDGET_TABLE_UNIT_SIZE);
 
-        ReportTable table = new ReportTable(ReportStyles.BUDGET_TABLE_SIZE,
+        ReportTable table = new ReportTable(style, ReportStyles.BUDGET_TABLE_SIZE,
                 new Column("예산 항목", 0, ReportAlign.LEFT),
                 new Column("예산액", AMOUNT_WIDTH, ReportAlign.RIGHT),
                 new Column("점유율", RATE_WIDTH, ReportAlign.RIGHT),

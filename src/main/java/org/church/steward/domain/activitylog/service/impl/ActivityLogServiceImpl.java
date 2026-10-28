@@ -167,17 +167,32 @@ public class ActivityLogServiceImpl implements ActivityLogService {
 
     @Override
     public void logExport(String targetName, String fiscalYearName, String fileName, int count) {
-        log(ActivityType.EXPORT, targetName, List.of(field("회계 연도", fiscalYearName), field("파일 이름", fileName),
-                field("건수", String.format("%,d건", count))));
+        List<ActivityLogFieldDto> fields = fiscalYearFields(fiscalYearName);
+        fields.add(field("파일 이름", fileName));
+        fields.add(field("건수", String.format("%,d건", count)));
+        log(ActivityType.EXPORT, targetName, fields);
     }
 
     @Override
     public void logImport(String targetName, String fiscalYearName, String fileName, String result,
             List<List<ActivityLogFieldDto>> items) {
-        List<ActivityLogFieldDto> fields = List.of(field("회계 연도", fiscalYearName), field("파일 이름", fileName),
-                field("결과", result));
+        List<ActivityLogFieldDto> fields = fiscalYearFields(fiscalYearName);
+        fields.add(field("파일 이름", fileName));
+        fields.add(field("결과", result));
         activityLogRepository.save(activityLogMapper.toEntity(getUserId(), ActivityType.IMPORT, targetName, fields,
                 items));
+    }
+
+    /**
+     * 내보내기와 가져오기 기록의 첫 항목인 회계 연도. 관계자처럼 회계 연도에 속하지 않는 대상(null)이면 항목을 두지 않는다.
+     * 뒤에 항목을 더 붙일 수 있도록 수정 가능한 목록을 돌려준다.
+     */
+    private List<ActivityLogFieldDto> fiscalYearFields(String fiscalYearName) {
+        List<ActivityLogFieldDto> fields = new ArrayList<>();
+        if (fiscalYearName != null) {
+            fields.add(field("회계 연도", fiscalYearName));
+        }
+        return fields;
     }
 
     @Override

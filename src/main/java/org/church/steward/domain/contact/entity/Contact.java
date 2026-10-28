@@ -46,12 +46,12 @@ public class Contact {
     private ContactType type;
 
     @Setter
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = ContactConstraints.NAME_MAX_LENGTH)
     @LoggableField(name = "이름", isIdentifier = true)
     private String name;
 
     @Setter
-    @Column(length = 100)
+    @Column(length = ContactConstraints.REMARKS_MAX_LENGTH)
     @LoggableField(name = "비고")
     private String remarks;
 

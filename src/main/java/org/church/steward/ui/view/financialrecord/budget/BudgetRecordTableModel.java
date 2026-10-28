@@ -17,7 +17,7 @@ import org.church.steward.util.NumberUtils;
 /**
  * "예산별 보기" 탭의 테이블 모델.
  * 수입/지출 내역을 예산별로 묶어, 예산 행 아래에 그 예산의 내역 행들을 두는 형태로 보여준다.
- * 예산 행은 기본적으로 접혀 있다. 예산 행의 키는 예산 ID이고, 내역 행은 키가 없다.
+ * 예산 행은 기본적으로 접혀 있다. 예산 행의 키는 예산 ID이고, 내역 행의 키는 {@link RecordKey}다.
  */
 public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordRow> implements TooltipTableModel {
 
@@ -36,7 +36,8 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
 
     /**
      * 표시할 수입/지출 내역을 설정한다.
-     * 예산은 예산 설정 화면과 같은 순서로, 예산 안의 내역은 나중에 입력한 것이 위에 오도록 ID 내림차순으로 정렬한다.
+     * 예산은 예산 설정 화면과 같은 순서로, 예산 안의 내역은 새로 입력한 내역이 아래에 붙도록
+     * 날짜 오름차순, 같은 날짜에서는 ID 오름차순으로 정렬한다.
      *
      * @param budgetPositions 예산 ID별 표시 위치({@link BudgetDisplayOrder#positionsOf}).
      *                        여기에 없는 예산은 맨 뒤에 둔다.
@@ -46,7 +47,8 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
         sorted.sort(Comparator
                 .<FinancialRecordResponseDto>comparingInt(
                         record -> budgetPositions.getOrDefault(record.getBudgetId(), Integer.MAX_VALUE))
-                .thenComparing(FinancialRecordResponseDto::getId, Comparator.reverseOrder()));
+                .thenComparing(FinancialRecordResponseDto::getDate)
+                .thenComparing(FinancialRecordResponseDto::getId));
 
         // 예산 ID별 수입/지출 내역. 예산의 표시 순서대로 정렬되어 있다.
         Map<Long, List<FinancialRecordResponseDto>> recordsByBudget = new LinkedHashMap<>();
@@ -64,7 +66,7 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
                     .mapToLong(FinancialRecordResponseDto::getAmount)
                     .sum();
             List<TreeTableNode<BudgetRecordRow>> recordNodes = budgetRecords.stream()
-                    .map(record -> TreeTableNode.leaf(null, BudgetRecordRow.ofRecord(record)))
+                    .map(record -> TreeTableNode.leaf(new RecordKey(record.getId()), BudgetRecordRow.ofRecord(record)))
                     .toList();
             budgetNodes.add(new TreeTableNode<>(budgetId,
                     BudgetRecordRow.ofBudget(budgetId, budgetNameOf(budgetRecords.getFirst()), total), recordNodes));
@@ -74,6 +76,13 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
 
     private static String budgetNameOf(FinancialRecordResponseDto record) {
         return record.getBudgetName() != null ? record.getBudgetName() : "";
+    }
+
+    /**
+     * 내역이 보이도록 그 예산 행을 펼치고, 내역 행을 반환한다. 표에 없는 내역이면 -1을 반환한다.
+     */
+    public int revealRecord(Long recordId) {
+        return reveal(new RecordKey(recordId));
     }
 
     /**
@@ -148,5 +157,11 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
                 .getRemarks();
         default -> null;
         };
+    }
+
+    /**
+     * 내역 행의 키. 예산 행의 키(예산 ID)와 섞이지 않도록 타입을 나눈다.
+     */
+    private record RecordKey(Long recordId) {
     }
 }

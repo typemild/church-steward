@@ -2,6 +2,7 @@ package org.church.steward.ui.view.settings.contact;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -22,6 +23,7 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 
 import org.church.steward.domain.contact.dto.ContactDto;
+import org.church.steward.domain.contact.entity.ContactConstraints;
 import org.church.steward.domain.contact.entity.ContactType;
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.button.PrimaryButton;
@@ -105,6 +107,7 @@ public class ContactDetailDialog extends JDialog {
         formPanel.add(new FieldLabel("이름:", ComponentSize.MEDIUM), gbc);
         gbc.gridx = 1;
         nameField = new StyledTextField(ComponentSize.MEDIUM);
+        nameField.setMaxLength(ContactConstraints.NAME_MAX_LENGTH);
         formPanel.add(nameField, gbc);
 
         // 비고. 마지막 입력란이므로 Enter를 누르면 저장한다.
@@ -113,7 +116,14 @@ public class ContactDetailDialog extends JDialog {
         formPanel.add(new FieldLabel("비고:", ComponentSize.MEDIUM), gbc);
         gbc.gridx = 1;
         remarksArea = new StyledTextArea(3, 20, ComponentSize.MEDIUM);
-        formPanel.add(new JScrollPane(remarksArea), gbc);
+        remarksArea.setMaxLength(ContactConstraints.REMARKS_MAX_LENGTH);
+        JScrollPane remarksScrollPane = new JScrollPane(remarksArea);
+        // 내용이 길어져 세로 스크롤바가 생기면 스크롤 패인의 선호 폭이 스크롤바만큼 늘어나고, 다이얼로그 폭에 들어가지 않게 되어
+        // GridBagLayout이 최소 크기로 배치하므로 입력란이 찌그러진다. 내용과 상관없이 빈 상태의 크기로 고정한다.
+        Dimension remarksSize = remarksScrollPane.getPreferredSize();
+        remarksScrollPane.setPreferredSize(remarksSize);
+        remarksScrollPane.setMinimumSize(remarksSize);
+        formPanel.add(remarksScrollPane, gbc);
 
         gbc.gridy = 3;
         gbc.insets = new Insets(0, 5, 5, 5);

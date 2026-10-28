@@ -33,7 +33,7 @@ import lombok.Setter;
 public class User {
 
     @Id
-    @Column(length = 100)
+    @Column(length = UserConstraints.ID_MAX_LENGTH)
     @LoggableField(name = "사용자명", isIdentifier = true)
     private String id; // 사용자ID(= 사용자명). 관리자는 "관리자"로 고정
 
@@ -51,7 +51,7 @@ public class User {
     private UserRole role;
 
     @Setter
-    @Column(length = 100)
+    @Column(length = UserConstraints.REMARKS_MAX_LENGTH)
     @LoggableField(name = "비고")
     private String remarks;
 

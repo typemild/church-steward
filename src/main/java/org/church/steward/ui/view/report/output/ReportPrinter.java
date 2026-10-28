@@ -74,9 +74,9 @@ public final class ReportPrinter {
     }
 
     /**
-     * 보고서의 쪽을 용지에 맞춰 그린다.
+     * 보고서의 페이지를 용지에 맞춰 그린다.
      * 용지가 A4이고 프린터가 보고서의 여백 안쪽을 모두 인쇄할 수 있으면 실제 크기 그대로 그린다.
-     * 그렇지 않으면 내용이 잘리지 않도록 쪽 전체를 인쇄할 수 있는 영역 안으로 같은 비율로 줄인다.
+     * 그렇지 않으면 내용이 잘리지 않도록 페이지 전체를 인쇄할 수 있는 영역 안으로 같은 비율로 줄인다.
      */
     private static final class DocumentPrintable implements Printable {
 
@@ -115,7 +115,7 @@ public final class ReportPrinter {
         }
 
         /**
-         * 쪽을 용지에 맞춰 놓았을 때 보고서의 여백 안쪽(내용이 있는 영역)이 프린터의 인쇄 가능 영역 안에 들어가는지 여부
+         * 페이지를 용지에 맞춰 놓았을 때 보고서의 여백 안쪽(내용이 있는 영역)이 프린터의 인쇄 가능 영역 안에 들어가는지 여부
          */
         private boolean isContentPrintable(PageFormat format, double scale, double offsetX, double offsetY) {
             double margin = ReportPaper.MARGIN * scale;

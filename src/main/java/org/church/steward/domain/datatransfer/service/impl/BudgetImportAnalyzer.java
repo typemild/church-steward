@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import org.church.steward.domain.budget.entity.Budget;
+import org.church.steward.domain.budget.entity.BudgetConstraints;
 import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.datatransfer.dto.BudgetImportAction;
 import org.church.steward.domain.datatransfer.dto.BudgetImportAnalysisDto;
@@ -33,8 +34,6 @@ import org.church.steward.domain.datatransfer.dto.ImportItemStatus;
  */
 final class BudgetImportAnalyzer {
 
-    /** 예산명의 최대 길이. 예산 서비스의 검증과 같다. */
-    private static final int NAME_MAX_LENGTH = 50;
     /** 전체 경로 열에서 단계를 나누는 문자 */
     private static final String PATH_SEPARATOR = ">";
     private static final String KEY_PATH_SEPARATOR = " > ";
@@ -268,8 +267,8 @@ final class BudgetImportAnalyzer {
 
     private void validateNames(List<String> levelNames) {
         for (String name : levelNames) {
-            if (name.length() > NAME_MAX_LENGTH) {
-                throw new UnreadableRowException("예산명이 " + NAME_MAX_LENGTH + "자를 넘습니다: " + name);
+            if (name.length() > BudgetConstraints.NAME_MAX_LENGTH) {
+                throw new UnreadableRowException("예산명이 " + BudgetConstraints.NAME_MAX_LENGTH + "자를 넘습니다: " + name);
             }
             if (name.contains("<") || name.contains(">")) {
                 throw new UnreadableRowException("예산명에는 '<', '>' 문자를 사용할 수 없습니다: " + name);

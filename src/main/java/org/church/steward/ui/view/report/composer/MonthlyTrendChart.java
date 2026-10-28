@@ -10,7 +10,6 @@ import org.church.steward.domain.dashboard.dto.MonthlyTrendDto;
 import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.view.report.layout.ReportAlign;
 import org.church.steward.ui.view.report.layout.ReportCanvas;
-import org.church.steward.ui.view.report.layout.ReportFonts;
 import org.church.steward.ui.view.report.layout.ReportText;
 
 /**
@@ -43,13 +42,15 @@ final class MonthlyTrendChart {
     }
 
     /**
-     * 현재 쪽의 정해진 자리에 차트를 그린다. 작업대의 위치는 바꾸지 않는다.
+     * 현재 페이지의 정해진 자리에 차트를 그린다. 작업대의 위치는 바꾸지 않는다.
      *
-     * @param data 회계 연도 기간의 달 순서대로 놓인 월별 합계
+     * @param data     회계 연도 기간의 달 순서대로 놓인 월별 합계
+     * @param baseSize 눈금과 범례 글자의 기본 크기
      */
     static void draw(ReportCanvas canvas, double left, double top, double width, double height,
-            List<MonthlyTrendDto> data, float fontSize) {
-        Font font = ReportFonts.regular(fontSize);
+            List<MonthlyTrendDto> data, float baseSize) {
+        Font font = canvas.getStyle()
+                .regular(baseSize);
         double lineHeight = ReportText.lineHeight(font);
         double ascent = ReportText.ascent(font);
         double right = left + width;

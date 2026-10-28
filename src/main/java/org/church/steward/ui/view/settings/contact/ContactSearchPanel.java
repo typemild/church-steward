@@ -100,6 +100,7 @@ public class ContactSearchPanel extends JPanel {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         nameField = new StyledTextField(ComponentSize.MEDIUM);
+        nameField.addActionListener(_ -> onSearch.accept(getSearchRequest()));
         add(nameField, gbc);
 
         // 비고 레이블
@@ -123,6 +124,7 @@ public class ContactSearchPanel extends JPanel {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         remarksField = new StyledTextField(ComponentSize.MEDIUM);
+        remarksField.addActionListener(_ -> onSearch.accept(getSearchRequest()));
         add(remarksField, gbc);
 
         // includeHiddenCheck
@@ -161,9 +163,17 @@ public class ContactSearchPanel extends JPanel {
 
         return ContactSearchRequestDto.builder()
                 .type(type)
-                .name(nameField.getText().trim())
-                .remarks(remarksField.getText().trim())
+                .name(blankToNull(nameField.getText()))
+                .remarks(blankToNull(remarksField.getText()))
                 .includeHidden(includeHiddenCheck.isSelected())
                 .build();
+    }
+
+    /**
+     * 빈 입력란은 조건을 적용하지 않도록 null로 넘긴다. 빈 글자를 넘기면 비고가 null인 관계자가 조건에서 빠진다.
+     */
+    private String blankToNull(String text) {
+        String trimmed = text.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

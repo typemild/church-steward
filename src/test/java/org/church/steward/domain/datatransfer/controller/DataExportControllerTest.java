@@ -108,6 +108,37 @@ class DataExportControllerTest {
     }
 
     @Nested
+    @DisplayName("exportContacts 테스트")
+    class ExportContactsTest {
+
+        @Test
+        @DisplayName("서비스가 내보낸 관계자의 수를 그대로 반환한다")
+        void exportContacts_ValidParameters_ReturnsServiceResult() {
+            // Given
+            when(dataExportService.exportContacts(TARGET, SpreadsheetFormat.XLSX, "secret")).thenReturn(24);
+
+            // When
+            int count = dataExportController.exportContacts(TARGET, SpreadsheetFormat.XLSX, "secret");
+
+            // Then
+            assertThat(count).isEqualTo(24);
+        }
+
+        @Test
+        @DisplayName("관리자가 아니면 AccessDeniedException을 던지고 서비스를 호출하지 않는다")
+        void exportContacts_NotAdmin_ThrowsAccessDeniedException() {
+            // Given
+            denyAccess();
+
+            // When & Then
+            assertThatThrownBy(() -> dataExportController.exportContacts(TARGET, SpreadsheetFormat.XLSX, "secret"))
+                    .isInstanceOf(AccessDeniedException.class);
+
+            verifyNoInteractions(dataExportService);
+        }
+    }
+
+    @Nested
     @DisplayName("exportBudgetTemplate 테스트")
     class ExportBudgetTemplateTest {
 
@@ -162,6 +193,36 @@ class DataExportControllerTest {
             // When & Then
             assertThatThrownBy(() -> dataExportController.exportFinancialRecordTemplate(TARGET,
                     SpreadsheetFormat.XLSX))
+                    .isInstanceOf(AccessDeniedException.class);
+
+            verifyNoInteractions(dataExportService);
+        }
+    }
+
+    @Nested
+    @DisplayName("exportContactTemplate 테스트")
+    class ExportContactTemplateTest {
+
+        @Test
+        @DisplayName("저장할 파일과 형식을 서비스에 그대로 넘긴다")
+        void exportContactTemplate_TargetAndFormat_DelegatesToService() {
+            // Given
+
+            // When
+            dataExportController.exportContactTemplate(TARGET, SpreadsheetFormat.CSV);
+
+            // Then
+            verify(dataExportService).exportContactTemplate(TARGET, SpreadsheetFormat.CSV);
+        }
+
+        @Test
+        @DisplayName("관리자가 아니면 AccessDeniedException을 던지고 서비스를 호출하지 않는다")
+        void exportContactTemplate_NotAdmin_ThrowsAccessDeniedException() {
+            // Given
+            denyAccess();
+
+            // When & Then
+            assertThatThrownBy(() -> dataExportController.exportContactTemplate(TARGET, SpreadsheetFormat.CSV))
                     .isInstanceOf(AccessDeniedException.class);
 
             verifyNoInteractions(dataExportService);

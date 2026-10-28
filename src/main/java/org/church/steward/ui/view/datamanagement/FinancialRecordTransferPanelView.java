@@ -66,7 +66,7 @@ public class FinancialRecordTransferPanelView extends AbstractTransferPanelView 
     }
 
     @Override
-    protected void onFiscalYearsReloaded(List<FiscalYearDto> fiscalYears) {
+    protected void onTabActivated(List<FiscalYearDto> fiscalYears) {
         recordImportPanel.onReturned(fiscalYears);
     }
 

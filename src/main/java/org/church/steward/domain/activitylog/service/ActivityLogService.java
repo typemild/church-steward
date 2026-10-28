@@ -86,8 +86,9 @@ public interface ActivityLogService {
     /**
      * 데이터를 파일로 내보낸 내역을 기록한다.
      *
-     * @param targetName     내보낸 대상 (예시: 예산, 수입/지출)
-     * @param fiscalYearName 회계 연도의 이름
+     * @param targetName     내보낸 대상 (예시: 예산, 수입/지출, 관계자)
+     * @param fiscalYearName 회계 연도의 이름. 관계자처럼 회계 연도에 속하지 않는 대상이면 null이며, 이때는 회계 연도
+     *                       항목을 남기지 않는다.
      * @param fileName       내보낸 파일의 이름
      * @param count          내보낸 건수
      */
@@ -97,8 +98,9 @@ public interface ActivityLogService {
      * 파일에서 데이터를 가져온 내역을 한 건으로 기록한다.
      * 가져오기로 생성/수정된 엔터티의 내역을 건별 항목 목록에 담는다.
      *
-     * @param targetName     가져온 대상 (예시: 예산, 수입/지출)
-     * @param fiscalYearName 회계 연도의 이름
+     * @param targetName     가져온 대상 (예시: 예산, 수입/지출, 관계자)
+     * @param fiscalYearName 회계 연도의 이름. 관계자처럼 회계 연도에 속하지 않는 대상이면 null이며, 이때는 회계 연도
+     *                       항목을 남기지 않는다.
      * @param fileName       가져온 파일의 이름
      * @param result         처리 결과의 요약 (예시: 추가 12건, 금액 갱신 3건)
      * @param items          건별 항목 목록. {@link #describeCreation}과

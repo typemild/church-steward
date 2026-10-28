@@ -19,6 +19,9 @@ import org.church.steward.domain.budget.dto.BudgetDto;
 import org.church.steward.domain.budget.entity.Budget;
 import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.budget.service.BudgetService;
+import org.church.steward.domain.contact.entity.Contact;
+import org.church.steward.domain.contact.entity.ContactType;
+import org.church.steward.domain.contact.repository.ContactRepository;
 import org.church.steward.domain.financialrecord.entity.FinancialRecord;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordContact;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
@@ -48,6 +51,8 @@ class DataExportServiceImplTest {
     private FiscalYearRepository fiscalYearRepository;
     @Mock
     private FinancialRecordRepository financialRecordRepository;
+    @Mock
+    private ContactRepository contactRepository;
     @Mock
     private BudgetService budgetService;
     @Mock
@@ -306,6 +311,106 @@ class DataExportServiceImplTest {
             // Then
             verify(spreadsheetWriter).write(any(), any(), tableCaptor.capture(), any());
             assertThat(tableCaptor.getValue().rows()).isEmpty();
+        }
+    }
+
+    private Contact contact(Long id, ContactType type, String name, String remarks, boolean hidden) {
+        return Contact.builder()
+                .id(id)
+                .type(type)
+                .name(name)
+                .remarks(remarks)
+                .isHidden(hidden)
+                .build();
+    }
+
+    @Nested
+    @DisplayName("exportContacts 테스트")
+    class ExportContactsTest {
+
+        @Test
+        @DisplayName("머리글은 구분, 이름, 비고, 상태다")
+        void exportContacts_Contacts_WritesHeaders() {
+            // Given
+            when(contactRepository.findAll()).thenReturn(List.of());
+
+            // When
+            dataExportService.exportContacts(TARGET, SpreadsheetFormat.XLSX, null);
+
+            // Then
+            verify(spreadsheetWriter).write(eq(TARGET), eq(SpreadsheetFormat.XLSX), tableCaptor.capture(), isNull());
+            assertThat(tableCaptor.getValue().headers()).containsExactly("구분", "이름", "비고", "상태");
+        }
+
+        @Test
+        @DisplayName("숨긴 관계자도 포함해 구분 순서, 이름순, 등록 순으로 한 행씩 적는다")
+        void exportContacts_Contacts_WritesRowsInOrder() {
+            // Given
+            when(contactRepository.findAll()).thenReturn(List.of(
+                    contact(3L, ContactType.VENDOR, "한빛은행", "교회 통장", false),
+                    contact(2L, ContactType.INDIVIDUAL, "홍길동", null, true),
+                    contact(1L, ContactType.INDIVIDUAL, "홍길동", "1구역", false),
+                    contact(4L, ContactType.INDIVIDUAL, "김찬양", null, false)));
+
+            // When
+            dataExportService.exportContacts(TARGET, SpreadsheetFormat.XLSX, null);
+
+            // Then
+            verify(spreadsheetWriter).write(any(), any(), tableCaptor.capture(), any());
+            assertThat(tableCaptor.getValue().rows()).containsExactly(
+                    Arrays.asList("개인", "김찬양", null, "표시"),
+                    Arrays.asList("개인", "홍길동", "1구역", "표시"),
+                    Arrays.asList("개인", "홍길동", null, "숨김"),
+                    Arrays.asList("업체", "한빛은행", "교회 통장", "표시"));
+        }
+
+        @Test
+        @DisplayName("내보낸 관계자의 수를 반환한다")
+        void exportContacts_TwoContacts_ReturnsCount() {
+            // Given
+            when(contactRepository.findAll()).thenReturn(List.of(
+                    contact(1L, ContactType.INDIVIDUAL, "홍길동", null, false),
+                    contact(2L, ContactType.OTHER, "무명", null, false)));
+
+            // When
+            int count = dataExportService.exportContacts(TARGET, SpreadsheetFormat.CSV, null);
+
+            // Then
+            assertThat(count).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("활동 기록에 회계 연도 없이 파일 이름과 건수를 남긴다")
+        void exportContacts_Success_LogsExportWithoutFiscalYear() {
+            // Given
+            when(contactRepository.findAll()).thenReturn(List.of(
+                    contact(1L, ContactType.INDIVIDUAL, "홍길동", null, false)));
+
+            // When
+            dataExportService.exportContacts(TARGET, SpreadsheetFormat.XLSX, "secret");
+
+            // Then
+            verify(activityLogService).logExport("관계자", null, "내보내기.xlsx", 1);
+        }
+    }
+
+    @Nested
+    @DisplayName("exportContactTemplate 테스트")
+    class ExportContactTemplateTest {
+
+        @Test
+        @DisplayName("구분, 이름, 비고, 상태 머리글만 있는 빈 양식을 암호 없이 저장한다")
+        void exportContactTemplate_Format_WritesHeadersOnly() {
+            // Given
+
+            // When
+            dataExportService.exportContactTemplate(TARGET, SpreadsheetFormat.CSV);
+
+            // Then
+            verify(spreadsheetWriter).write(eq(TARGET), eq(SpreadsheetFormat.CSV), tableCaptor.capture(), isNull());
+            assertThat(tableCaptor.getValue())
+                    .extracting(SpreadsheetTable::headers, SpreadsheetTable::rows)
+                    .containsExactly(List.of("구분", "이름", "비고", "상태"), List.of());
         }
     }
 

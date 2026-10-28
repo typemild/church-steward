@@ -73,4 +73,9 @@ public final class UIColors {
     public static final Color ERROR_WARNING = new Color(230, 126, 34); // #E67E22
     public static final Color WARNING_BACKGROUND = new Color(255, 245, 230); // #FFF5E6
 
+    // Input hint (입력란 아래에 잠깐 띄우는 안내)
+    public static final Color INPUT_HINT_BACKGROUND = new Color(255, 243, 230); // #FFF3E6
+    public static final Color INPUT_HINT_BORDER = new Color(255, 193, 7); // #FFC107
+    public static final Color INPUT_HINT_TEXT = new Color(139, 69, 19); // #8B4513
+
 }

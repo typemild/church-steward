@@ -1,5 +1,6 @@
 package org.church.steward.ui.component.table;
 
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -9,6 +10,8 @@ import java.awt.event.MouseEvent;
 import java.util.function.IntConsumer;
 
 import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
 import javax.swing.InputMap;
 import javax.swing.JScrollPane;
@@ -34,7 +37,9 @@ import org.church.steward.ui.util.UIFonts;
  * <li>표의 빈 영역을 클릭하면 선택이 풀린다.</li>
  * </ul>
  * 여러 행을 선택할 수 있는 표에서도 쓸 수 있다. 여러 행이 선택되어 있거나 Ctrl/Shift를 누른 채 클릭하면
- * 여러 행 선택의 기본 동작을 따른다.
+ * 여러 행 선택의 기본 동작을 따른다. 키보드로 이동할 때는 선택이 풀리지 않는다.
+ * <p>
+ * ↓ 키는 마지막 행에서 첫 행으로, ↑ 키는 첫 행에서 마지막 행으로 넘어간다.
  * <p>
  * 행을 더블클릭했을 때 할 일은 {@link #setRowDoubleClickHandler}로 등록한다. 두 번째 클릭에서 선택이 풀리므로,
  * 처리기를 부르기 전에 더블클릭한 행을 다시 선택한다. 화면에서 마우스 이벤트로 더블클릭을 직접 처리하지 않는다.
@@ -52,6 +57,9 @@ public class ListTable extends JTable {
     private static final Font FONT = new Font(UIFonts.FONT_FAMILY, Font.PLAIN, UIFonts.FONT_SIZE_BASE);
     private static final String ROW_ACTION_KEY = "listTable.rowAction";
     private static final KeyStroke ENTER = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
+    /** 표의 UI가 ↓/↑ 키에 연결한 동작의 이름 */
+    static final String SELECT_NEXT_ROW_ACTION = "selectNextRow";
+    static final String SELECT_PREVIOUS_ROW_ACTION = "selectPreviousRow";
 
     private transient IntConsumer rowDoubleClickHandler;
 
@@ -80,6 +88,8 @@ public class ListTable extends JTable {
                 }
             }
         });
+
+        installWrappingRowKeys();
     }
 
     /**
@@ -136,9 +146,48 @@ public class ListTable extends JTable {
         }
     }
 
+    /**
+     * ↑/↓ 키가 처음과 끝에서 반대쪽 끝으로 넘어가게 한다. 표의 기본 동작은 끝에서 멈춘다.
+     */
+    private void installWrappingRowKeys() {
+        wrapRowAction(SELECT_NEXT_ROW_ACTION, 1);
+        wrapRowAction(SELECT_PREVIOUS_ROW_ACTION, -1);
+    }
+
+    private void wrapRowAction(String actionKey, int direction) {
+        ActionMap actionMap = getActionMap();
+        actionMap.put(actionKey, new AbstractAction() {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int rowCount = getRowCount();
+                int leadRow = getSelectionModel().getLeadSelectionIndex();
+                int edgeRow = direction > 0 ? rowCount - 1 : 0;
+                if (rowCount > 0 && leadRow == edgeRow && isRowSelected(leadRow)) {
+                    int targetRow = direction > 0 ? 0 : rowCount - 1;
+                    int leadColumn = getColumnModel().getSelectionModel().getLeadSelectionIndex();
+                    changeSelection(targetRow, Math.max(leadColumn, 0), false, false);
+                    return;
+                }
+                // 표의 기본 Enter와 같이, 기본 동작은 UI가 넣은 부모 ActionMap에 있다.
+                ActionMap parent = actionMap.getParent();
+                Action defaultAction = parent == null ? null : parent.get(actionKey);
+                if (defaultAction != null) {
+                    defaultAction.actionPerformed(e);
+                }
+            }
+        });
+    }
+
+    /**
+     * 하나만 선택된 행을 다시 클릭하면 선택을 푼다. 키보드 이동(끝 행에서 더 가려는 ↑/↓, End 등)도 같은 행으로 이
+     * 메서드를 부르므로, 마우스 클릭일 때만 푼다.
+     */
     @Override
     public void changeSelection(int row, int col, boolean toggle, boolean extend) {
-        if (!toggle && !extend && getSelectedRowCount() == 1 && isRowSelected(row)) {
+        if (!toggle && !extend && EventQueue.getCurrentEvent() instanceof MouseEvent && getSelectedRowCount() == 1
+                && isRowSelected(row)) {
             clearRowSelection();
             return;
         }
@@ -159,6 +208,18 @@ public class ListTable extends JTable {
 
         String text = tooltipModel.getTooltipText(convertRowIndexToModel(viewRow), convertColumnIndexToModel(viewCol));
         return text == null || text.isBlank() ? null : text;
+    }
+
+    /**
+     * 모델 기준 행 하나만 선택하고, 그 행이 보이도록 스크롤한다.
+     */
+    public void selectAndScrollToModelRow(int modelRow) {
+        int viewRow = convertRowIndexToView(modelRow);
+        if (viewRow < 0) {
+            return;
+        }
+        setRowSelectionInterval(viewRow, viewRow);
+        scrollRectToVisible(getCellRect(viewRow, 0, true));
     }
 
     /**

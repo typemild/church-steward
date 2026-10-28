@@ -19,6 +19,7 @@ import org.church.steward.domain.financialrecord.dto.FinancialRecordRequestDto;
 import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
 import org.church.steward.domain.financialrecord.dto.FinancialRecordSearchRequestDto;
 import org.church.steward.domain.financialrecord.entity.FinancialRecord;
+import org.church.steward.domain.financialrecord.entity.FinancialRecordConstraints;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
 import org.church.steward.domain.financialrecord.mapper.FinancialRecordMapper;
 import org.church.steward.domain.financialrecord.repository.FinancialRecordRepository;
@@ -79,6 +80,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
             throw new IllegalArgumentException("Invalid Financial Record Type");
         }
         validateAmount(dto.getAmount());
+        validateTexts(dto.getDescription(), dto.getRemarks());
         validateContacts(type, dto.getContactIds());
         FiscalYear fiscalYear = findFiscalYear(dto.getFiscalYearId());
         validateNotClosed(fiscalYear);
@@ -111,6 +113,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
     @Override
     public FinancialRecordResponseDto updateFinancialRecord(Long id, FinancialRecordRequestDto dto) {
         validateAmount(dto.getAmount());
+        validateTexts(dto.getDescription(), dto.getRemarks());
         FinancialRecord financialRecord = financialRecordRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Financial Record not found"));
         // 구분은 바꿀 수 없으므로 요청의 구분은 보지 않고 기존 내역의 구분을 따른다.
@@ -179,6 +182,20 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
         }
         if (amount > MAX_AMOUNT) {
             throw new IllegalArgumentException("금액이 허용된 범위를 초과했습니다. (최대 금액 : 1,000억)");
+        }
+    }
+
+    /**
+     * 내용과 비고는 비워 둘 수 있고, 적으면 칼럼 길이 이내여야 한다.
+     */
+    private void validateTexts(String description, String remarks) {
+        if (description != null && description.length() > FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH) {
+            throw new IllegalArgumentException(
+                    "내용은 " + FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH + "자 이내로 입력해주세요.");
+        }
+        if (remarks != null && remarks.length() > FinancialRecordConstraints.REMARKS_MAX_LENGTH) {
+            throw new IllegalArgumentException(
+                    "비고는 " + FinancialRecordConstraints.REMARKS_MAX_LENGTH + "자 이내로 입력해주세요.");
         }
     }
 

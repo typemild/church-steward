@@ -11,7 +11,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * 진행 중인 가져오기 한 번의 상태 중에서 예산과 수입/지출에 공통인 부분: 회계 연도, 읽어 둔 파일, 머리글 행, 받아 둔 백업.
+ * 진행 중인 가져오기 한 번의 상태 중에서 대상(관계자, 예산, 수입/지출)과 무관한 부분: 회계 연도, 읽어 둔 파일, 머리글 행,
+ * 받아 둔 백업.
  * 화면 컴포넌트와 무관하게 상태와 규칙만 가진다. 열 지정과 분석 결과는 대상마다 다르므로 하위 클래스가 가진다.
  * <p>
  * 상태는 두 가지로 나뉜다. 다른 메뉴에 다녀와도 이 구분에 따라 이어서 진행한다.
@@ -23,6 +24,7 @@ import lombok.Setter;
 @Getter
 public abstract class ImportSession {
 
+    /** 가져올 회계 연도. 관계자처럼 회계 연도에 속하지 않는 대상이면 null */
     @Setter
     private FiscalYearDto fiscalYear;
 

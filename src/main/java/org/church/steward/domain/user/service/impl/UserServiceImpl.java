@@ -8,6 +8,7 @@ import org.church.steward.domain.activitylog.util.EntitySnapshot;
 import org.church.steward.domain.activitylog.util.EntitySnapshotCapturer;
 import org.church.steward.domain.user.dto.UserDto;
 import org.church.steward.domain.user.entity.User;
+import org.church.steward.domain.user.entity.UserConstraints;
 import org.church.steward.domain.user.entity.UserRole;
 import org.church.steward.domain.user.mapper.UserMapper;
 import org.church.steward.domain.user.repository.UserRepository;
@@ -41,8 +42,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void createUser(String id, String rawPassword, String remarks) {
-        // 1. ID 패턴 검증
+        // 1. ID 패턴과 비고 길이 검증
         validateId(id);
+        validateRemarks(remarks);
 
         // 2. 중복 사용자 확인
         if (userRepository.existsById(id)) {
@@ -69,8 +71,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void createAdmin(String id, String rawPassword, String remarks) {
-        // 1. ID 패턴 검증
+        // 1. ID 패턴과 비고 길이 검증
         validateId(id);
+        validateRemarks(remarks);
 
         // 2. 중복 사용자 확인
         if (userRepository.existsById(id)) {
@@ -139,6 +142,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void updateUser(String id, String newPassword, String remarks) {
+        validateRemarks(remarks);
+
         // 1. 사용자 조회
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + id));
@@ -185,12 +190,21 @@ public class UserServiceImpl implements UserService {
         if (id == null || id.isEmpty()) {
             throw new IllegalArgumentException("사용자 ID는 필수 입력 사항입니다.");
         }
+        if (id.length() > UserConstraints.ID_MAX_LENGTH) {
+            throw new IllegalArgumentException("사용자 ID는 " + UserConstraints.ID_MAX_LENGTH + "자 이내로 입력해주세요.");
+        }
 
         // 패턴: 첫 글자는 한글 또는 영문, 이후는 한글, 영문, 숫자, 언더바(_)
         String pattern = "^[a-zA-Zㄱ-ㅎ가-힣][a-zA-Z0-9ㄱ-ㅎ가-힣_]*$";
         if (!id.matches(pattern)) {
             throw new IllegalArgumentException("사용자 ID는 한글, 영문, 숫자로 구성되어야 하며, " +
                     "첫 글자는 한글 또는 영문이어야 합니다. (언더바(_) 사용 가능)");
+        }
+    }
+
+    private void validateRemarks(String remarks) {
+        if (remarks != null && remarks.length() > UserConstraints.REMARKS_MAX_LENGTH) {
+            throw new IllegalArgumentException("비고는 " + UserConstraints.REMARKS_MAX_LENGTH + "자 이내로 입력해주세요.");
         }
     }
 }

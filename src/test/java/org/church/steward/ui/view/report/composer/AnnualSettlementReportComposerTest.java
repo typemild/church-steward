@@ -11,6 +11,7 @@ import org.church.steward.domain.report.dto.BudgetExecutionDto;
 import org.church.steward.domain.report.dto.ReportSummaryDto;
 import org.church.steward.ui.view.report.layout.ReportDocument;
 import org.church.steward.ui.view.report.layout.ReportElement;
+import org.church.steward.ui.view.report.layout.ReportStyle;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -84,7 +85,7 @@ class AnnualSettlementReportComposerTest {
                     .build(), monthlyTrend(10_000_000L, 8_000_000L));
 
             // When
-            ReportDocument document = AnnualSettlementReportComposer.compose(report);
+            ReportDocument document = AnnualSettlementReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(document.getPageCount()).isEqualTo(1);
@@ -97,7 +98,7 @@ class AnnualSettlementReportComposerTest {
             AnnualSettlementReportDto report = report(null, monthlyTrend(10_000_000L, 8_000_000L));
 
             // When
-            ReportDocument document = AnnualSettlementReportComposer.compose(report);
+            ReportDocument document = AnnualSettlementReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(document.getTitle()).isEqualTo("2026년 회계 연도 수입/지출 결산 보고서");
@@ -113,7 +114,7 @@ class AnnualSettlementReportComposerTest {
                     .build(), monthlyTrend(10_000_000L, 8_000_000L));
 
             // When
-            ReportDocument document = AnnualSettlementReportComposer.compose(report);
+            ReportDocument document = AnnualSettlementReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(textsOf(document)).contains("직전 회계 연도 (2025년)", "해당 회계 연도 (2026년)");
@@ -126,7 +127,7 @@ class AnnualSettlementReportComposerTest {
             AnnualSettlementReportDto report = report(null, monthlyTrend(10_000_000L, 8_000_000L));
 
             // When
-            ReportDocument document = AnnualSettlementReportComposer.compose(report);
+            ReportDocument document = AnnualSettlementReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(textsOf(document)).contains("직전 회계 연도 (없음)");
@@ -139,7 +140,7 @@ class AnnualSettlementReportComposerTest {
             AnnualSettlementReportDto report = report(null, monthlyTrend(10_000_000L, 8_000_000L));
 
             // When
-            ReportDocument document = AnnualSettlementReportComposer.compose(report);
+            ReportDocument document = AnnualSettlementReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(textsOf(document)).contains("120,000,000", "96,000,000", "24,000,000");
@@ -152,7 +153,7 @@ class AnnualSettlementReportComposerTest {
             AnnualSettlementReportDto report = report(null, monthlyTrend(0L, 0L));
 
             // When
-            ReportDocument document = AnnualSettlementReportComposer.compose(report);
+            ReportDocument document = AnnualSettlementReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(textsOf(document)).contains("등록된 수입/지출이 없습니다.");

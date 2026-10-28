@@ -17,11 +17,13 @@ import org.church.steward.domain.activitylog.service.ActivityLogService;
 import org.church.steward.domain.activitylog.util.EntitySnapshot;
 import org.church.steward.domain.activitylog.util.EntitySnapshotCapturer;
 import org.church.steward.domain.contact.dto.ContactAutocompleteDto;
+import org.church.steward.domain.contact.dto.ContactAutocompleteResultDto;
 import org.church.steward.domain.contact.dto.ContactDto;
 import org.church.steward.domain.contact.dto.ContactSearchRequestDto;
 import org.church.steward.domain.contact.dto.ContactSummaryDto;
 import org.church.steward.domain.contact.dto.GroupInfoDto;
 import org.church.steward.domain.contact.entity.Contact;
+import org.church.steward.domain.contact.entity.ContactConstraints;
 import org.church.steward.domain.contact.entity.ContactGroup;
 import org.church.steward.domain.contact.entity.ContactGroupMember;
 import org.church.steward.domain.contact.entity.ContactType;
@@ -158,7 +160,7 @@ class ContactServiceImplTest {
         @DisplayName("관계자 생성_성공 시_저장된 DTO를 반환한다")
         void createContact_success_returnsSavedDto() {
             // Given
-            ContactDto dto = ContactDto.builder().name("New").build();
+            ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("New").build();
             Contact contactToSave = Contact.builder().build();
             Contact savedContact = Contact.builder().id(1L).name("New").build();
             ContactDto savedDto = ContactDto.builder().id(1L).name("New").build();
@@ -178,7 +180,7 @@ class ContactServiceImplTest {
         @DisplayName("관계자 생성_성공 시_Repository를 호출한다")
         void createContact_success_callsRepository() {
             // Given
-            ContactDto dto = ContactDto.builder().name("New").build();
+            ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("New").build();
             Contact contactToSave = Contact.builder().build();
 
             when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
@@ -195,7 +197,7 @@ class ContactServiceImplTest {
         @DisplayName("관계자 생성_성공 시_ActivityLogService를 호출한다")
         void createContact_success_callsActivityLog() {
             // Given
-            ContactDto dto = ContactDto.builder().name("New").build();
+            ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("New").build();
             Contact contactToSave = Contact.builder().build();
 
             when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
@@ -206,6 +208,151 @@ class ContactServiceImplTest {
 
             // Then
             verify(activityLogService).logCreation(contactToSave);
+        }
+
+        @Test
+        @DisplayName("관계자 생성_실패 시_구분이 없으면 예외가 발생한다")
+        void createContact_nullType_throwsException() {
+            // Given
+            ContactDto dto = ContactDto.builder().name("New").build();
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.createContact(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("구분을 선택해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 생성_실패 시_이름이 공백뿐이면 예외가 발생한다")
+        void createContact_blankName_throwsException() {
+            // Given
+            ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("  ").build();
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.createContact(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("이름을 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 생성_실패 시_이름이 최대 길이를 넘으면 예외가 발생한다")
+        void createContact_nameTooLong_throwsException() {
+            // Given
+            ContactDto dto = ContactDto.builder()
+                    .type(ContactType.INDIVIDUAL)
+                    .name("가".repeat(ContactConstraints.NAME_MAX_LENGTH + 1))
+                    .build();
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.createContact(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("이름은 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 생성_성공 시_이름과 비고가 최대 길이와 같으면 저장한다")
+        void createContact_maxLengthTexts_callsRepository() {
+            // Given
+            ContactDto dto = ContactDto.builder()
+                    .type(ContactType.INDIVIDUAL)
+                    .name("가".repeat(ContactConstraints.NAME_MAX_LENGTH))
+                    .remarks("나".repeat(ContactConstraints.REMARKS_MAX_LENGTH))
+                    .build();
+            Contact contactToSave = Contact.builder().build();
+
+            when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
+            when(contactRepository.save(contactToSave)).thenReturn(contactToSave);
+
+            // When
+            contactService.createContact(dto);
+
+            // Then
+            verify(contactRepository).save(contactToSave);
+        }
+
+        @Test
+        @DisplayName("관계자 생성_실패 시_비고가 최대 길이를 넘으면 예외가 발생한다")
+        void createContact_remarksTooLong_throwsException() {
+            // Given
+            ContactDto dto = ContactDto.builder()
+                    .type(ContactType.INDIVIDUAL)
+                    .name("New")
+                    .remarks("나".repeat(ContactConstraints.REMARKS_MAX_LENGTH + 1))
+                    .build();
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.createContact(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("비고는 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 생성_실패 시_저장하지 않는다")
+        void createContact_invalidInput_doesNotSave() {
+            // Given
+            ContactDto dto = ContactDto.builder()
+                    .type(ContactType.INDIVIDUAL)
+                    .name("가".repeat(ContactConstraints.NAME_MAX_LENGTH + 1))
+                    .build();
+
+            // When
+            assertThatThrownBy(() -> contactService.createContact(dto))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            // Then
+            verify(contactRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("createContactWithoutLog 테스트")
+    class CreateContactWithoutLogTest {
+
+        @Test
+        @DisplayName("관계자를 저장하고 저장된 엔터티를 반환한다")
+        void createContactWithoutLog_validInput_returnsSavedEntity() {
+            // Given
+            ContactDto dto = ContactDto.builder().type(ContactType.OTHER).name("무명").build();
+            Contact contactToSave = Contact.builder().build();
+            Contact savedContact = Contact.builder().id(1L).name("무명").build();
+
+            when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
+            when(contactRepository.save(contactToSave)).thenReturn(savedContact);
+
+            // When
+            Contact result = contactService.createContactWithoutLog(dto);
+
+            // Then
+            assertThat(result).isSameAs(savedContact);
+        }
+
+        @Test
+        @DisplayName("활동 기록을 남기지 않는다")
+        void createContactWithoutLog_validInput_doesNotLog() {
+            // Given
+            ContactDto dto = ContactDto.builder().type(ContactType.OTHER).name("무명").build();
+            Contact contactToSave = Contact.builder().build();
+
+            when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
+            when(contactRepository.save(contactToSave)).thenReturn(contactToSave);
+
+            // When
+            contactService.createContactWithoutLog(dto);
+
+            // Then
+            verify(activityLogService, never()).logCreation(any());
+        }
+
+        @Test
+        @DisplayName("일반 등록과 같이 검증하여 이름이 비어 있으면 예외가 발생한다")
+        void createContactWithoutLog_blankName_throwsException() {
+            // Given
+            ContactDto dto = ContactDto.builder().type(ContactType.OTHER).name("").build();
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.createContactWithoutLog(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("이름을 입력해주세요.");
         }
     }
 
@@ -268,6 +415,39 @@ class ContactServiceImplTest {
                     () -> contactService.updateContact(id, ContactType.INDIVIDUAL, "New", "New Remarks", false))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("해당 관계자를 찾을 수 없습니다.");
+        }
+
+        @Test
+        @DisplayName("관계자 수정_실패 시_이름이 최대 길이를 넘으면 예외가 발생한다")
+        void updateContact_nameTooLong_throwsException() {
+            // Given
+            String name = "가".repeat(ContactConstraints.NAME_MAX_LENGTH + 1);
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.updateContact(1L, ContactType.INDIVIDUAL, name, null, false))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("이름은 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 수정_실패 시_비고가 최대 길이를 넘으면 예외가 발생한다")
+        void updateContact_remarksTooLong_throwsException() {
+            // Given
+            String remarks = "나".repeat(ContactConstraints.REMARKS_MAX_LENGTH + 1);
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.updateContact(1L, ContactType.INDIVIDUAL, "New", remarks, false))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("비고는 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 수정_실패 시_이름이 비어 있으면 예외가 발생한다")
+        void updateContact_emptyName_throwsException() {
+            // When & Then
+            assertThatThrownBy(() -> contactService.updateContact(1L, ContactType.INDIVIDUAL, "", null, false))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("이름을 입력해주세요.");
         }
     }
 
@@ -563,7 +743,7 @@ class ContactServiceImplTest {
                     .contactGroup(group)
                     .build();
 
-            when(contactRepository.findByNameContainingAndIsHiddenFalseOrderByNameAsc(any(), any()))
+            when(contactRepository.findAutocompleteCandidates(any(), any(), any()))
                     .thenReturn(List.of(contact));
             when(contactGroupMemberRepository.findAllByContactId(1L))
                     .thenReturn(List.of(member));
@@ -582,11 +762,12 @@ class ContactServiceImplTest {
             when(contactMapper.toAutocompleteDto(any(), any())).thenReturn(expectedDto);
 
             // When
-            List<ContactAutocompleteDto> result = contactService.autocompleteContacts(keyword, limit);
+            ContactAutocompleteResultDto<ContactAutocompleteDto> result = contactService.autocompleteContacts(keyword,
+                    List.of(), limit);
 
             // Then
-            assertThat(result).hasSize(1);
-            ContactAutocompleteDto dto = result.get(0);
+            assertThat(result.getContacts()).hasSize(1);
+            ContactAutocompleteDto dto = result.getContacts().get(0);
             assertThat(dto.getId()).isEqualTo(1L);
             assertThat(dto.getName()).isEqualTo("홍길동");
             assertThat(dto.getGroups()).hasSize(1);
@@ -594,20 +775,88 @@ class ContactServiceImplTest {
         }
 
         @Test
-        @DisplayName("관계자 자동완성_결과 없음 시_빈 리스트를 반환한다")
-        void autocompleteContacts_noResult_returnsEmptyList() {
+        @DisplayName("관계자 자동완성_결과 없음 시_빈 목록과 0건을 반환한다")
+        void autocompleteContacts_noResult_returnsEmptyResult() {
             // Given
             String keyword = "없는이름";
             int limit = 10;
 
-            when(contactRepository.findByNameContainingAndIsHiddenFalseOrderByNameAsc(any(), any()))
+            when(contactRepository.findAutocompleteCandidates(any(), any(), any()))
                     .thenReturn(List.of());
 
             // When
-            List<ContactAutocompleteDto> result = contactService.autocompleteContacts(keyword, limit);
+            ContactAutocompleteResultDto<ContactAutocompleteDto> result = contactService.autocompleteContacts(keyword,
+                    List.of(), limit);
 
             // Then
-            assertThat(result).isEmpty();
+            assertThat(result.getContacts()).isEmpty();
+            assertThat(result.getTotalCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("관계자 자동완성_검색어와 제외 목록과 제한 수를 조회 조건으로 넘긴다")
+        void autocompleteContacts_validRequest_passesConditionsToRepository() {
+            // Given
+            String keyword = "홍길동";
+            List<Long> excludedIds = List.of(3L, 4L);
+            int limit = 5;
+
+            // When
+            contactService.autocompleteContacts(keyword, excludedIds, limit);
+
+            // Then
+            verify(contactRepository).findAutocompleteCandidates(keyword, excludedIds, PageRequest.of(0, limit));
+        }
+
+        @Test
+        @DisplayName("관계자 자동완성_조회 건수가 제한보다 적을 때_조회 건수를 전체 건수로 한다")
+        void autocompleteContacts_fewerThanLimit_totalCountIsFoundCount() {
+            // Given
+            Contact contact = Contact.builder().id(1L).name("홍길동").build();
+            when(contactRepository.findAutocompleteCandidates(any(), any(), any()))
+                    .thenReturn(List.of(contact));
+
+            // When
+            ContactAutocompleteResultDto<ContactAutocompleteDto> result = contactService.autocompleteContacts("홍",
+                    List.of(), 5);
+
+            // Then
+            assertThat(result.getTotalCount()).isEqualTo(1);
+            assertThat(result.getRemainingCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("관계자 자동완성_조회 건수가 제한보다 적을 때_건수를 따로 세지 않는다")
+        void autocompleteContacts_fewerThanLimit_doesNotCount() {
+            // Given
+            Contact contact = Contact.builder().id(1L).name("홍길동").build();
+            when(contactRepository.findAutocompleteCandidates(any(), any(), any()))
+                    .thenReturn(List.of(contact));
+
+            // When
+            contactService.autocompleteContacts("홍", List.of(), 5);
+
+            // Then
+            verify(contactRepository, never()).countAutocompleteCandidates(any(), any());
+        }
+
+        @Test
+        @DisplayName("관계자 자동완성_조회 건수가 제한에 이를 때_따로 센 건수를 전체 건수로 한다")
+        void autocompleteContacts_reachesLimit_totalCountFromCountQuery() {
+            // Given
+            Contact contact = Contact.builder().id(1L).name("홍길동").build();
+            List<Long> excludedIds = List.of(3L);
+            when(contactRepository.findAutocompleteCandidates(any(), any(), any()))
+                    .thenReturn(List.of(contact));
+            when(contactRepository.countAutocompleteCandidates("홍", excludedIds)).thenReturn(7L);
+
+            // When
+            ContactAutocompleteResultDto<ContactAutocompleteDto> result = contactService.autocompleteContacts("홍",
+                    excludedIds, 1);
+
+            // Then
+            assertThat(result.getTotalCount()).isEqualTo(7);
+            assertThat(result.getRemainingCount()).isEqualTo(6);
         }
     }
 
@@ -620,21 +869,42 @@ class ContactServiceImplTest {
         void autocompleteContactSummaries_success_returnsSummaryDtos() {
             // Given
             String keyword = "홍길동";
+            List<Long> excludedIds = List.of(3L);
             int limit = 10;
 
             Contact contact = Contact.builder().id(1L).name("홍길동").build();
             ContactSummaryDto summaryDto = ContactSummaryDto.builder().id(1L).name("홍길동").build();
 
-            when(contactRepository.findByNameContainingAndIsHiddenFalseOrderByNameAsc(keyword,
-                    PageRequest.of(0, limit)))
+            when(contactRepository.findAutocompleteCandidates(keyword, excludedIds, PageRequest.of(0, limit)))
                     .thenReturn(List.of(contact));
             when(contactMapper.toSummaryDto(contact)).thenReturn(summaryDto);
 
             // When
-            List<ContactSummaryDto> result = contactService.autocompleteContactSummaries(keyword, limit);
+            ContactAutocompleteResultDto<ContactSummaryDto> result = contactService
+                    .autocompleteContactSummaries(keyword, excludedIds, limit);
 
             // Then
-            assertThat(result).containsExactly(summaryDto);
+            assertThat(result.getContacts()).containsExactly(summaryDto);
+            assertThat(result.getTotalCount()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("관계자 요약 자동완성_조회 건수가 제한에 이를 때_따로 센 건수를 전체 건수로 한다")
+        void autocompleteContactSummaries_reachesLimit_totalCountFromCountQuery() {
+            // Given
+            Contact contact = Contact.builder().id(1L).name("홍길동").build();
+            List<Long> excludedIds = List.of();
+            when(contactRepository.findAutocompleteCandidates(any(), any(), any()))
+                    .thenReturn(List.of(contact));
+            when(contactRepository.countAutocompleteCandidates("홍", excludedIds)).thenReturn(12L);
+
+            // When
+            ContactAutocompleteResultDto<ContactSummaryDto> result = contactService
+                    .autocompleteContactSummaries("홍", excludedIds, 1);
+
+            // Then
+            assertThat(result.getTotalCount()).isEqualTo(12);
+            assertThat(result.getRemainingCount()).isEqualTo(11);
         }
     }
 }

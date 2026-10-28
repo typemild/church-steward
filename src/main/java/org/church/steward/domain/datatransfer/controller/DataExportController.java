@@ -26,6 +26,11 @@ public class DataExportController {
         return dataExportService.exportFinancialRecords(fiscalYearId, target, format, password);
     }
 
+    public int exportContacts(Path target, SpreadsheetFormat format, String password) {
+        adminAccessChecker.checkAdmin();
+        return dataExportService.exportContacts(target, format, password);
+    }
+
     public void exportBudgetTemplate(Path target, SpreadsheetFormat format) {
         adminAccessChecker.checkAdmin();
         dataExportService.exportBudgetTemplate(target, format);
@@ -34,5 +39,10 @@ public class DataExportController {
     public void exportFinancialRecordTemplate(Path target, SpreadsheetFormat format) {
         adminAccessChecker.checkAdmin();
         dataExportService.exportFinancialRecordTemplate(target, format);
+    }
+
+    public void exportContactTemplate(Path target, SpreadsheetFormat format) {
+        adminAccessChecker.checkAdmin();
+        dataExportService.exportContactTemplate(target, format);
     }
 }

@@ -32,13 +32,11 @@ import lombok.NoArgsConstructor;
 @Loggable(name = "회계 연도")
 public class FiscalYear {
 
-    public static final int NAME_MAX_LENGTH = 30;
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = NAME_MAX_LENGTH)
+    @Column(nullable = false, unique = true, length = FiscalYearConstraints.NAME_MAX_LENGTH)
     @LoggableField(name = "이름", isIdentifier = true)
     private String name;
 

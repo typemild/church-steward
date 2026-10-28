@@ -539,6 +539,23 @@ class ActivityLogServiceImplTest {
                     tuple("파일 이름", null, "수입지출.xlsx", false),
                     tuple("건수", null, "1,234건", false));
         }
+
+        @Test
+        @DisplayName("logExport_회계 연도 없음_회계 연도 항목 없이 파일 이름과 건수만 기록된다")
+        void logExport_noFiscalYear_recordsWithoutFiscalYear() {
+            // Given
+            mockLoggedInUser("test-user");
+
+            // When
+            activityLogService.logExport("관계자", null, "관계자.xlsx", 24);
+
+            // Then
+            verify(activityLogMapper).toEntity(eq("test-user"), eq(ActivityType.EXPORT), eq("관계자"),
+                    fieldsCaptor.capture());
+            assertCapturedFields(
+                    tuple("파일 이름", null, "관계자.xlsx", false),
+                    tuple("건수", null, "24건", false));
+        }
     }
 
     @Nested
@@ -565,6 +582,24 @@ class ActivityLogServiceImplTest {
                     tuple("회계 연도", null, "2026년", false),
                     tuple("파일 이름", null, "예산.xlsx", false),
                     tuple("결과", null, "추가 1건, 금액 갱신 0건", false));
+        }
+
+        @Test
+        @DisplayName("logImport_회계 연도 없음_회계 연도 항목 없이 파일 이름과 결과만 기록된다")
+        void logImport_noFiscalYear_recordsWithoutFiscalYear() {
+            // Given
+            mockLoggedInUser("test-user");
+            List<List<ActivityLogFieldDto>> items = List.of();
+
+            // When
+            activityLogService.logImport("관계자", null, "관계자.csv", "추가 3건", items);
+
+            // Then
+            verify(activityLogMapper).toEntity(eq("test-user"), eq(ActivityType.IMPORT), eq("관계자"),
+                    fieldsCaptor.capture(), eq(items));
+            assertCapturedFields(
+                    tuple("파일 이름", null, "관계자.csv", false),
+                    tuple("결과", null, "추가 3건", false));
         }
     }
 

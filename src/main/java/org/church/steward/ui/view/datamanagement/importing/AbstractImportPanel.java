@@ -151,6 +151,8 @@ public abstract class AbstractImportPanel extends JPanel {
 
     /**
      * 주어진 회계 연도로 가져오기를 새로 시작한다.
+     *
+     * @param fiscalYear 가져올 회계 연도. 관계자처럼 회계 연도에 속하지 않는 대상이면 null
      */
     public void start(FiscalYearDto fiscalYear) {
         getSession().reset();
@@ -171,11 +173,16 @@ public abstract class AbstractImportPanel extends JPanel {
     /**
      * 다른 메뉴에 다녀온 뒤에 호출한다. 가져오던 회계 연도가 삭제되었으면 가져오기를 취소하고,
      * 아니면 회계 연도의 최신 정보를 받아들인 뒤 하위 클래스가 다시 분석하게 한다.
+     * 회계 연도 없이 시작한 가져오기는 회계 연도를 확인하지 않고 바로 다시 분석하게 한다.
      *
      * @param fiscalYears 방금 다시 읽은 회계 연도 목록
      */
     public void onReturned(List<FiscalYearDto> fiscalYears) {
         if (!inProgress) {
+            return;
+        }
+        if (getSession().getFiscalYear() == null) {
+            onReturnedToStep(step);
             return;
         }
 
@@ -305,7 +312,7 @@ public abstract class AbstractImportPanel extends JPanel {
 
     private void updateHeader() {
         FiscalYearDto fiscalYear = getSession().getFiscalYear();
-        titleLabel.setText(title + " - 회계 연도: " + (fiscalYear == null ? "" : fiscalYear.getName()));
+        titleLabel.setText(fiscalYear == null ? title : title + " - 회계 연도: " + fiscalYear.getName());
 
         StringBuilder steps = new StringBuilder("<html>");
         for (int i = 0; i < stepNames.length; i++) {

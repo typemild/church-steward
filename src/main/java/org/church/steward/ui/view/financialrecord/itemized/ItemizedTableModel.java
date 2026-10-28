@@ -1,5 +1,6 @@
 package org.church.steward.ui.view.financialrecord.itemized;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -47,6 +48,20 @@ public class ItemizedTableModel extends AbstractTableModel implements TooltipTab
         return data.get(row);
     }
 
+    /**
+     * ID가 같은 내역의 행을 반환한다. 없으면 -1을 반환한다.
+     */
+    public int indexOfRecord(Long recordId) {
+        for (int i = 0; i < data.size(); i++) {
+            if (data.get(i)
+                    .getId()
+                    .equals(recordId)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     @Override
     public int getRowCount() {
         return data.size();
@@ -63,17 +78,22 @@ public class ItemizedTableModel extends AbstractTableModel implements TooltipTab
     }
 
     /**
-     * 정렬 시 금액은 숫자로, 나머지는 문자열로 비교하도록 컬럼의 타입을 알려준다.
+     * 정렬 시 날짜는 {@link RecordDate}로, 금액은 숫자로, 나머지는 문자열로 비교하도록 컬럼의 타입을 알려준다.
      */
     @Override
     public Class<?> getColumnClass(int col) {
-        return col == COLUMN_AMOUNT ? Long.class : String.class;
+        return switch (col) {
+        case COLUMN_DATE -> RecordDate.class;
+        case COLUMN_AMOUNT -> Long.class;
+        default -> String.class;
+        };
     }
 
     @Override
     public Object getValueAt(int row, int col) {
         FinancialRecordResponseDto record = data.get(row);
         return switch (col) {
+        case COLUMN_DATE -> new RecordDate(record.getDate(), record.getId());
         case COLUMN_AMOUNT -> record.getAmount();
         default -> getText(record, col);
         };
@@ -108,5 +128,29 @@ public class ItemizedTableModel extends AbstractTableModel implements TooltipTab
         case COLUMN_REMARKS -> record.getRemarks();
         default -> null;
         };
+    }
+
+    /**
+     * 날짜 칸의 값. 화면에는 날짜만 보이고, 정렬할 때는 같은 날짜의 내역을 ID로 가른다.
+     * 정렬기는 내림차순이면 비교 결과를 뒤집으므로, 오름차순은 "날짜 오름차순, ID 오름차순",
+     * 내림차순은 "날짜 내림차순, ID 내림차순"이 된다.
+     */
+    public record RecordDate(LocalDate date, Long id) implements Comparable<RecordDate> {
+
+        private static final Comparator<RecordDate> ORDER = Comparator.comparing(RecordDate::date)
+                .thenComparing(RecordDate::id);
+
+        @Override
+        public int compareTo(RecordDate other) {
+            return ORDER.compare(this, other);
+        }
+
+        /**
+         * 셀 렌더러가 표시하는 글자다.
+         */
+        @Override
+        public String toString() {
+            return date.format(DATE_FORMAT);
+        }
     }
 }

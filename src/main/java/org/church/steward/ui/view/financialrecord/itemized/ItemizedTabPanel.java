@@ -32,7 +32,7 @@ import org.church.steward.ui.view.financialrecord.FinancialRecordFormats;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 /**
- * "건별 보기" 탭. 검색된 수입/지출 내역을 날짜 내림차순으로 보여주며, 컬럼 헤더를 클릭해 정렬을 바꿀 수 있다.
+ * "건별 보기" 탭. 검색된 수입/지출 내역을 날짜 오름차순으로 보여주며, 컬럼 헤더를 클릭해 정렬을 바꿀 수 있다.
  */
 public class ItemizedTabPanel extends JPanel {
 
@@ -98,11 +98,12 @@ public class ItemizedTabPanel extends JPanel {
         setupColumn(ItemizedTableModel.COLUMN_AMOUNT, 85, new AmountCellRenderer());
         setupColumn(ItemizedTableModel.COLUMN_REMARKS, 80, new PaddedCellRenderer(SwingConstants.LEADING));
 
-        // 컬럼 헤더를 클릭하면 그 컬럼으로 정렬한다. 기본은 날짜 내림차순이다.
+        // 컬럼 헤더를 클릭하면 그 컬럼으로 정렬한다. 기본은 "예산별 보기"와 같은 날짜 오름차순이다.
         // 정렬 기준을 하나만 유지해서, 값이 같은 행은 이전 정렬 컬럼이 아니라 모델 순서(ID 내림차순)를 따르게 한다.
+        // 날짜 칸은 값에 ID가 들어 있어 같은 날짜의 내역도 정렬 방향을 따른다(ItemizedTableModel.RecordDate).
         TableRowSorter<ItemizedTableModel> sorter = new TableRowSorter<>(tableModel);
         sorter.setMaxSortKeys(1);
-        sorter.setSortKeys(List.of(new RowSorter.SortKey(ItemizedTableModel.COLUMN_DATE, SortOrder.DESCENDING)));
+        sorter.setSortKeys(List.of(new RowSorter.SortKey(ItemizedTableModel.COLUMN_DATE, SortOrder.ASCENDING)));
         table.setRowSorter(sorter);
 
         // 가로 스크롤 없이 컬럼 폭을 테이블 폭에 맞춘다.
@@ -175,6 +176,16 @@ public class ItemizedTabPanel extends JPanel {
         tableModel.setData(records);
         updateTotalCount();
         updateSelectionSum();
+    }
+
+    /**
+     * 내역이 표에 있으면 그 행을 선택하고 보이도록 스크롤한다.
+     */
+    public void revealRecord(Long recordId) {
+        int modelRow = tableModel.indexOfRecord(recordId);
+        if (modelRow >= 0) {
+            table.selectAndScrollToModelRow(modelRow);
+        }
     }
 
     /**

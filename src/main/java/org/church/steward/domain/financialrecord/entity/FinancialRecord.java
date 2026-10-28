@@ -74,7 +74,7 @@ public class FinancialRecord implements DynamicLoggable {
     @LoggableField(name = "예산", isIdentifier = true, transformer = BudgetTransformer.class)
     private Budget budget;
 
-    @Column(length = 100)
+    @Column(length = FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH)
     @LoggableField(name = "내역", isIdentifier = true)
     private String description;
 
@@ -82,7 +82,7 @@ public class FinancialRecord implements DynamicLoggable {
     @LoggableField(name = "금액", format = "#,###원")
     private long amount;
 
-    @Column(length = 100)
+    @Column(length = FinancialRecordConstraints.REMARKS_MAX_LENGTH)
     @LoggableField(name = "비고")
     private String remarks;
 

@@ -15,6 +15,7 @@ import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
 import org.church.steward.domain.financialrecord.repository.FinancialRecordRepository;
 import org.church.steward.domain.fiscalyear.dto.FiscalYearDto;
 import org.church.steward.domain.fiscalyear.entity.FiscalYear;
+import org.church.steward.domain.fiscalyear.entity.FiscalYearConstraints;
 import org.church.steward.domain.fiscalyear.mapper.FiscalYearMapper;
 import org.church.steward.domain.fiscalyear.repository.FiscalYearRepository;
 import org.church.steward.domain.fiscalyear.service.FiscalYearService;
@@ -143,9 +144,9 @@ public class FiscalYearServiceImpl implements FiscalYearService {
         if (trimmedName.isEmpty()) {
             throw new IllegalArgumentException("회계 연도의 이름을 입력해주세요.");
         }
-        if (trimmedName.length() > FiscalYear.NAME_MAX_LENGTH) {
+        if (trimmedName.length() > FiscalYearConstraints.NAME_MAX_LENGTH) {
             throw new IllegalArgumentException(
-                    String.format("회계 연도의 이름은 %d자를 넘을 수 없습니다.", FiscalYear.NAME_MAX_LENGTH));
+                    String.format("회계 연도의 이름은 %d자를 넘을 수 없습니다.", FiscalYearConstraints.NAME_MAX_LENGTH));
         }
 
         boolean duplicated = id == null ? fiscalYearRepository.existsByName(trimmedName)

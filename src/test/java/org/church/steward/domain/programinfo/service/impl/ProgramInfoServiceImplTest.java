@@ -138,8 +138,8 @@ class ProgramInfoServiceImplTest {
             List<OpenSourceLicenseDto> result = programInfoService.getOpenSourceLicenses();
 
             // Then
-            // 리포트의 라이브러리 뒤에 프로그램에 포함한 글꼴이 붙는다.
-            assertThat(result).hasSize(2);
+            // 리포트의 라이브러리 뒤에 리포트에 나오지 않는 글꼴(나눔고딕, 나눔명조, Font Awesome Free)이 붙는다.
+            assertThat(result).hasSize(4);
             assertThat(result.get(0).getLibraryName()).isEqualTo("Library A");
             assertThat(result.get(0).getVersion()).isEqualTo("1.2.3");
             assertThat(result.get(0).getLicenseType()).isEqualTo("Apache 2.0");
@@ -159,8 +159,9 @@ class ProgramInfoServiceImplTest {
             List<OpenSourceLicenseDto> result = programInfoService.getOpenSourceLicenses();
 
             // Then
-            assertThat(result).extracting(OpenSourceLicenseDto::getLicenseType)
-                    .containsExactly("SIL Open Font License 1.1");
+            assertThat(result).extracting(OpenSourceLicenseDto::getLibraryName)
+                    .containsExactly("나눔고딕 글꼴 (NanumGothic, 보고서에 사용)", "나눔명조 글꼴 (NanumMyeongjo, 보고서에 사용)",
+                            "Font Awesome Free (화면의 아이콘, Ikonli에 포함)");
         }
 
         @Test
@@ -176,8 +177,9 @@ class ProgramInfoServiceImplTest {
             List<OpenSourceLicenseDto> result = programInfoService.getOpenSourceLicenses();
 
             // Then
-            assertThat(result).extracting(OpenSourceLicenseDto::getLicenseType)
-                    .containsExactly("SIL Open Font License 1.1");
+            assertThat(result).extracting(OpenSourceLicenseDto::getLibraryName)
+                    .containsExactly("나눔고딕 글꼴 (NanumGothic, 보고서에 사용)", "나눔명조 글꼴 (NanumMyeongjo, 보고서에 사용)",
+                            "Font Awesome Free (화면의 아이콘, Ikonli에 포함)");
         }
     }
 }

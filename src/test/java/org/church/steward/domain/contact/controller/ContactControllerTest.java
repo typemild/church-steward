@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 
 import org.church.steward.domain.contact.dto.ContactAutocompleteDto;
+import org.church.steward.domain.contact.dto.ContactAutocompleteResultDto;
 import org.church.steward.domain.contact.dto.ContactDto;
 import org.church.steward.domain.contact.dto.ContactSearchRequestDto;
 import org.church.steward.domain.contact.dto.ContactSummaryDto;
@@ -189,20 +190,25 @@ class ContactControllerTest {
     class AutocompleteContactsTest {
 
         @Test
-        @DisplayName("키워드와 제한 수 전달 시 - 자동완성 목록을 반환한다")
-        void autocompleteContacts_validKeywordAndLimit_returnsAutocompleteList() {
+        @DisplayName("키워드, 제외 목록, 제한 수 전달 시 - 자동완성 결과를 반환한다")
+        void autocompleteContacts_validKeywordAndLimit_returnsAutocompleteResult() {
             // Given
             String keyword = "테스트";
+            List<Long> excludedIds = List.of(2L);
             int limit = 5;
-            List<ContactAutocompleteDto> expectedList = List.of(
-                    ContactAutocompleteDto.builder().id(1L).name("테스트").build());
-            when(contactService.autocompleteContacts(keyword, limit)).thenReturn(expectedList);
+            ContactAutocompleteResultDto<ContactAutocompleteDto> expected = ContactAutocompleteResultDto
+                    .<ContactAutocompleteDto>builder()
+                    .contacts(List.of(ContactAutocompleteDto.builder().id(1L).name("테스트").build()))
+                    .totalCount(1)
+                    .build();
+            when(contactService.autocompleteContacts(keyword, excludedIds, limit)).thenReturn(expected);
 
             // When
-            List<ContactAutocompleteDto> actualList = contactController.autocompleteContacts(keyword, limit);
+            ContactAutocompleteResultDto<ContactAutocompleteDto> actual = contactController
+                    .autocompleteContacts(keyword, excludedIds, limit);
 
             // Then
-            assertThat(actualList).isEqualTo(expectedList);
+            assertThat(actual).isEqualTo(expected);
         }
 
     }
@@ -212,20 +218,25 @@ class ContactControllerTest {
     class AutocompleteContactSummariesTest {
 
         @Test
-        @DisplayName("키워드와 제한 수 전달 시 - 요약 목록을 반환한다")
-        void autocompleteContactSummaries_validKeywordAndLimit_returnsSummaryList() {
+        @DisplayName("키워드, 제외 목록, 제한 수 전달 시 - 요약 자동완성 결과를 반환한다")
+        void autocompleteContactSummaries_validKeywordAndLimit_returnsSummaryResult() {
             // Given
             String keyword = "테스트";
+            List<Long> excludedIds = List.of(2L);
             int limit = 5;
-            List<ContactSummaryDto> expectedList = List.of(
-                    ContactSummaryDto.builder().id(1L).name("테스트").remarks("비고").build());
-            when(contactService.autocompleteContactSummaries(keyword, limit)).thenReturn(expectedList);
+            ContactAutocompleteResultDto<ContactSummaryDto> expected = ContactAutocompleteResultDto
+                    .<ContactSummaryDto>builder()
+                    .contacts(List.of(ContactSummaryDto.builder().id(1L).name("테스트").remarks("비고").build()))
+                    .totalCount(1)
+                    .build();
+            when(contactService.autocompleteContactSummaries(keyword, excludedIds, limit)).thenReturn(expected);
 
             // When
-            List<ContactSummaryDto> actualList = contactController.autocompleteContactSummaries(keyword, limit);
+            ContactAutocompleteResultDto<ContactSummaryDto> actual = contactController
+                    .autocompleteContactSummaries(keyword, excludedIds, limit);
 
             // Then
-            assertThat(actualList).isEqualTo(expectedList);
+            assertThat(actual).isEqualTo(expected);
         }
 
     }

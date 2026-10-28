@@ -24,7 +24,7 @@ import lombok.Setter;
 public class UserSetting {
 
     @Id
-    @Column(name = "user_id", length = 100)
+    @Column(name = "user_id", length = UserConstraints.ID_MAX_LENGTH)
     private String userId;
 
     @OneToOne(fetch = FetchType.LAZY)

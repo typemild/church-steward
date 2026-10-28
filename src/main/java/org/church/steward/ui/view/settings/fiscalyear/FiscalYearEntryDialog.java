@@ -17,6 +17,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 import org.church.steward.domain.fiscalyear.dto.FiscalYearDto;
+import org.church.steward.domain.fiscalyear.entity.FiscalYearConstraints;
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.button.PrimaryButton;
 import org.church.steward.ui.component.button.SecondaryButton;
@@ -110,6 +111,8 @@ class FiscalYearEntryDialog extends JDialog {
 
         setLayout(new BorderLayout());
         getContentPane().setBackground(UIColors.BACKGROUND);
+
+        nameField.setMaxLength(FiscalYearConstraints.NAME_MAX_LENGTH);
 
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setOpaque(false);

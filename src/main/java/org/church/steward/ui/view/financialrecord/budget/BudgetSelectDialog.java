@@ -105,6 +105,9 @@ public class BudgetSelectDialog extends JDialog {
         setLocationRelativeTo(owner);
 
         btnOK.addActionListener(_ -> onConfirm());
+        // 행을 더블클릭하면 그 예산으로 확인한다.
+        incomePanel.setRowDoubleClickHandler(this::onConfirm);
+        expensePanel.setRowDoubleClickHandler(this::onConfirm);
 
         // 입력란 없이 예산 표만 있으므로, 표에서든 다른 곳에서든 Enter를 누르면 선택한 예산으로 확인한다.
         DialogKeyHandler.install(this)

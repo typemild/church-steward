@@ -6,9 +6,9 @@ import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.report.dto.AnnualSettlementReportDto;
 import org.church.steward.domain.report.dto.BudgetPlanReportDto;
 import org.church.steward.domain.report.dto.ReportOutputType;
-import org.church.steward.domain.report.dto.ReportType;
 import org.church.steward.domain.report.dto.SettlementDetailReportDto;
 import org.church.steward.domain.report.dto.WeeklySettlementReportDto;
+import org.church.steward.domain.report.entity.ReportType;
 
 /**
  * 보고서에 실을 데이터를 집계하는 서비스.

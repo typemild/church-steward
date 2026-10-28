@@ -7,6 +7,7 @@ import org.church.steward.ui.view.report.layout.ReportAlign;
 import org.church.steward.ui.view.report.layout.ReportCanvas;
 import org.church.steward.ui.view.report.layout.ReportDocument;
 import org.church.steward.ui.view.report.layout.ReportPaper;
+import org.church.steward.ui.view.report.layout.ReportStyle;
 import org.church.steward.ui.view.report.layout.ReportTable;
 import org.church.steward.ui.view.report.layout.ReportTable.Column;
 import org.church.steward.ui.view.report.layout.ReportTable.RowStyle;
@@ -23,18 +24,18 @@ public final class SettlementDetailReportComposer {
         // 인스턴스화 방지
     }
 
-    public static ReportDocument compose(SettlementDetailReportDto report) {
+    public static ReportDocument compose(SettlementDetailReportDto report, ReportStyle style) {
         boolean income = report.getType() == BudgetType.INCOME;
         String title = String.format("%s 회계 연도 %s 결산 세부 내역서", report.getFiscalYearName(), report.getType()
                 .getLabel());
 
-        ReportCanvas canvas = new ReportCanvas(title);
+        ReportCanvas canvas = new ReportCanvas(title, style);
         canvas.title(title, ReportStyles.ANNUAL_TITLE_SIZE);
         canvas.moveDown(ReportStyles.TITLE_GAP);
         ReportStyles.drawUnit(canvas, ReportStyles.BUDGET_TABLE_UNIT_SIZE);
 
         // 수입은 예산을 채운 정도(달성), 지출은 예산을 쓴 정도(집행)로 부른다.
-        ReportTable table = new ReportTable(ReportStyles.BUDGET_TABLE_SIZE,
+        ReportTable table = new ReportTable(style, ReportStyles.BUDGET_TABLE_SIZE,
                 new Column("예산 항목", 0, ReportAlign.LEFT),
                 new Column("예산액", AMOUNT_WIDTH, ReportAlign.RIGHT),
                 new Column("점유율", RATE_WIDTH, ReportAlign.RIGHT),

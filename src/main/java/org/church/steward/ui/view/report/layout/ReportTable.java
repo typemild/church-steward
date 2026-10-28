@@ -11,9 +11,10 @@ import org.church.steward.ui.util.UIColors;
  * 머리글과 여러 행으로 이루어진 표.
  * 칸의 내용이 길면 칸 안에서 줄을 바꾼다. 세로선 없이 가로선과 머리글의 회색 바탕만으로 구분한다.
  * <p>
- * 쪽 전체 폭으로 흘려 그리면({@link #render(ReportCanvas)}) 행이 쪽 끝에 걸릴 때 행 전체를 다음 쪽으로 넘기며
+ * 페이지 전체 폭으로 흘려 그리면({@link #render(ReportCanvas)}) 행이 페이지 끝에 걸릴 때 행 전체를 다음 페이지로
+ * 넘기며
  * 머리글을 다시 그린다.
- * 정해진 자리에 그리면({@link #renderAt}) 쪽을 넘기지 않으므로 여러 표를 좌우로 나란히 놓을 수 있다.
+ * 정해진 자리에 그리면({@link #renderAt}) 페이지를 넘기지 않으므로 여러 표를 좌우로 나란히 놓을 수 있다.
  */
 public final class ReportTable {
 
@@ -21,7 +22,9 @@ public final class ReportTable {
      * 표의 열
      *
      * @param header 머리글
-     * @param width  열의 폭. 0 이하이면 폭이 정해진 열들을 뺀 나머지를 차지한다.
+     * @param width  열의 폭. 0 이하이면 폭이 정해진 열들을 뺀 나머지를 차지한다. 머리글이나 내용이 이 폭의 한 줄에 들어가지
+     *               않으면
+     *               들어갈 만큼 넓힌다(글자 크기를 키운 경우).
      * @param align  내용의 정렬. 머리글은 항상 가운데 정렬한다.
      */
     public record Column(String header, double width, ReportAlign align) {
@@ -58,9 +61,6 @@ public final class ReportTable {
     private record LaidOutRow(Row row, Font font, List<List<String>> cellLines, double height) {
     }
 
-    /** 행의 글자 위아래에 두는 기본 여백 */
-    public static final double DEFAULT_ROW_PADDING = 1.5;
-
     private static final double PADDING_X = 3;
     /** 첫 열을 한 단계 들여쓸 때의 폭 */
     private static final double INDENT_STEP = 8;
@@ -73,23 +73,20 @@ public final class ReportTable {
     private static final double BAR_LINE = 0.4;
 
     private final List<Column> columns;
+    private final ReportStyle style;
     private final Font regularFont;
     private final Font boldFont;
-    private final double rowPadding;
     private final List<Row> rows = new ArrayList<>();
 
-    public ReportTable(float fontSize, Column... columns) {
-        this(fontSize, DEFAULT_ROW_PADDING, columns);
-    }
-
     /**
-     * @param rowPadding 행의 글자 위아래에 두는 여백
+     * @param style    글꼴, 글자 크기, 행 간격. 행의 높이는 글자 높이에 행 간격을 곱한 값이다.
+     * @param baseSize 글자의 기본 크기
      */
-    public ReportTable(float fontSize, double rowPadding, Column... columns) {
+    public ReportTable(ReportStyle style, float baseSize, Column... columns) {
         this.columns = List.of(columns);
-        this.regularFont = ReportFonts.regular(fontSize);
-        this.boldFont = ReportFonts.bold(fontSize);
-        this.rowPadding = rowPadding;
+        this.style = style;
+        this.regularFont = style.regular(baseSize);
+        this.boldFont = style.bold(baseSize);
     }
 
     /**
@@ -131,7 +128,7 @@ public final class ReportTable {
     }
 
     /**
-     * 작업대의 현재 위치부터 쪽 전체 폭으로 표를 그리고 표 아래로 이동한다. 쪽이 모자라면 다음 쪽으로 이어 그린다.
+     * 작업대의 현재 위치부터 페이지 전체 폭으로 표를 그리고 표 아래로 이동한다. 페이지가 모자라면 다음 페이지로 이어 그린다.
      */
     public void render(ReportCanvas canvas) {
         double left = canvas.getLeft();
@@ -157,7 +154,7 @@ public final class ReportTable {
     }
 
     /**
-     * 현재 쪽의 정해진 자리에 표 전체를 그린다. 쪽을 넘기지 않으며 작업대의 위치도 바꾸지 않는다.
+     * 현재 페이지의 정해진 자리에 표 전체를 그린다. 페이지를 넘기지 않으며 작업대의 위치도 바꾸지 않는다.
      *
      * @return 표의 높이
      */
@@ -190,7 +187,7 @@ public final class ReportTable {
     private List<LaidOutRow> layOut(double[] widths) {
         List<LaidOutRow> laidOutRows = new ArrayList<>();
         for (Row row : rows) {
-            Font font = row.style() == RowStyle.NORMAL ? regularFont : boldFont;
+            Font font = fontOf(row);
 
             List<List<String>> cellLines = new ArrayList<>();
             int lineCount = 1;
@@ -205,14 +202,17 @@ public final class ReportTable {
                     cellLines.add(null);
                 }
             }
-            laidOutRows.add(new LaidOutRow(row, font, cellLines,
-                    lineCount * ReportText.lineHeight(font) + rowPadding * 2));
+            laidOutRows.add(new LaidOutRow(row, font, cellLines, lineCount * style.lineHeight(font)));
         }
         return laidOutRows;
     }
 
+    private Font fontOf(Row row) {
+        return row.style() == RowStyle.NORMAL ? regularFont : boldFont;
+    }
+
     private double headerHeight() {
-        return ReportText.lineHeight(boldFont) + rowPadding * 2;
+        return style.lineHeight(boldFont);
     }
 
     /**
@@ -226,7 +226,7 @@ public final class ReportTable {
         canvas.line(left, top, right, top, STRONG_LINE, UIColors.REPORT_LINE);
         canvas.line(left, top + height, right, top + height, HEADER_LINE, UIColors.REPORT_LINE);
 
-        double baseline = top + rowPadding + ReportText.ascent(boldFont);
+        double baseline = top + style.baselineOffset(boldFont);
         double x = left;
         for (int i = 0; i < widths.length; i++) {
             canvas.text(columns.get(i)
@@ -244,7 +244,7 @@ public final class ReportTable {
         Row row = laidOutRow.row();
         Font font = laidOutRow.font();
         double right = left + sum(widths);
-        double lineHeight = ReportText.lineHeight(font);
+        double lineHeight = style.lineHeight(font);
 
         if (row.style() == RowStyle.TOTAL) {
             canvas.fillRect(left, top, right - left, laidOutRow.height(), UIColors.REPORT_FILL);
@@ -260,7 +260,7 @@ public final class ReportTable {
 
             if (row.cells()
                     .get(i) instanceof BarCell barCell) {
-                drawBar(canvas, barCell, cellX, top, cellWidth, laidOutRow.height(), lineHeight);
+                drawBar(canvas, barCell, cellX, top, cellWidth, laidOutRow.height(), ReportText.lineHeight(font));
             } else {
                 ReportAlign align = columns.get(i)
                         .align();
@@ -269,7 +269,7 @@ public final class ReportTable {
                 case CENTER -> cellX + cellWidth / 2;
                 case RIGHT -> cellX + cellWidth - PADDING_X;
                 };
-                double baseline = top + rowPadding + ReportText.ascent(font);
+                double baseline = top + style.baselineOffset(font);
                 for (String line : laidOutRow.cellLines()
                         .get(i)) {
                     canvas.text(line, font, align, anchorX, baseline);
@@ -317,25 +317,44 @@ public final class ReportTable {
 
     /**
      * 폭이 정해지지 않은 열들이 남은 폭을 똑같이 나눠 갖도록 열의 폭을 정한다.
+     * 폭이 정해진 열이라도 글자를 키워 머리글이나 내용이 한 줄에 들어가지 않으면 들어갈 만큼 넓힌다.
      */
     private double[] resolveWidths(double tableWidth) {
+        double[] widths = new double[columns.size()];
         double fixedWidth = 0;
         int flexibleCount = 0;
-        for (Column column : columns) {
+        for (int i = 0; i < widths.length; i++) {
+            Column column = columns.get(i);
             if (column.width() > 0) {
-                fixedWidth += column.width();
+                widths[i] = Math.max(column.width(), requiredWidth(i));
+                fixedWidth += widths[i];
             } else {
                 flexibleCount++;
             }
         }
 
         double flexibleWidth = flexibleCount == 0 ? 0 : Math.max(0, tableWidth - fixedWidth) / flexibleCount;
-        double[] widths = new double[columns.size()];
         for (int i = 0; i < widths.length; i++) {
-            double width = columns.get(i)
-                    .width();
-            widths[i] = width > 0 ? width : flexibleWidth;
+            if (columns.get(i)
+                    .width() <= 0) {
+                widths[i] = flexibleWidth;
+            }
         }
         return widths;
+    }
+
+    /**
+     * 열의 머리글과 글자 칸을 모두 한 줄에 적는 데 필요한 폭. 막대 칸은 세지 않는다.
+     */
+    private double requiredWidth(int columnIndex) {
+        double width = ReportText.width(columns.get(columnIndex)
+                .header(), boldFont);
+        for (Row row : rows) {
+            if (row.cells()
+                    .get(columnIndex) instanceof TextCell textCell && textCell.text() != null) {
+                width = Math.max(width, ReportText.width(textCell.text(), fontOf(row)) + indentOf(row, columnIndex));
+            }
+        }
+        return width > 0 ? width + PADDING_X * 2 : 0;
     }
 }

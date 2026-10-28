@@ -54,4 +54,12 @@ public class BudgetTabPanel extends JPanel {
                 .filter(record -> record.getType() == FinancialRecordType.EXPENSE)
                 .toList(), budgetPositions);
     }
+
+    /**
+     * 내역을 선택하고 보이도록 스크롤한다. 수입과 지출 목록 중 내역이 있는 쪽에서만 일어난다.
+     */
+    public void revealRecord(Long recordId) {
+        incomePanel.revealRecord(recordId);
+        expensePanel.revealRecord(recordId);
+    }
 }
