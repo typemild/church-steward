@@ -10,10 +10,10 @@ import org.church.steward.ui.view.report.layout.ReportCanvas;
 import org.church.steward.ui.view.report.layout.ReportDocument;
 import org.church.steward.ui.view.report.layout.ReportFonts;
 import org.church.steward.ui.view.report.layout.ReportPaper;
+import org.church.steward.ui.view.report.layout.ReportStyle;
 import org.church.steward.ui.view.report.layout.ReportTable;
 import org.church.steward.ui.view.report.layout.ReportTable.Column;
 import org.church.steward.ui.view.report.layout.ReportTable.RowStyle;
-import org.church.steward.ui.view.report.layout.ReportText;
 
 /**
  * 회계 연도 수입/지출 결산 보고서를 배치한다.
@@ -35,10 +35,10 @@ public final class AnnualSettlementReportComposer {
         // 인스턴스화 방지
     }
 
-    public static ReportDocument compose(AnnualSettlementReportDto report) {
+    public static ReportDocument compose(AnnualSettlementReportDto report, ReportStyle style) {
         String title = String.format("%s 회계 연도 수입/지출 결산 보고서", report.getFiscalYearName());
 
-        ReportCanvas canvas = new ReportCanvas(title);
+        ReportCanvas canvas = new ReportCanvas(title, style);
         canvas.title(title, ReportStyles.ANNUAL_TITLE_SIZE);
         canvas.moveDown(ReportStyles.TITLE_GAP);
         ReportStyles.drawUnit(canvas, ReportFonts.SIZE_SMALL);
@@ -58,7 +58,7 @@ public final class AnnualSettlementReportComposer {
     private static void drawSummary(ReportCanvas canvas, AnnualSettlementReportDto report) {
         canvas.section("수입/지출 총괄", ReportFonts.SIZE_SECTION, canvas.getLeft());
 
-        ReportTable table = new ReportTable(BODY_SIZE,
+        ReportTable table = new ReportTable(canvas.getStyle(), BODY_SIZE,
                 new Column("구분", 0, ReportAlign.LEFT),
                 new Column("수입 총액", SUMMARY_AMOUNT_WIDTH, ReportAlign.RIGHT),
                 new Column("지출 총액", SUMMARY_AMOUNT_WIDTH, ReportAlign.RIGHT),
@@ -92,7 +92,7 @@ public final class AnnualSettlementReportComposer {
      * 월별 수입/지출. 왼쪽에 흐름을 보여주는 차트를, 오른쪽에 정확한 금액을 적은 표를 같은 높이로 놓는다.
      */
     private static void drawMonthly(ReportCanvas canvas, AnnualSettlementReportDto report) {
-        ReportTable table = new ReportTable(BODY_SIZE,
+        ReportTable table = new ReportTable(canvas.getStyle(), BODY_SIZE,
                 new Column("월", MONTH_WIDTH, ReportAlign.CENTER),
                 new Column("수입", 0, ReportAlign.RIGHT),
                 new Column("지출", 0, ReportAlign.RIGHT),
@@ -119,7 +119,7 @@ public final class AnnualSettlementReportComposer {
         double tableWidth = canvas.getContentWidth() * MONTHLY_TABLE_RATIO;
         double chartWidth = canvas.getContentWidth() - tableWidth - MONTHLY_GAP;
         double height = table.measureHeight(tableWidth);
-        if (!canvas.fits(ReportText.lineHeight(ReportFonts.bold(ReportFonts.SIZE_SECTION)) + height)) {
+        if (!canvas.fits(canvas.sectionHeight(ReportFonts.SIZE_SECTION) + height)) {
             canvas.newPage();
         }
 

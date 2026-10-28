@@ -17,6 +17,7 @@ import javax.swing.SwingConstants;
 
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.button.IconButton;
+import org.church.steward.ui.component.button.SecondaryButton;
 import org.church.steward.ui.component.field.StyledDatePicker;
 import org.church.steward.ui.component.label.FieldLabel;
 import org.church.steward.ui.util.UIColors;
@@ -33,7 +34,8 @@ import com.github.lgooddatepicker.zinternaltools.HighlightInformation;
  * 주간 보고서의 대상 주간(일요일~토요일)을 고르는 영역.
  * 날짜 하나만 보여주면 "그 날짜까지의 보고서"로 오해하기 쉬우므로, 날짜 입력란 없이 주간의 시작일과 종료일을 글자로 보여준다.
  * 달력 버튼으로 연 달력에서는 선택된 주간 전체가 칠해져 보이고, 어느 날짜를 눌러도 그 날짜가 속한 주간이 선택된다.
- * 좌/우 화살표로 한 주씩 이동할 수 있다.
+ * 좌/우 화살표로 한 주씩 이동할 수 있고, "이번 주" 버튼으로 오늘이 속한 주간으로 돌아온다.
+ * 이번 주간이 회계 연도의 기간과 겹치지 않으면(지난 회계 연도를 보고 있을 때 등) "이번 주" 버튼은 꺼진다.
  * 주간은 회계 연도의 기간({@link #setLimits})을 벗어날 수 없고, 기간의 경계에 걸친 주간은 벗어난 부분을 잘라낸다.
  */
 class WeekSelectorPanel extends JPanel {
@@ -51,6 +53,7 @@ class WeekSelectorPanel extends JPanel {
 
     private final IconButton previousButton = new IconButton(FontAwesomeSolid.ANGLE_LEFT, ComponentSize.MEDIUM);
     private final IconButton nextButton = new IconButton(FontAwesomeSolid.ANGLE_RIGHT, ComponentSize.MEDIUM);
+    private final SecondaryButton thisWeekButton = new SecondaryButton("이번 주", ComponentSize.MEDIUM);
     private final FieldLabel weekLabel = new FieldLabel("", SwingConstants.CENTER, ComponentSize.MEDIUM);
     /**
      * 달력을 띄우는 데만 쓰는 날짜 피커. 입력란은 숨기고 달력 버튼만 보여준다.
@@ -77,6 +80,7 @@ class WeekSelectorPanel extends JPanel {
 
         previousButton.setToolTipText("이전 주간");
         nextButton.setToolTipText("다음 주간");
+        thisWeekButton.setToolTipText("오늘이 속한 주간으로 이동합니다.");
         initCalendarPicker();
 
         add(new FieldLabel("주간", FontAwesomeSolid.CALENDAR_WEEK, SwingConstants.LEFT, ComponentSize.MEDIUM));
@@ -88,11 +92,17 @@ class WeekSelectorPanel extends JPanel {
         add(calendarPicker);
         add(Box.createHorizontalStrut(NARROW_GAP));
         add(nextButton);
+        add(Box.createHorizontalStrut(GAP));
+        add(thisWeekButton);
 
         setWeekContaining(LocalDate.now());
 
         previousButton.addActionListener(_ -> shift(-1));
         nextButton.addActionListener(_ -> shift(1));
+        thisWeekButton.addActionListener(_ -> {
+            setWeekContaining(todayWithinLimits());
+            onWeekChanged.run();
+        });
         calendarPicker.addDateChangeListener(_ -> onDatePicked());
     }
 
@@ -184,16 +194,28 @@ class WeekSelectorPanel extends JPanel {
             // 잘려 있던 주간이 새 범위에서는 온전해질 수 있으므로, 겹치는 날을 기준으로 주간을 다시 잡는다.
             base = startDate.isBefore(firstAllowedDate) ? firstAllowedDate : startDate;
         } else {
-            base = LocalDate.now();
-            if (base.isBefore(firstAllowedDate)) {
-                base = firstAllowedDate;
-            } else if (base.isAfter(lastAllowedDate)) {
-                base = lastAllowedDate;
-            }
+            base = todayWithinLimits();
         }
         setWeekContaining(base);
 
         calendarPicker.setDateRange(firstAllowedDate, lastAllowedDate);
+    }
+
+    /**
+     * 오늘. 허용 범위가 있고 오늘이 그 밖이면 범위에서 오늘과 가장 가까운 날(시작일 또는 종료일)이다.
+     */
+    private LocalDate todayWithinLimits() {
+        LocalDate today = LocalDate.now();
+        if (firstAllowedDate == null) {
+            return today;
+        }
+        if (today.isBefore(firstAllowedDate)) {
+            return firstAllowedDate;
+        }
+        if (today.isAfter(lastAllowedDate)) {
+            return lastAllowedDate;
+        }
+        return today;
     }
 
     private void onDatePicked() {
@@ -263,5 +285,20 @@ class WeekSelectorPanel extends JPanel {
 
         previousButton.setEnabled(shiftedStart(-1) != null);
         nextButton.setEnabled(shiftedStart(1) != null);
+        // 이번 주간이 회계 연도의 기간과 하루도 겹치지 않거나, 이미 이번 주간을 보고 있으면 끈다.
+        LocalDate today = todayWithinLimits();
+        thisWeekButton.setEnabled(isThisWeekWithinLimits() && (today.isBefore(start) || today.isAfter(end)));
+    }
+
+    /**
+     * 오늘이 속한 주간이 허용 범위와 하루 이상 겹치는지 여부. 범위를 아직 지정하지 않았으면 겹치는 것으로 본다.
+     */
+    private boolean isThisWeekWithinLimits() {
+        if (firstAllowedDate == null) {
+            return true;
+        }
+        LocalDate thisWeekStart = UNIT.startOf(LocalDate.now());
+        LocalDate thisWeekEnd = UNIT.endOf(thisWeekStart);
+        return !thisWeekEnd.isBefore(firstAllowedDate) && !thisWeekStart.isAfter(lastAllowedDate);
     }
 }

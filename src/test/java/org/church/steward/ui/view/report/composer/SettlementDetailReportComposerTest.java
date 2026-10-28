@@ -10,6 +10,7 @@ import org.church.steward.domain.report.dto.BudgetExecutionDto;
 import org.church.steward.domain.report.dto.SettlementDetailReportDto;
 import org.church.steward.ui.view.report.layout.ReportDocument;
 import org.church.steward.ui.view.report.layout.ReportElement;
+import org.church.steward.ui.view.report.layout.ReportStyle;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -57,7 +58,7 @@ class SettlementDetailReportComposerTest {
             SettlementDetailReportDto report = report(BudgetType.INCOME, 3);
 
             // When
-            ReportDocument document = SettlementDetailReportComposer.compose(report);
+            ReportDocument document = SettlementDetailReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(document.getTitle()).isEqualTo("2026년 회계 연도 수입 결산 세부 내역서");
@@ -71,7 +72,7 @@ class SettlementDetailReportComposerTest {
             SettlementDetailReportDto report = report(BudgetType.EXPENSE, 3);
 
             // When
-            ReportDocument document = SettlementDetailReportComposer.compose(report);
+            ReportDocument document = SettlementDetailReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(document.getTitle()).isEqualTo("2026년 회계 연도 지출 결산 세부 내역서");
@@ -79,13 +80,13 @@ class SettlementDetailReportComposerTest {
         }
 
         @Test
-        @DisplayName("한 장에 담을 수 없을 만큼 예산이 많으면 다음 쪽으로 넘긴다")
+        @DisplayName("한 장에 담을 수 없을 만큼 예산이 많으면 다음 페이지로 넘긴다")
         void compose_TooManyBudgets_BreaksIntoMultiplePages() {
             // Given
             SettlementDetailReportDto report = report(BudgetType.EXPENSE, 200);
 
             // When
-            ReportDocument document = SettlementDetailReportComposer.compose(report);
+            ReportDocument document = SettlementDetailReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(document.getPageCount()).isGreaterThan(1);

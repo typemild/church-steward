@@ -9,6 +9,7 @@ import org.church.steward.ui.view.report.layout.ReportAlign;
 import org.church.steward.ui.view.report.layout.ReportCanvas;
 import org.church.steward.ui.view.report.layout.ReportFonts;
 import org.church.steward.ui.view.report.layout.ReportPaper;
+import org.church.steward.ui.view.report.layout.ReportStyle;
 import org.church.steward.ui.view.report.layout.ReportTable;
 import org.church.steward.ui.view.report.layout.ReportTable.Column;
 import org.church.steward.ui.view.report.layout.ReportTable.RowStyle;
@@ -34,22 +35,22 @@ final class BudgetStatusSection {
     }
 
     /**
-     * 현재 위치에 수입 현황과 지출 현황을 나란히 그리고 그 아래로 이동한다. 현재 쪽에 다 들어가지 않으면 다음 쪽에 그린다.
+     * 현재 위치에 수입 현황과 지출 현황을 나란히 그리고 그 아래로 이동한다. 현재 페이지에 다 들어가지 않으면 다음 페이지에 그린다.
      *
+     * @param baseSize    표 글자의 기본 크기
      * @param titleSuffix 절 제목 뒤에 붙일 설명(집계 기준 등). 없으면 빈 문자열
      */
     static void render(ReportCanvas canvas, List<BudgetExecutionDto> incomeStatus,
-            List<BudgetExecutionDto> expenseStatus, float fontSize, String titleSuffix) {
+            List<BudgetExecutionDto> expenseStatus, float baseSize, String titleSuffix) {
         double columnWidth = (canvas.getContentWidth() - COLUMN_GAP) / 2;
         double expenseLeft = canvas.getLeft() + columnWidth + COLUMN_GAP;
 
-        ReportTable incomeTable = createTable(BudgetType.INCOME, incomeStatus, fontSize);
-        ReportTable expenseTable = createTable(BudgetType.EXPENSE, expenseStatus, fontSize);
+        ReportTable incomeTable = createTable(canvas.getStyle(), BudgetType.INCOME, incomeStatus, baseSize);
+        ReportTable expenseTable = createTable(canvas.getStyle(), BudgetType.EXPENSE, expenseStatus, baseSize);
 
-        Font titleFont = ReportFonts.bold(ReportFonts.SIZE_SECTION);
         double tableHeight = Math.max(incomeTable.measureHeight(columnWidth),
                 expenseTable.measureHeight(columnWidth));
-        if (!canvas.fits(ReportText.lineHeight(titleFont) + tableHeight)) {
+        if (!canvas.fits(canvas.sectionHeight(ReportFonts.SIZE_SECTION) + tableHeight)) {
             canvas.newPage();
         }
 
@@ -64,7 +65,8 @@ final class BudgetStatusSection {
         canvas.setPosition(canvas.getPageIndex(), tableTop + tableHeight);
     }
 
-    private static ReportTable createTable(BudgetType type, List<BudgetExecutionDto> rows, float fontSize) {
+    private static ReportTable createTable(ReportStyle style, BudgetType type, List<BudgetExecutionDto> rows,
+            float baseSize) {
         boolean income = type == BudgetType.INCOME;
 
         long totalBudgeted = 0;
@@ -75,14 +77,14 @@ final class BudgetStatusSection {
         }
 
         // 금액 열은 가장 큰 금액(합계)이 들어갈 만큼만 잡아 예산명에 폭을 최대한 준다.
-        Font boldFont = ReportFonts.bold(fontSize);
+        Font boldFont = style.bold(baseSize);
         double amountWidth = CELL_PADDING + Math.max(
                 ReportText.width(ReportFormats.amount(Math.max(totalBudgeted, totalActual)), boldFont),
                 ReportText.width("예산액", boldFont));
         double rateWidth = CELL_PADDING + ReportText.width(WIDEST_RATE, boldFont);
 
         // 수입은 예산을 채운 정도(달성), 지출은 예산을 쓴 정도(집행)로 부른다.
-        ReportTable table = new ReportTable(fontSize,
+        ReportTable table = new ReportTable(style, baseSize,
                 new Column("예산 항목", 0, ReportAlign.LEFT),
                 new Column("", BAR_WIDTH, ReportAlign.LEFT),
                 new Column(income ? "수입액" : "집행액", amountWidth, ReportAlign.RIGHT),

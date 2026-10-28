@@ -5,18 +5,58 @@ import java.awt.RenderingHints;
 import java.util.List;
 
 /**
- * 배치가 끝난 보고서. 쪽마다 그릴 요소와 그 자리가 확정되어 있어, 미리보기·인쇄·PDF 어디에 그려도 같은 결과가 나온다.
+ * 배치가 끝난 보고서. 페이지마다 그릴 요소와 그 자리가 확정되어 있어, 미리보기·인쇄·PDF 어디에 그려도 같은 결과가 나온다.
  */
 public final class ReportDocument {
 
     private final String title;
     private final List<List<ReportElement>> pages;
+    private final ReportStyle style;
+    private final float smallestFontSize;
 
-    ReportDocument(String title, List<List<ReportElement>> pages) {
+    ReportDocument(String title, List<List<ReportElement>> pages, ReportStyle style, float smallestFontSize) {
         this.title = title;
         this.pages = pages.stream()
                 .map(List::copyOf)
                 .toList();
+        this.style = style;
+        this.smallestFontSize = smallestFontSize;
+    }
+
+    /**
+     * 이 문서를 배치한 서식
+     */
+    public ReportStyle getStyle() {
+        return style;
+    }
+
+    /**
+     * 가장 작은 글자의 크기(페이지 번호 제외)
+     */
+    public float getSmallestFontSize() {
+        return smallestFontSize;
+    }
+
+    /**
+     * 글자 크기를 조정하지 않았을 때 가장 작은 글자의 크기. 글자 크기를 조정할 수 있는 범위를 정하는 기준이다.
+     */
+    public float getSmallestBaseFontSize() {
+        // 조정은 모든 글자에 같은 크기를 더하므로, 0pt에 더해진 크기가 곧 조정한 크기다.
+        return smallestFontSize - style.size(0);
+    }
+
+    /**
+     * 가장 작은 글자가 허용 범위를 벗어나지 않는 가장 작은 글자 크기 조정 단계
+     */
+    public int getMinFontSizeStep() {
+        return ReportStyle.minFontSizeStep(getSmallestBaseFontSize());
+    }
+
+    /**
+     * 가장 작은 글자가 허용 범위를 벗어나지 않는 가장 큰 글자 크기 조정 단계
+     */
+    public int getMaxFontSizeStep() {
+        return ReportStyle.maxFontSizeStep(getSmallestBaseFontSize());
     }
 
     /**
@@ -31,14 +71,14 @@ public final class ReportDocument {
     }
 
     /**
-     * 한 쪽에 그릴 요소들을 그리는 순서대로 반환한다.
+     * 한 페이지에 그릴 요소들을 그리는 순서대로 반환한다.
      */
     public List<ReportElement> getElements(int pageIndex) {
         return pages.get(pageIndex);
     }
 
     /**
-     * 한 쪽을 그린다. 그래픽 컨텍스트는 쪽의 왼쪽 위가 원점이고 1단위가 1포인트가 되도록 맞춰져 있어야 한다.
+     * 한 페이지를 그린다. 그래픽 컨텍스트는 페이지의 왼쪽 위가 원점이고 1단위가 1포인트가 되도록 맞춰져 있어야 한다.
      */
     public void paintPage(Graphics2D g, int pageIndex) {
         Graphics2D g2 = (Graphics2D) g.create();

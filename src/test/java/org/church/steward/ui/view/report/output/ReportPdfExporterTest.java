@@ -5,15 +5,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.awt.Color;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.church.steward.domain.report.entity.ReportFontFamily;
 import org.church.steward.ui.view.report.layout.ReportAlign;
 import org.church.steward.ui.view.report.layout.ReportCanvas;
 import org.church.steward.ui.view.report.layout.ReportDocument;
 import org.church.steward.ui.view.report.layout.ReportFonts;
+import org.church.steward.ui.view.report.layout.ReportStyle;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,16 +30,20 @@ class ReportPdfExporterTest {
     Path tempDir;
 
     /**
-     * 제목과 본문 한 줄이 있는 쪽을 지정한 수만큼 가진 보고서를 만든다.
+     * 제목과 본문 한 줄이 있는 페이지를 지정한 수만큼 가진 보고서를 만든다.
      */
     private ReportDocument document(int pageCount, String body) {
-        ReportCanvas canvas = new ReportCanvas("시험 보고서");
+        return document(pageCount, body, ReportStyle.DEFAULT);
+    }
+
+    private ReportDocument document(int pageCount, String body, ReportStyle style) {
+        ReportCanvas canvas = new ReportCanvas("시험 보고서", style);
         for (int i = 0; i < pageCount; i++) {
             if (i > 0) {
                 canvas.newPage();
             }
-            canvas.title("시험 보고서");
-            canvas.text(body, ReportFonts.regular(ReportFonts.SIZE_BODY), ReportAlign.LEFT, canvas.getLeft(),
+            canvas.title("시험 보고서", ReportFonts.SIZE_TITLE);
+            canvas.text(body, style.regular(ReportFonts.SIZE_BODY), ReportAlign.LEFT, canvas.getLeft(),
                     canvas.getY() + 20);
             canvas.line(canvas.getLeft(), canvas.getY() + 30, canvas.getRight(), canvas.getY() + 30, 0.5,
                     Color.BLACK);
@@ -48,7 +57,7 @@ class ReportPdfExporterTest {
     class ExportTest {
 
         @Test
-        @DisplayName("보고서의 쪽 수만큼 A4 크기의 쪽을 가진 PDF 파일을 만든다")
+        @DisplayName("보고서의 페이지 수만큼 A4 크기의 페이지를 가진 PDF 파일을 만든다")
         void export_TwoPages_WritesA4PdfWithSamePageCount() throws IOException {
             // Given
             Path file = tempDir.resolve("report.pdf");
@@ -99,6 +108,32 @@ class ReportPdfExporterTest {
             try (PDDocument pdf = Loader.loadPDF(file.toFile())) {
                 String text = new PDFTextStripper().getText(pdf);
                 assertThat(text).contains("감사?헌금");
+            }
+        }
+
+        @Test
+        @DisplayName("나눔명조로 배치한 보고서는 나눔명조 글꼴을 넣어 저장한다")
+        void export_MyeongjoStyle_EmbedsMyeongjoFont() throws IOException {
+            // Given
+            Path file = tempDir.resolve("report.pdf");
+            ReportDocument document = document(1, "감사헌금",
+                    ReportStyle.DEFAULT.withFontFamily(ReportFontFamily.NANUM_MYEONGJO));
+
+            // When
+            ReportPdfExporter.export(document, file);
+
+            // Then
+            try (PDDocument pdf = Loader.loadPDF(file.toFile())) {
+                List<String> fontNames = new ArrayList<>();
+                for (COSName name : pdf.getPage(0)
+                        .getResources()
+                        .getFontNames()) {
+                    fontNames.add(pdf.getPage(0)
+                            .getResources()
+                            .getFont(name)
+                            .getName());
+                }
+                assertThat(fontNames).allMatch(fontName -> fontName.contains("NanumMyeongjo"));
             }
         }
     }

@@ -8,7 +8,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 
 /**
- * 쪽 위의 정해진 자리에 그려지는 요소. 좌표는 쪽의 왼쪽 위를 원점으로 하는 포인트 단위다.
+ * 페이지 위의 정해진 자리에 그려지는 요소. 좌표는 페이지의 왼쪽 위를 원점으로 하는 포인트 단위다.
  * PDF로 저장할 때는 요소를 종류별로 PDF 명령으로 옮기므로, 종류를 늘리면 PDF 쪽도 함께 고쳐야 한다.
  */
 public sealed interface ReportElement {

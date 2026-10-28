@@ -25,16 +25,38 @@ import tools.jackson.databind.ObjectMapper;
 public class ProgramInfoServiceImpl implements ProgramInfoService {
 
     /**
-     * 보고서에 쓰려고 프로그램에 포함한 글꼴(src/main/resources/fonts/nanumgothic).
-     * 라이브러리가 아니어서 라이선스 리포트에 나오지 않으므로 직접 목록에 넣는다.
+     * 라이선스 리포트에 나오지 않는 글꼴과 아이콘. 직접 목록에 넣는다.
+     * <ul>
+     * <li>보고서에 쓰려고 프로그램에 포함한 글꼴(src/main/resources/fonts/nanumgothic,
+     * nanummyeongjo). 라이브러리가 아니어서 리포트에 나오지 않는다.</li>
+     * <li>화면의 아이콘인 Font Awesome Free. ikonli-fontawesome5-pack의 jar에 글꼴 파일이 들어 있지만,
+     * 리포트에는 Ikonli 자신의 라이선스(Apache-2.0)만 나온다.
+     * Ikonli를 올려 포함된 Font Awesome의 버전이 바뀌면 여기의 버전도 고친다(jar의
+     * META-INF/resources/fontawesome5/{버전}).</li>
+     * </ul>
      */
-    private static final OpenSourceLicenseDto BUNDLED_FONT = OpenSourceLicenseDto.builder()
-            .libraryName("나눔고딕 글꼴 (NanumGothic, 보고서에 사용)")
-            .version("3.020")
-            .licenseType("SIL Open Font License 1.1")
-            .licenseUrl("https://openfontlicense.org")
-            .projectUrl("https://hangeul.naver.com/font")
-            .build();
+    private static final List<OpenSourceLicenseDto> BUNDLED_FONTS = List.of(
+            OpenSourceLicenseDto.builder()
+                    .libraryName("나눔고딕 글꼴 (NanumGothic, 보고서에 사용)")
+                    .version("3.020")
+                    .licenseType("SIL Open Font License 1.1")
+                    .licenseUrl("https://openfontlicense.org")
+                    .projectUrl("https://hangeul.naver.com/font")
+                    .build(),
+            OpenSourceLicenseDto.builder()
+                    .libraryName("나눔명조 글꼴 (NanumMyeongjo, 보고서에 사용)")
+                    .version("2.032")
+                    .licenseType("SIL Open Font License 1.1")
+                    .licenseUrl("https://openfontlicense.org")
+                    .projectUrl("https://hangeul.naver.com/font")
+                    .build(),
+            OpenSourceLicenseDto.builder()
+                    .libraryName("Font Awesome Free (화면의 아이콘, Ikonli에 포함)")
+                    .version("5.15.3")
+                    .licenseType("CC BY 4.0 (아이콘), SIL Open Font License 1.1 (글꼴)")
+                    .licenseUrl("https://fontawesome.com/license/free")
+                    .projectUrl("https://fontawesome.com")
+                    .build());
 
     private final ResourceLoader resourceLoader;
     private final ObjectMapper objectMapper;
@@ -86,7 +108,7 @@ public class ProgramInfoServiceImpl implements ProgramInfoService {
     @Override
     public List<OpenSourceLicenseDto> getOpenSourceLicenses() {
         List<OpenSourceLicenseDto> licenses = new ArrayList<>(loadDependencyLicenses());
-        licenses.add(BUNDLED_FONT);
+        licenses.addAll(BUNDLED_FONTS);
         return licenses;
     }
 

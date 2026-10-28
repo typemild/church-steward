@@ -1,4 +1,4 @@
-package org.church.steward.domain.report.dto;
+package org.church.steward.domain.report.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,9 +1,12 @@
 package org.church.steward.ui.view.report.output;
 
+import java.awt.Font;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -18,7 +21,7 @@ import org.church.steward.ui.view.report.layout.ReportPaper;
 
 /**
  * 보고서를 PDF 파일로 저장한다.
- * 쪽의 요소들을 그림이 아니라 글자와 선 그대로 옮기므로 확대해도 선명하고 글자를 검색하거나 복사할 수 있다.
+ * 페이지의 요소들을 그림이 아니라 글자와 선 그대로 옮기므로 확대해도 선명하고 글자를 검색하거나 복사할 수 있다.
  * 글꼴은 쓰인 글자만 추려 파일에 넣는다.
  */
 public final class ReportPdfExporter {
@@ -38,8 +41,8 @@ public final class ReportPdfExporter {
             pdf.getDocumentInformation()
                     .setTitle(document.getTitle());
 
-            PDFont regularFont = loadFont(pdf, ReportFonts.REGULAR_RESOURCE);
-            PDFont boldFont = loadFont(pdf, ReportFonts.BOLD_RESOURCE);
+            // 글꼴 파일은 실제로 쓰인 것만 처음 쓰일 때 읽어 넣는다.
+            Map<String, PDFont> fonts = new HashMap<>();
 
             for (int i = 0; i < document.getPageCount(); i++) {
                 PDPage page = new PDPage(new PDRectangle((float) ReportPaper.WIDTH, (float) ReportPaper.HEIGHT));
@@ -47,7 +50,7 @@ public final class ReportPdfExporter {
 
                 try (PDPageContentStream content = new PDPageContentStream(pdf, page)) {
                     for (ReportElement element : document.getElements(i)) {
-                        draw(content, element, regularFont, boldFont);
+                        draw(pdf, content, element, fonts);
                     }
                 }
             }
@@ -67,11 +70,21 @@ public final class ReportPdfExporter {
         }
     }
 
-    private static void draw(PDPageContentStream content, ReportElement element, PDFont regularFont, PDFont boldFont)
-            throws IOException {
+    private static PDFont fontFor(PDDocument pdf, Font font, Map<String, PDFont> fonts) throws IOException {
+        String resource = ReportFonts.resourceOf(font);
+        PDFont loaded = fonts.get(resource);
+        if (loaded == null) {
+            loaded = loadFont(pdf, resource);
+            fonts.put(resource, loaded);
+        }
+        return loaded;
+    }
+
+    private static void draw(PDDocument pdf, PDPageContentStream content, ReportElement element,
+            Map<String, PDFont> fonts) throws IOException {
         switch (element) {
         case ReportElement.Text text -> {
-            PDFont font = ReportFonts.isBold(text.font()) ? boldFont : regularFont;
+            PDFont font = fontFor(pdf, text.font(), fonts);
             content.beginText();
             content.setFont(font, text.font()
                     .getSize2D());

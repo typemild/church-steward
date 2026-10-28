@@ -13,6 +13,7 @@ import org.church.steward.domain.report.dto.ReportSummaryDto;
 import org.church.steward.domain.report.dto.WeeklySettlementReportDto;
 import org.church.steward.ui.view.report.layout.ReportDocument;
 import org.church.steward.ui.view.report.layout.ReportElement;
+import org.church.steward.ui.view.report.layout.ReportStyle;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -109,7 +110,7 @@ class WeeklySettlementReportComposerTest {
             WeeklySettlementReportDto report = report(List.of(), List.of());
 
             // When
-            ReportDocument document = WeeklySettlementReportComposer.compose(report);
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(document.getTitle()).isEqualTo("2026년 주간 회계 결산 보고서 (2026-10-04 ~ 2026-10-10)");
@@ -122,7 +123,7 @@ class WeeklySettlementReportComposerTest {
             WeeklySettlementReportDto report = report(List.of(), List.of());
 
             // When
-            ReportDocument document = WeeklySettlementReportComposer.compose(report);
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(textsOf(document)).contains("12,345,000", "3,000,000", "1,200,000", "1,800,000",
@@ -136,20 +137,20 @@ class WeeklySettlementReportComposerTest {
             WeeklySettlementReportDto report = report(groups(4, 8), groups(10, 2));
 
             // When
-            ReportDocument document = WeeklySettlementReportComposer.compose(report);
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(document.getPageCount()).isEqualTo(1);
         }
 
         @Test
-        @DisplayName("내역이 한 장을 넘으면 다음 쪽의 같은 단으로 이어 적는다")
+        @DisplayName("내역이 한 장을 넘으면 다음 페이지의 같은 단으로 이어 적는다")
         void compose_TooManyRecords_BreaksIntoMultiplePages() {
             // Given
             WeeklySettlementReportDto report = report(groups(10, 30), groups(2, 3));
 
             // When
-            ReportDocument document = WeeklySettlementReportComposer.compose(report);
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(document.getPageCount()).isGreaterThan(1);
@@ -164,7 +165,7 @@ class WeeklySettlementReportComposerTest {
                     List.of(group("관리비", List.of(record("OO설비", longDescription, "")))));
 
             // When
-            ReportDocument document = WeeklySettlementReportComposer.compose(report);
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             List<String> texts = textsOf(document);
@@ -181,7 +182,7 @@ class WeeklySettlementReportComposerTest {
                     List.of(group("관리비", List.of(record("OO설비", "수리비", "")))));
 
             // When
-            ReportDocument document = WeeklySettlementReportComposer.compose(report);
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(textsOf(document)).contains("수리비")

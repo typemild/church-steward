@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 class ReportTextTest {
 
-    private static final Font FONT = ReportFonts.regular(ReportFonts.SIZE_BODY);
+    private static final Font FONT = ReportStyle.DEFAULT.regular(ReportFonts.SIZE_BODY);
     /** 딱 맞는 폭에서 소수 오차로 결과가 흔들리지 않도록 더하는 여유 */
     private static final double TOLERANCE = 0.01;
 

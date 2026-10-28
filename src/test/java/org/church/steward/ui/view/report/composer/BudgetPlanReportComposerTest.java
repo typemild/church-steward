@@ -9,6 +9,7 @@ import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.report.dto.BudgetPlanReportDto;
 import org.church.steward.domain.report.dto.BudgetPlanRowDto;
 import org.church.steward.ui.view.report.layout.ReportDocument;
+import org.church.steward.ui.view.report.layout.ReportStyle;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ class BudgetPlanReportComposerTest {
             BudgetPlanReportDto report = report(3);
 
             // When
-            ReportDocument document = BudgetPlanReportComposer.compose(report);
+            ReportDocument document = BudgetPlanReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(document.getTitle()).isEqualTo("2026년 회계 연도 수입 예산안");
@@ -58,36 +59,64 @@ class BudgetPlanReportComposerTest {
             BudgetPlanReportDto report = report(30);
 
             // When
-            ReportDocument document = BudgetPlanReportComposer.compose(report);
+            ReportDocument document = BudgetPlanReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(document.getPageCount()).isEqualTo(1);
         }
 
         @Test
-        @DisplayName("한 장에 담을 수 없을 만큼 예산이 많으면 다음 쪽으로 넘긴다")
+        @DisplayName("한 장에 담을 수 없을 만큼 예산이 많으면 다음 페이지로 넘긴다")
         void compose_TooManyBudgets_BreaksIntoMultiplePages() {
             // Given
             BudgetPlanReportDto report = report(200);
 
             // When
-            ReportDocument document = BudgetPlanReportComposer.compose(report);
+            ReportDocument document = BudgetPlanReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(document.getPageCount()).isGreaterThan(1);
         }
 
         @Test
-        @DisplayName("예산이 하나도 없어도 머리글과 총계만 있는 한 쪽을 만든다")
+        @DisplayName("예산이 하나도 없어도 머리글과 총계만 있는 한 페이지를 만든다")
         void compose_NoBudgets_ReturnsSinglePage() {
             // Given
             BudgetPlanReportDto report = report(0);
 
             // When
-            ReportDocument document = BudgetPlanReportComposer.compose(report);
+            ReportDocument document = BudgetPlanReportComposer.compose(report, ReportStyle.DEFAULT);
 
             // Then
             assertThat(document.getPageCount()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("가장 작은 글자는 금액 단위(8pt)이며 글자 크기를 조정하면 함께 바뀐다")
+        void compose_FontSizeStep_ChangesSmallestFontSize() {
+            // Given
+            BudgetPlanReportDto report = report(3);
+
+            // When
+            ReportDocument document = BudgetPlanReportComposer.compose(report, ReportStyle.DEFAULT.withFontSizeStep(2));
+
+            // Then
+            assertThat(document.getSmallestFontSize()).isEqualTo(9f);
+            assertThat(document.getMaxFontSizeStep()).isEqualTo(8);
+        }
+
+        @Test
+        @DisplayName("행 간격을 늘리면 같은 예산이 더 많은 페이지를 차지한다")
+        void compose_LargerLineSpacing_TakesMorePages() {
+            // Given
+            BudgetPlanReportDto report = report(120);
+
+            // When
+            ReportDocument tight = BudgetPlanReportComposer.compose(report, ReportStyle.DEFAULT.withLineSpacing(100));
+            ReportDocument loose = BudgetPlanReportComposer.compose(report, ReportStyle.DEFAULT.withLineSpacing(200));
+
+            // Then
+            assertThat(loose.getPageCount()).isGreaterThan(tight.getPageCount());
         }
     }
 }

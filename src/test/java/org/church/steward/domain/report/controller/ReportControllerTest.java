@@ -10,10 +10,15 @@ import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.report.dto.AnnualSettlementReportDto;
 import org.church.steward.domain.report.dto.BudgetPlanReportDto;
 import org.church.steward.domain.report.dto.ReportOutputType;
-import org.church.steward.domain.report.dto.ReportType;
+import org.church.steward.domain.report.dto.ReportSettingDto;
 import org.church.steward.domain.report.dto.SettlementDetailReportDto;
 import org.church.steward.domain.report.dto.WeeklySettlementReportDto;
+import org.church.steward.domain.report.entity.ReportType;
 import org.church.steward.domain.report.service.ReportService;
+import org.church.steward.domain.report.service.ReportSettingService;
+import org.church.steward.domain.user.entity.UserRole;
+import org.church.steward.infrastructure.security.LoggedInUser;
+import org.church.steward.infrastructure.security.UserSessionHolder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,6 +36,14 @@ class ReportControllerTest {
 
     @Mock
     private ReportService reportService;
+
+    @Mock
+    private ReportSettingService reportSettingService;
+
+    @Mock
+    private UserSessionHolder userSessionHolder;
+
+    private final LoggedInUser user = new LoggedInUser("testUser", UserRole.USER);
 
     @InjectMocks
     private ReportController reportController;
@@ -133,6 +146,49 @@ class ReportControllerTest {
 
             // Then
             verify(reportService).logOutput(reportType, outputType, FISCAL_YEAR_ID, WEEK_START, WEEK_END);
+        }
+    }
+
+    @Nested
+    @DisplayName("getReportSetting 테스트")
+    class GetReportSettingTest {
+
+        @Test
+        @DisplayName("로그인한 사용자의 ID로 서비스가 조회한 보고서 설정을 그대로 반환한다")
+        void getReportSetting_LoggedInUser_ReturnsServiceResult() {
+            // Given
+            ReportSettingDto expected = ReportSettingDto.builder()
+                    .reportType(ReportType.ANNUAL_SETTLEMENT)
+                    .build();
+            when(userSessionHolder.getLoggedInUser()).thenReturn(user);
+            when(reportSettingService.getReportSetting(user.id(), ReportType.ANNUAL_SETTLEMENT)).thenReturn(expected);
+
+            // When
+            ReportSettingDto actual = reportController.getReportSetting(ReportType.ANNUAL_SETTLEMENT);
+
+            // Then
+            assertThat(actual).isSameAs(expected);
+        }
+    }
+
+    @Nested
+    @DisplayName("updateReportSetting 테스트")
+    class UpdateReportSettingTest {
+
+        @Test
+        @DisplayName("로그인한 사용자의 ID와 받은 설정을 그대로 서비스에 넘긴다")
+        void updateReportSetting_LoggedInUser_CallsServiceWithUserId() {
+            // Given
+            ReportSettingDto setting = ReportSettingDto.builder()
+                    .reportType(ReportType.WEEKLY_SETTLEMENT)
+                    .build();
+            when(userSessionHolder.getLoggedInUser()).thenReturn(user);
+
+            // When
+            reportController.updateReportSetting(setting);
+
+            // Then
+            verify(reportSettingService).updateReportSetting(user.id(), setting);
         }
     }
 }

@@ -5,11 +5,11 @@ import java.awt.Font;
 import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.view.report.layout.ReportAlign;
 import org.church.steward.ui.view.report.layout.ReportCanvas;
-import org.church.steward.ui.view.report.layout.ReportFonts;
 import org.church.steward.ui.view.report.layout.ReportText;
 
 /**
- * 여러 보고서가 함께 쓰는 글자 크기와 간격, 공통 요소
+ * 여러 보고서가 함께 쓰는 글자 크기와 간격, 공통 요소.
+ * 글자 크기는 기본 크기이며, 실제 크기는 작업대의 서식({@link ReportCanvas#getStyle()})이 정한다.
  */
 final class ReportStyles {
 
@@ -39,8 +39,9 @@ final class ReportStyles {
     /**
      * 현재 위치의 오른쪽 끝에 금액의 단위를 적고 그 아래로 이동한다.
      */
-    static void drawUnit(ReportCanvas canvas, float fontSize) {
-        Font font = ReportFonts.regular(fontSize);
+    static void drawUnit(ReportCanvas canvas, float baseSize) {
+        Font font = canvas.getStyle()
+                .regular(baseSize);
         canvas.text("(단위: 원)", font, ReportAlign.RIGHT, canvas.getRight(), canvas.getY() + ReportText.ascent(font),
                 UIColors.REPORT_TEXT_SUB);
         canvas.moveDown(ReportText.lineHeight(font) + UNIT_GAP);
