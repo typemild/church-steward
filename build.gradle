@@ -10,7 +10,7 @@ plugins {
 
 group = 'org.church.steward'
 // jpackage는 숫자로만 된 버전을 받으므로 "-SNAPSHOT" 같은 접미어를 붙이지 않는다. 릴리스 태그(v1.0.0)와 같아야 한다.
-version = '1.1.0'
+version = '1.2.0'
 
 java {
 	toolchain {
