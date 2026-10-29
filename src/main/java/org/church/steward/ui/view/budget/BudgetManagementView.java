@@ -6,19 +6,15 @@ import java.awt.GridLayout;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
 
 import org.church.steward.domain.budget.controller.BudgetController;
 import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.fiscalyear.dto.FiscalYearDto;
 import org.church.steward.infrastructure.annotation.UiView;
 import org.church.steward.ui.MenuActivatable;
-import org.church.steward.ui.component.ComponentSize;
-import org.church.steward.ui.component.label.FieldLabel;
 import org.church.steward.ui.util.UIColors;
+import org.church.steward.ui.view.main.ClosedFiscalYearNoticeLabel;
 import org.church.steward.ui.view.main.FiscalYearSelector;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import org.kordamp.ikonli.swing.FontIcon;
 
 /**
  * 예산 관리 화면. 사이드바에서 선택된 회계 연도의 수입 예산(왼쪽)과 지출 예산(오른쪽)을 진행 현황과 함께 보여주고 편집한다.
@@ -34,8 +30,7 @@ public class BudgetManagementView extends JPanel implements MenuActivatable {
     private final BudgetTreePanel incomePanel;
     private final BudgetTreePanel expensePanel;
     /** 마감된 회계 연도여서 편집할 수 없음을 알리는 안내. 마감되지 않은 회계 연도에서는 숨긴다. */
-    private final FieldLabel closedNoticeLabel = new FieldLabel("마감된 회계 연도입니다. 예산을 조회만 할 수 있습니다.",
-            FontAwesomeSolid.LOCK, SwingConstants.LEFT, ComponentSize.MEDIUM);
+    private final ClosedFiscalYearNoticeLabel closedNoticeLabel = new ClosedFiscalYearNoticeLabel();
 
     public BudgetManagementView(BudgetController budgetController, FiscalYearSelector fiscalYearSelector) {
         this.fiscalYearSelector = fiscalYearSelector;
@@ -46,11 +41,6 @@ public class BudgetManagementView extends JPanel implements MenuActivatable {
         setBackground(UIColors.BACKGROUND);
         setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
-        closedNoticeLabel.setForeground(UIColors.ERROR_WARNING);
-        if (closedNoticeLabel.getIcon() instanceof FontIcon fontIcon) {
-            fontIcon.setIconColor(UIColors.ERROR_WARNING);
-        }
-        closedNoticeLabel.setVisible(false);
         add(closedNoticeLabel, BorderLayout.NORTH);
 
         // 진행 현황 칸에 폭을 내주기 위해 패널 사이 간격은 15px로 둔다.

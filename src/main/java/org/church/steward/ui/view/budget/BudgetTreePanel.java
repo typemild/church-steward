@@ -43,7 +43,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 예산 테이블을 포함하는 패널.
  * 예산 관리 화면에서는 예산마다 진행 현황(수입액/집행액, 달성률/집행률)을 함께 보여주고 툴바와 더블클릭으로 편집한다.
- * 마감된 회계 연도처럼 편집을 막아야 할 때는 {@link #setEditable}로 툴바와 더블클릭 수정을 끈다.
+ * 마감된 회계 연도처럼 편집을 막아야 할 때는 {@link #setEditable}로 편집 툴바를 상세 보기 버튼으로 바꾸고, 더블클릭도
+ * 상세 보기로 바꾼다.
  * 읽기 전용 모드에서는 편집 툴바와 진행 현황 없이 예산 선택 용도로만 쓸 수 있다.
  * 예산을 고르는 다이얼로그는 {@link #setRowDoubleClickHandler}로 더블클릭을 수정 대신 선택 확인으로 바꾼다.
  */
@@ -67,8 +68,10 @@ public class BudgetTreePanel extends JPanel {
     private final boolean readOnly;
     private final TreeTable table;
     private final BudgetTableModel tableModel;
-    /** 예산을 추가, 수정, 삭제하거나 순서를 바꾸는 툴바 버튼. 읽기 전용 모드에서는 비어 있다. */
-    private final List<IconButton> editButtons = new ArrayList<>();
+    /** 예산을 추가, 수정, 삭제하거나 순서를 바꾸는 툴바 버튼과 그 사이의 구분선. 읽기 전용 모드에서는 비어 있다. */
+    private final List<JComponent> editControls = new ArrayList<>();
+    /** 상세 보기 버튼. 편집할 수 없을 때(마감된 회계 연도) 편집 툴바 대신 보인다. 읽기 전용 모드에서는 null이다. */
+    private IconButton btnView;
     private Long currentFiscalYearId;
     private boolean editable = true;
     private Long selectedIdToRestore = null;
@@ -112,9 +115,12 @@ public class BudgetTreePanel extends JPanel {
         });
 
         if (!readOnly) {
+            // 편집할 수 있으면 수정, 아니면 상세 보기를 연다.
             table.setRowDoubleClickHandler(_ -> {
                 if (editable) {
                     onEdit();
+                } else {
+                    onView();
                 }
             });
         }
@@ -164,15 +170,24 @@ public class BudgetTreePanel extends JPanel {
             btnUp.addActionListener(_ -> onMove(-1));
             btnDown.addActionListener(_ -> onMove(1));
 
+            btnView = new IconButton(FontAwesomeSolid.EDIT, ComponentSize.SMALL);
+            btnView.setToolTipText("예산 상세 보기");
+            btnView.addActionListener(_ -> onView());
+            btnView.setVisible(false);
+
+            JSeparator separator1 = new JSeparator(SwingConstants.VERTICAL);
+            JSeparator separator2 = new JSeparator(SwingConstants.VERTICAL);
+
             toolbarPanel.add(btnUp);
             toolbarPanel.add(btnDown);
-            toolbarPanel.add(new JSeparator(SwingConstants.VERTICAL));
-            toolbarPanel.add(new JSeparator(SwingConstants.VERTICAL));
+            toolbarPanel.add(separator1);
+            toolbarPanel.add(separator2);
             toolbarPanel.add(btnAdd);
             toolbarPanel.add(btnEdit);
             toolbarPanel.add(btnDelete);
+            toolbarPanel.add(btnView);
 
-            editButtons.addAll(List.of(btnUp, btnDown, btnAdd, btnEdit, btnDelete));
+            editControls.addAll(List.of(btnUp, btnDown, separator1, separator2, btnAdd, btnEdit, btnDelete));
 
             headerPanel.add(toolbarPanel, BorderLayout.EAST);
         }
@@ -186,12 +201,15 @@ public class BudgetTreePanel extends JPanel {
 
     /**
      * 예산을 추가, 수정, 삭제하거나 순서를 바꿀 수 있는지 정한다. 마감된 회계 연도의 예산은 조회만 할 수 있으므로 false로 둔다.
-     * 읽기 전용 모드에서는 아무 효과가 없다.
+     * 편집할 수 없으면 편집 툴바를 숨기고 상세 보기 버튼을 보인다. 읽기 전용 모드에서는 아무 효과가 없다.
      */
     public void setEditable(boolean editable) {
         this.editable = editable;
-        for (IconButton button : editButtons) {
-            button.setEnabled(editable);
+        for (JComponent control : editControls) {
+            control.setVisible(editable);
+        }
+        if (btnView != null) {
+            btnView.setVisible(!editable);
         }
     }
 
@@ -298,27 +316,7 @@ public class BudgetTreePanel extends JPanel {
         if (selectedDto == null)
             return;
 
-        boolean isLeaf = isLeaf(selectedDto);
-        String parentPath = (selectedDto.getParentId() != null) ? getParentPath(selectedDto) : "(없음)";
-
-        long amountToShow;
-        boolean amountEditable;
-
-        if (isLeaf) {
-            amountToShow = selectedDto.getAmount();
-            amountEditable = true;
-        } else {
-            amountToShow = selectedDto.getTotalAmount();
-            amountEditable = false;
-        }
-
-        BudgetEntryDialog dialog = new BudgetEntryDialog(
-                SwingUtilities.getWindowAncestor(this),
-                "예산 수정",
-                selectedDto.getName(),
-                amountToShow,
-                parentPath,
-                amountEditable);
+        BudgetEntryDialog dialog = createDialogFor(selectedDto, "예산 수정");
         dialog.setVisible(true);
 
         if (!dialog.isConfirmed()) {
@@ -341,6 +339,35 @@ public class BudgetTreePanel extends JPanel {
                     log.error("Failed to edit budget", err);
                     JOptionPane.showMessageDialog(this, "수정 실패: " + err.getMessage());
                 });
+    }
+
+    private void onView() {
+        BudgetDto selectedDto = getSelectedDto();
+        if (selectedDto == null) {
+            JOptionPane.showMessageDialog(this, "상세 보기할 예산을 선택해주세요.");
+            return;
+        }
+
+        BudgetEntryDialog dialog = createDialogFor(selectedDto, "예산 상세 보기");
+        dialog.enableViewOnly();
+        dialog.setVisible(true);
+    }
+
+    /**
+     * 기존 예산의 값을 채운 다이얼로그를 만든다. 상위 예산의 금액은 하위 예산의 합계이므로 바꿀 수 없다.
+     */
+    private BudgetEntryDialog createDialogFor(BudgetDto dto, String title) {
+        boolean isLeaf = isLeaf(dto);
+        String parentPath = (dto.getParentId() != null) ? getParentPath(dto) : "(없음)";
+        long amountToShow = isLeaf ? dto.getAmount() : dto.getTotalAmount();
+
+        return new BudgetEntryDialog(
+                SwingUtilities.getWindowAncestor(this),
+                title,
+                dto.getName(),
+                amountToShow,
+                parentPath,
+                isLeaf);
     }
 
     private void onDelete() {

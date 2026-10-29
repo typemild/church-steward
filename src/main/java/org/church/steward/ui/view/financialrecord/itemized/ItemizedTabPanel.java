@@ -45,6 +45,8 @@ public class ItemizedTabPanel extends JPanel {
     private final IconButton btnAdd = new IconButton(FontAwesomeSolid.PLUS, ComponentSize.SMALL);
     private final IconButton btnEdit = new IconButton(FontAwesomeSolid.EDIT, ComponentSize.SMALL);
     private final IconButton btnDelete = new IconButton(FontAwesomeSolid.TRASH_ALT, ComponentSize.SMALL);
+    /** 상세 보기 버튼. 편집할 수 없을 때(마감된 회계 연도) 추가/수정/삭제 버튼 대신 보인다. */
+    private final IconButton btnView = new IconButton(FontAwesomeSolid.EDIT, ComponentSize.SMALL);
     private boolean editable = true;
     private final FieldLabel selectionSumLabel = new FieldLabel("", SwingConstants.RIGHT, ComponentSize.MEDIUM);
 
@@ -75,10 +77,13 @@ public class ItemizedTabPanel extends JPanel {
         btnAdd.setToolTipText("수입/지출 추가");
         btnEdit.setToolTipText("수입/지출 수정");
         btnDelete.setToolTipText("수입/지출 삭제");
+        btnView.setToolTipText("수입/지출 상세 보기");
+        btnView.setVisible(false);
 
         toolbarPanel.add(btnAdd);
         toolbarPanel.add(btnEdit);
         toolbarPanel.add(btnDelete);
+        toolbarPanel.add(btnView);
 
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
@@ -129,9 +134,12 @@ public class ItemizedTabPanel extends JPanel {
                     }
                 });
 
+        // 편집할 수 있으면 수정, 아니면 상세 보기를 연다.
         table.setRowDoubleClickHandler(_ -> {
             if (editable) {
                 onEdit();
+            } else {
+                onView();
             }
         });
 
@@ -139,16 +147,19 @@ public class ItemizedTabPanel extends JPanel {
         btnAdd.addActionListener(_ -> actionHandler.addRecord(null, null, null));
         btnEdit.addActionListener(_ -> onEdit());
         btnDelete.addActionListener(_ -> onDelete());
+        btnView.addActionListener(_ -> onView());
     }
 
     /**
      * 내역을 추가, 수정, 삭제할 수 있는지 정한다. 마감된 회계 연도의 내역은 조회만 할 수 있으므로 false로 둔다.
+     * 편집할 수 없으면 추가/수정/삭제 버튼을 숨기고 상세 보기 버튼을 보인다.
      */
     public void setEditable(boolean editable) {
         this.editable = editable;
-        btnAdd.setEnabled(editable);
-        btnEdit.setEnabled(editable);
-        btnDelete.setEnabled(editable);
+        btnAdd.setVisible(editable);
+        btnEdit.setVisible(editable);
+        btnDelete.setVisible(editable);
+        btnView.setVisible(!editable);
     }
 
     private void onEdit() {
@@ -158,6 +169,15 @@ public class ItemizedTabPanel extends JPanel {
             return;
         }
         actionHandler.editRecord(selected.getFirst());
+    }
+
+    private void onView() {
+        List<FinancialRecordResponseDto> selected = getSelectedRecords();
+        if (selected.size() != 1) {
+            JOptionPane.showMessageDialog(this, "상세 보기할 내역을 한 건만 선택해주세요.");
+            return;
+        }
+        actionHandler.viewRecord(selected.getFirst());
     }
 
     private void onDelete() {

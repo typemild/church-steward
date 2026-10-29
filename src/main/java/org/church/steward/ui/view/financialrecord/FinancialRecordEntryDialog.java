@@ -7,6 +7,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Window;
+import java.awt.event.MouseListener;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,11 +45,13 @@ import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.view.financialrecord.budget.BudgetSelectBox;
 import org.church.steward.ui.view.financialrecord.contact.ContactChipField;
 import org.church.steward.ui.view.financialrecord.contact.HierarchicalContactSuggester;
+import org.church.steward.ui.view.main.ClosedFiscalYearNoticeLabel;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 수입/지출을 추가하거나 수정하기 위한 다이얼로그
+ * 수입/지출을 추가하거나 수정하기 위한 다이얼로그.
+ * 마감된 회계 연도의 내역은 {@link #enableViewOnly()}로 바꿀 수 없는 상세 보기로 띄운다.
  */
 @Slf4j
 public class FinancialRecordEntryDialog extends JDialog {
@@ -69,6 +72,7 @@ public class FinancialRecordEntryDialog extends JDialog {
     private final AmountField amountField = new AmountField(ComponentSize.MEDIUM);
     private final StyledTextField remarksField = new StyledTextField(ComponentSize.MEDIUM);
 
+    private final JPanel formPanel = new JPanel(new GridBagLayout());
     private final JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 10));
     private final DialogKeyHandler keyHandler;
 
@@ -164,7 +168,6 @@ public class FinancialRecordEntryDialog extends JDialog {
     }
 
     private JPanel createFormPanel() {
-        JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBorder(BorderFactory.createEmptyBorder(25, 25, 15, 25));
         formPanel.setBackground(UIColors.BACKGROUND);
 
@@ -262,6 +265,40 @@ public class FinancialRecordEntryDialog extends JDialog {
      */
     public void enableContinuousEntry() {
         layoutButtons(true);
+        pack();
+        setLocationRelativeTo(getOwner());
+    }
+
+    /**
+     * 내용을 바꿀 수 없는 상세 보기로 바꾼다. 마감된 회계 연도의 내역을 볼 때 쓴다.
+     * 맨 위에 마감 안내를 보이고, 입력란은 포커스를 받아 글자를 고르거나 툴팁을 볼 수 있지만 내용은 바꿀 수 없으며, 버튼은
+     * "닫기"만 남는다. 입력값이 바뀌지 않으므로 닫을 때 확인을 받지 않는다.
+     */
+    public void enableViewOnly() {
+        add(ClosedFiscalYearNoticeLabel.createDialogNotice(), BorderLayout.NORTH);
+        // 안내가 차지한 높이만큼 폼의 위아래 여백을 줄여 수정 다이얼로그와 높이를 비슷하게 맞춘다.
+        formPanel.setBorder(BorderFactory.createEmptyBorder(5, 25, 0, 25));
+
+        typeCombo.setEnabled(false);
+        datePicker.getComponentDateTextField()
+                .setEditable(false);
+        JButton datePickerButton = datePicker.getComponentToggleCalendarButton();
+        datePickerButton.setEnabled(false);
+        for (MouseListener mouseListener : datePickerButton.getMouseListeners()) {
+            datePickerButton.removeMouseListener(mouseListener);
+        }
+        budgetSelectBox.setSelectable(false);
+        contactField.setReadOnly(true);
+        descriptionField.setEditable(false);
+        amountField.setEditable(false);
+        remarksField.setEditable(false);
+
+        buttonPanel.removeAll();
+        PrimaryButton btnClose = new PrimaryButton("닫기", ComponentSize.MEDIUM);
+        buttonPanel.add(btnClose);
+        // 마지막 입력란에서 Enter를 눌러도 닫는다.
+        keyHandler.setButtons(btnClose, btnClose);
+
         pack();
         setLocationRelativeTo(getOwner());
     }

@@ -38,6 +38,7 @@ import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.view.financialrecord.budget.BudgetDisplayOrder;
 import org.church.steward.ui.view.financialrecord.budget.BudgetTabPanel;
 import org.church.steward.ui.view.financialrecord.itemized.ItemizedTabPanel;
+import org.church.steward.ui.view.main.ClosedFiscalYearNoticeLabel;
 import org.church.steward.ui.view.main.FiscalYearSelector;
 
 import com.formdev.flatlaf.FlatClientProperties;
@@ -66,6 +67,8 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     private final JTabbedPane tabbedPane = new JTabbedPane();
     private final BudgetTabPanel budgetTabPanel;
     private final ItemizedTabPanel itemizedTabPanel;
+    /** 마감된 회계 연도여서 편집할 수 없음을 알리는 안내. 마감되지 않은 회계 연도에서는 숨긴다. */
+    private final ClosedFiscalYearNoticeLabel closedNoticeLabel = new ClosedFiscalYearNoticeLabel();
 
     /** 마지막으로 조회한 회계 연도의 ID. 사이드바에서 회계 연도가 바뀌었는지 판단하는 데 쓴다. */
     private Long lastFiscalYearId;
@@ -109,9 +112,10 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     }
 
     private void layoutComponents() {
-        // [1행] ~ [2행] 검색 조건, 총합
+        // [1행] ~ [2행] 검색 조건, 총합. 마감된 회계 연도면 그 위에 안내를 둔다(예산 관리와 같은 위치).
         JPanel topPanel = new JPanel(new BorderLayout(0, 10));
         topPanel.setOpaque(false);
+        topPanel.add(closedNoticeLabel, BorderLayout.NORTH);
         topPanel.add(searchPanel, BorderLayout.CENTER);
         topPanel.add(summaryPanel, BorderLayout.SOUTH);
         add(topPanel, BorderLayout.NORTH);
@@ -160,6 +164,7 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
         }
         // 마감된 회계 연도의 내역은 조회만 할 수 있다. 마감 여부도 회계 연도 관리에서 바뀔 수 있으므로 매번 맞춘다.
         boolean editable = fiscalYear != null && !fiscalYear.isClosed();
+        closedNoticeLabel.setVisible(fiscalYear != null && fiscalYear.isClosed());
         budgetTabPanel.setEditable(editable);
         itemizedTabPanel.setEditable(editable);
         search();
@@ -287,6 +292,23 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
                     log.error("Failed to edit financial record", err);
                     JOptionPane.showMessageDialog(this, "수정 실패: " + err.getMessage());
                 });
+    }
+
+    @Override
+    public void viewRecord(FinancialRecordResponseDto record) {
+        FiscalYearDto fiscalYear = fiscalYearSelector.getFiscalYear(record.getFiscalYearId());
+        if (fiscalYear == null) {
+            JOptionPane.showMessageDialog(this, "내역이 속한 회계 연도를 찾을 수 없습니다.");
+            return;
+        }
+
+        FinancialRecordType type = record.getType();
+        FinancialRecordEntryDialog dialog = new FinancialRecordEntryDialog(SwingUtilities.getWindowAncestor(this),
+                type.getLabel() + " 상세 보기", budgetController, contactController, contactGroupController,
+                fiscalYear, type, false);
+        dialog.setRecord(record);
+        dialog.enableViewOnly();
+        dialog.setVisible(true);
     }
 
     @Override

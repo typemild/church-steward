@@ -59,6 +59,8 @@ public class ContactChipField extends JPanel implements CompositeInputField {
     private int maxContacts = 0;
     /** 가장 최근에 자동 완성을 요청한 키워드 */
     private String lastSuggestedKeyword = "";
+    /** 칩을 보여주기만 하고 입력이나 삭제를 받지 않는지 여부 */
+    private boolean readOnly = false;
 
     public ContactChipField() {
         // 칩과 입력 필드는 doLayout에서 직접 배치한다.
@@ -148,7 +150,23 @@ public class ContactChipField extends JPanel implements CompositeInputField {
         });
     }
 
+    /**
+     * 칩을 보여주기만 하고 입력이나 삭제를 받지 않게 한다. 상세 보기 다이얼로그에서 쓴다.
+     * 입력 필드는 포커스를 받지만 글자를 넣을 수 없고, 칩은 앞에서부터 보이도록 입력 필드 자리를 남기지 않는다.
+     */
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+        inputField.setEditable(!readOnly);
+        setCursor(Cursor.getPredefinedCursor(readOnly ? Cursor.DEFAULT_CURSOR : Cursor.TEXT_CURSOR));
+        revalidate();
+        repaint();
+    }
+
     private void handleKeyPressed(KeyEvent e) {
+        // 입력 필드가 편집 불가여도 키 이벤트는 오므로, Backspace로 칩이 지워지지 않게 여기서 막는다.
+        if (readOnly) {
+            return;
+        }
         if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
             if (inputField.getText()
                     .isEmpty() && !chips.isEmpty()) {
@@ -370,6 +388,7 @@ public class ContactChipField extends JPanel implements CompositeInputField {
     /**
      * 칩들을 왼쪽부터 한 줄로 배치하고 입력 필드를 그 뒤에 둔다.
      * 칩이 많아 한 줄에 다 들어가지 않으면 앞쪽 칩을 가려서 입력 필드가 항상 보이도록 한다.
+     * 읽기 전용이면 입력 필드 자리를 남기지 않고 앞쪽 칩부터 보인다.
      */
     @Override
     public void doLayout() {
@@ -381,9 +400,12 @@ public class ContactChipField extends JPanel implements CompositeInputField {
         for (ContactChip chip : chips) {
             chipsWidth += chip.getPreferredSize().width + CHIP_GAP;
         }
-        int inputWidth = Math.max(MIN_INPUT_WIDTH, availableWidth - chipsWidth);
+        int inputWidth = Math.max(readOnly ? 0 : MIN_INPUT_WIDTH, availableWidth - chipsWidth);
 
-        int x = insets.left + Math.min(0, availableWidth - (chipsWidth + inputWidth));
+        int x = insets.left;
+        if (!readOnly) {
+            x += Math.min(0, availableWidth - (chipsWidth + inputWidth));
+        }
         for (ContactChip chip : chips) {
             Dimension chipSize = chip.getPreferredSize();
             int chipHeight = Math.min(chipSize.height, availableHeight);

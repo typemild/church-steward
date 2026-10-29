@@ -48,6 +48,8 @@ public class BudgetRecordPanel extends JPanel {
     private final IconButton btnAdd = new IconButton(FontAwesomeSolid.PLUS, ComponentSize.SMALL);
     private final IconButton btnEdit = new IconButton(FontAwesomeSolid.EDIT, ComponentSize.SMALL);
     private final IconButton btnDelete = new IconButton(FontAwesomeSolid.TRASH_ALT, ComponentSize.SMALL);
+    /** 상세 보기 버튼. 편집할 수 없을 때(마감된 회계 연도) 추가/수정/삭제 버튼 대신 보인다. */
+    private final IconButton btnView = new IconButton(FontAwesomeSolid.EDIT, ComponentSize.SMALL);
     private boolean editable = true;
     private final FieldLabel selectionSumLabel = new FieldLabel("", SwingConstants.RIGHT, ComponentSize.MEDIUM);
 
@@ -79,10 +81,13 @@ public class BudgetRecordPanel extends JPanel {
         btnAdd.setToolTipText(type.getLabel() + " 추가");
         btnEdit.setToolTipText(type.getLabel() + " 수정");
         btnDelete.setToolTipText(type.getLabel() + " 삭제");
+        btnView.setToolTipText(type.getLabel() + " 상세 보기");
+        btnView.setVisible(false);
 
         toolbarPanel.add(btnAdd);
         toolbarPanel.add(btnEdit);
         toolbarPanel.add(btnDelete);
+        toolbarPanel.add(btnView);
 
         // 제목 옆의 모두 펼치기/접기는 보기만 바꾸므로 마감된 회계 연도에서도 쓸 수 있다(setEditable의 대상이 아니다).
         JPanel titlePanel = new JPanel(new GridBagLayout());
@@ -138,16 +143,19 @@ public class BudgetRecordPanel extends JPanel {
         btnAdd.addActionListener(_ -> onAdd());
         btnEdit.addActionListener(_ -> onEdit());
         btnDelete.addActionListener(_ -> onDelete());
+        btnView.addActionListener(_ -> onView());
     }
 
     /**
      * 내역을 추가, 수정, 삭제할 수 있는지 정한다. 마감된 회계 연도의 내역은 조회만 할 수 있으므로 false로 둔다.
+     * 편집할 수 없으면 추가/수정/삭제 버튼을 숨기고 상세 보기 버튼을 보인다.
      */
     public void setEditable(boolean editable) {
         this.editable = editable;
-        btnAdd.setEnabled(editable);
-        btnEdit.setEnabled(editable);
-        btnDelete.setEnabled(editable);
+        btnAdd.setVisible(editable);
+        btnEdit.setVisible(editable);
+        btnDelete.setVisible(editable);
+        btnView.setVisible(!editable);
     }
 
     /**
@@ -172,6 +180,15 @@ public class BudgetRecordPanel extends JPanel {
         actionHandler.editRecord(selected.getFirst());
     }
 
+    private void onView() {
+        List<FinancialRecordResponseDto> selected = getSelectedRecords();
+        if (selected.size() != 1) {
+            JOptionPane.showMessageDialog(this, "상세 보기할 " + type.getLabel() + " 내역을 한 건만 선택해주세요.");
+            return;
+        }
+        actionHandler.viewRecord(selected.getFirst());
+    }
+
     private void onDelete() {
         List<FinancialRecordResponseDto> selected = getSelectedRecords();
         if (selected.isEmpty()) {
@@ -192,12 +209,18 @@ public class BudgetRecordPanel extends JPanel {
     }
 
     /**
-     * 내역 행을 더블클릭하면 수정한다. 예산 행은 더블클릭해도 선택만 된다.
+     * 내역 행을 더블클릭하면 수정한다. 편집할 수 없으면(마감된 회계 연도) 상세 보기를 연다.
+     * 예산 행은 더블클릭해도 선택만 된다.
      */
     private void onRowDoubleClicked(int modelRow) {
-        if (editable && !tableModel.getRowValue(modelRow)
+        if (tableModel.getRowValue(modelRow)
                 .isBudgetRow()) {
+            return;
+        }
+        if (editable) {
             onEdit();
+        } else {
+            onView();
         }
     }
 

@@ -105,6 +105,13 @@ public class BudgetSelectBox extends JPanel implements CompositeInputField {
     }
 
     /**
+     * 예산 선택 버튼을 보일지 정한다. 상세 보기 다이얼로그처럼 예산을 바꾸지 못하게 할 때 false로 둔다.
+     */
+    public void setSelectable(boolean selectable) {
+        selectButton.setVisible(selectable);
+    }
+
+    /**
      * 선택할 수 있는 예산 유형을 바꾼다. 이미 선택된 예산의 유형과 맞지 않으면 선택을 해제한다.
      */
     public void setAllowedType(BudgetType allowedType) {

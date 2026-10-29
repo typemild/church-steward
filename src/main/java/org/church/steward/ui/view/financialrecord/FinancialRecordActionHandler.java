@@ -6,7 +6,7 @@ import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
 
 /**
- * 탭의 추가/수정/삭제 버튼이 요청하는 동작을 처리하는 역할
+ * 탭의 추가/수정/삭제/상세 보기 버튼이 요청하는 동작을 처리하는 역할
  */
 public interface FinancialRecordActionHandler {
 
@@ -23,6 +23,11 @@ public interface FinancialRecordActionHandler {
      * 수입/지출 수정 다이얼로그를 연다.
      */
     void editRecord(FinancialRecordResponseDto record);
+
+    /**
+     * 수입/지출 상세 보기 다이얼로그를 연다. 마감된 회계 연도처럼 내역을 바꿀 수 없을 때 쓴다.
+     */
+    void viewRecord(FinancialRecordResponseDto record);
 
     /**
      * 확인을 받은 뒤 수입/지출 내역들을 삭제한다.
