@@ -155,7 +155,7 @@ DB 비밀번호는 로그인한 뒤에야 알 수 있으므로, `ChurchStewardAp
 - 수입과 지출은 하나의 엔터티 `FinancialRecord`(표 `FINANCIAL_RECORD`)에 저장하고 `FinancialRecordType`(INCOME/EXPENSE)으로 구분한다. 구분은 생성할 때 정해지며 수정으로 바꿀 수 없다.
 - 관계자(수입의 봉헌자, 지출의 수취인)는 조인 엔터티 `FinancialRecordContact`에 저장한다. "수입은 1명 이상, 지출은 정확히 1명" 제약은 스키마가 아니라 `FinancialRecordServiceImpl`의 검증으로 지킨다. 내역의 예산도 같은 구분(수입 예산/지출 예산)이어야 하며, 등록(가져오기 포함), 수정, 예산 일괄 변경이 모두 검증한다.
 - **이름 스냅샷**: 기록의 불변성을 위해 이름을 복사해 둔다. 예를 들어 `FinancialRecordContact.contactName`은 저장 시점의 `Contact` 이름이므로, 이후 이름이 바뀌거나 삭제되어도 과거 기록은 변하지 않는다.
-- **일괄 변경과 일괄 삭제**: `FinancialRecordService#updateFinancialRecordsBudget` / `updateFinancialRecordsContacts` / `deleteFinancialRecords`는 여러 건을 한 트랜잭션으로 처리한다. 모든 내역을 먼저 검증한 뒤에 바꾸므로 한 건이라도 걸리면 아무것도 바뀌지 않고, 찾지 못한 내역이 있어도(다른 곳에서 이미 삭제함) 전체를 거부한다. 엔터티는 예산이나 관계자만 바꾸고(`FinancialRecord#changeBudget` / `replaceContacts`) 다른 칸은 건드리지 않는다. 값이 이미 같은 내역도 건너뛰지 않으므로 관계자의 이름 스냅샷은 모두 현재 이름이 되고, 활동 기록은 내역마다 `logUpdate`(삭제는 `logDeletion`)로 남긴다. 예산을 바꿀 때는 등록(가져오기 포함)·수정과 같이 예산의 구분이 내역의 구분과 같은지도 검증한다(`validateBudgetType`). 단건 삭제 메서드는 따로 두지 않고 한 건도 이 메서드로 지운다.
+- **일괄 변경과 일괄 삭제**: `FinancialRecordService#updateFinancialRecordsBudget` / `updateFinancialRecordsContacts` / `deleteFinancialRecords`는 여러 건을 한 트랜잭션으로 처리한다. 모든 내역을 먼저 검증한 뒤에 바꾸므로 한 건이라도 걸리면 아무것도 바뀌지 않고, 찾지 못한 내역이 있어도(다른 곳에서 이미 삭제함) 전체를 거부한다. 엔터티는 예산이나 관계자만 바꾸고(`FinancialRecord#changeBudget` / `replaceContacts`) 다른 칸은 건드리지 않는다. 값이 이미 같은 내역도 건너뛰지 않으므로 관계자의 이름 스냅샷은 모두 현재 이름이 되고, 활동 기록은 내역마다 `logUpdate`(삭제는 `logDeletion`)로 남긴다(값이 이미 같아 바뀐 항목이 없는 내역은 기록되지 않는다). 예산을 바꿀 때는 등록(가져오기 포함)·수정과 같이 예산의 구분이 내역의 구분과 같은지도 검증한다(`validateBudgetType`). 단건 삭제 메서드는 따로 두지 않고 한 건도 이 메서드로 지운다.
 - **관계자 그룹 자동 생성**: 그룹을 직접 만들거나 구성원을 고치는 기능은 없다. 수입을 저장할 때 봉헌자가 2명 이상이면 `ContactGroupService#createGroupIfAbsent`가 구성원이 정확히 일치하는 그룹이 없는 경우에만 그룹을 만든다. 이후 수입을 수정하거나 삭제해도 그룹은 지우지 않으며, 그룹은 자동 완성 목록의 휴지통으로만 삭제한다. 예외로, 관계자를 삭제하면 그 관계자를 구성원에서 빼고, 남은 구성원이 1명 이하이거나 다른 그룹과 구성원이 같아진 그룹은 함께 지운다.
 
 ### 조회
@@ -173,6 +173,8 @@ DB 비밀번호는 로그인한 뒤에야 알 수 있으므로, `ChurchStewardAp
 - 마감/마감 취소 → 수정과 같은 방식으로 `logClosing` / `logReopening`을 호출한다. 활동 유형만 "마감"/"마감 취소"로 다르다.
 
 무엇을 기록할지는 엔터티에 선언한다. 클래스에 `@Loggable(name = …)`, 필드나 게터에 `@LoggableField(name, isIdentifier, transformer, format)`를 붙인다. `isIdentifier` 필드는 항상 기록되고, 나머지는 값이 바뀐 경우에만 기록된다. `LoggableTransformer`(기능별 `transformer/` 패키지)는 연관 엔터티나 enum을 표시용 문자열로 바꾸며 `format`보다 먼저 적용된다. **새 엔터티나 필드는 이 어노테이션을 붙여야 로그에 나타난다.**
+
+수정, 마감, 마감 취소는 값이 바뀐 항목이 하나도 없으면 기록하지 않는다(`ActivityLogServiceImpl#logChange`). 아무것도 바꾸지 않고 저장한 경우 식별자만 있는 기록은 확인할 내용이 없기 때문이다. 그래서 실제로 바뀌는 값은 모두 어노테이션으로 기록 대상이어야 하며, 그렇지 않으면 그 값만 바뀐 수정은 기록에서 빠진다. 비밀번호처럼 값을 기록할 수 없는 항목은 바뀌어도 비교할 값이 없어 기록에서 빠진다. 그래서 `User`는 DB에 저장하지 않는 `passwordChanged`("비밀번호 변경 여부")를 두고 비밀번호를 바꿀 때 `true`로 만든다. 수정 전에는 항상 `false`이므로 비밀번호를 바꿀 때마다 "아니요 → 예"로 기록된다.
 
 엔터티 상태에 따라 논리명이 달라져야 하면 엔터티가 `DynamicLoggable`을 구현한다. `FinancialRecord`가 그 예로, 구분에 따라 대상명을 "수입"/"지출", 필드명을 "수입일"/"지출일", "봉헌자"/"수취인"으로 기록한다. 이때 `EntitySnapshot`은 어노테이션의 논리명을 키로 쓰고, 바뀐 논리명은 로그 문구를 만들 때만 적용한다.
 

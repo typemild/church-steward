@@ -23,7 +23,7 @@ public interface ActivityLogService {
     <T> void logCreation(T entity);
 
     /**
-     * 데이터 수정 내역을 기록한다.
+     * 데이터 수정 내역을 기록한다. 값이 바뀐 항목이 없으면 기록하지 않는다.
      *
      * @param <T>               엔터티 타입
      * @param oldEntitySnapshot 변경 전 엔터티 (스냅샷)
