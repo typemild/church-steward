@@ -475,6 +475,32 @@ class UserServiceImplTest {
         }
 
         @Test
+        @DisplayName("updateUserPassword_성공 시 비밀번호 변경 여부가 true여야 한다.")
+        void updateUserPassword_Success_PasswordChanged() {
+            // Given
+            String userId = "user1";
+            String oldPassword = "old_password";
+            String newPassword = "new_password";
+            String encodedOldPassword = "encoded_for_old";
+            User user = User.builder().id(userId).password(encodedOldPassword).build();
+            @SuppressWarnings("unchecked")
+            EntitySnapshot<User> oldSnapshot = mock(EntitySnapshot.class);
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches(oldPassword, encodedOldPassword)).thenReturn(true);
+            when(passwordEncoder.encode(newPassword)).thenReturn("encoded_for_new");
+            when(entitySnapshotCapturer.capture(user)).thenReturn(oldSnapshot);
+
+            // When
+            userService.updateUserPassword(userId, oldPassword, newPassword);
+
+            // Then
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().isPasswordChanged()).isTrue();
+        }
+
+        @Test
         @DisplayName("updateUserPassword_성공 시 DatabaseManager의 비밀번호가 업데이트되어야 한다.")
         void updateUserPassword_Success_DatabaseManagerUpdated() throws Exception {
             // Given
@@ -631,6 +657,50 @@ class UserServiceImplTest {
             User updatedUser = userCaptor.getValue();
             assertThat(updatedUser.getPassword()).isEqualTo("old_password");
             assertThat(updatedUser.getRemarks()).isEqualTo(remarks);
+        }
+
+        @Test
+        @DisplayName("updateUser_비밀번호 제공 시 비밀번호 변경 여부가 true여야 한다.")
+        void updateUser_WithPassword_PasswordChanged() {
+            // Given
+            String userId = "user1";
+            String newPassword = "new_password";
+            User user = User.builder().id(userId).password("old_password").remarks("old_remarks").build();
+            @SuppressWarnings("unchecked")
+            EntitySnapshot<User> oldSnapshot = mock(EntitySnapshot.class);
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(passwordEncoder.encode(newPassword)).thenReturn("encoded_new_password");
+            when(entitySnapshotCapturer.capture(user)).thenReturn(oldSnapshot);
+
+            // When
+            userService.updateUser(userId, newPassword, "수정된 비고");
+
+            // Then
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().isPasswordChanged()).isTrue();
+        }
+
+        @Test
+        @DisplayName("updateUser_비밀번호를 제공하지 않으면 비밀번호 변경 여부가 false여야 한다.")
+        void updateUser_WithoutPassword_PasswordNotChanged() {
+            // Given
+            String userId = "user1";
+            User user = User.builder().id(userId).password("old_password").remarks("old_remarks").build();
+            @SuppressWarnings("unchecked")
+            EntitySnapshot<User> oldSnapshot = mock(EntitySnapshot.class);
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(entitySnapshotCapturer.capture(user)).thenReturn(oldSnapshot);
+
+            // When
+            userService.updateUser(userId, null, "비고만 수정");
+
+            // Then
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().isPasswordChanged()).isFalse();
         }
 
         @Test
