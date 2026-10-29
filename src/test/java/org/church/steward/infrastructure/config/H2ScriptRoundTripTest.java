@@ -18,12 +18,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * 전체 데이터 백업/복원이 기대는 H2의 동작을 확인한다.
- * 암호화된 데이터베이스를 암호화된 SQL 덤프({@code SCRIPT})로 내보내고, 새로 만든 암호화된 데이터베이스에
- * {@code RUNSCRIPT}로 되살릴 수 있어야 한다.
+ * 전체 데이터 백업/복원이 기대는 H2의 동작을 확인한다. 암호화된 데이터베이스를 암호화된 SQL 덤프({@code SCRIPT})로
+ * 내보내고, 새로 만든 암호화된 데이터베이스에 {@code RUNSCRIPT}로 되살릴 수 있어야 한다.
  * <p>
- * 내보내기와 되살리기를 같은 H2로 하므로, 과거 H2가 만든 덤프를 지금의 H2가 읽을 수 있는지는 이 테스트로 알 수 없다.
- * 그것은 H2 버전마다 만들어 둔 고정 덤프를 되살리는 {@link H2DumpCompatibilityTest}가 확인한다.
+ * 내보내기와 되살리기를 같은 H2로 하므로, 과거 H2가 만든 덤프를 지금의 H2가 읽을 수 있는지는 이 테스트로 알 수 없다. 그것은 H2
+ * 버전마다 만들어 둔 고정 덤프를 되살리는 {@link H2DumpCompatibilityTest}가 확인한다.
  */
 class H2ScriptRoundTripTest {
 

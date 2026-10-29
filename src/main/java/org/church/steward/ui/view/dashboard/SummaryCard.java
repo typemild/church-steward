@@ -16,8 +16,8 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
 /**
- * 금액 하나를 크게 보여주는 요약 카드.
- * 위에서부터 항목명, 금액, 보조 정보를 배치한다. 보조 정보는 한 줄 설명이거나 예산 대비 진행 막대다.
+ * 금액 하나를 크게 보여주는 요약 카드. 위에서부터 항목명, 금액, 보조 정보를 배치한다. 보조 정보는 한 줄 설명이거나 예산 대비 진행
+ * 막대다.
  */
 class SummaryCard extends DashboardCard {
 

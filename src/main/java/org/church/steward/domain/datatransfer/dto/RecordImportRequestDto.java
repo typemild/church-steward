@@ -11,8 +11,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 수입/지출 가져오기의 입력: 파일에서 읽은 행, 그 열들을 내역의 어느 항목으로 읽을지에 대한 지정,
- * 그리고 사용자가 직접 한 예산과 관계자의 매핑. 열은 0부터 세는 위치로 가리킨다.
+ * 수입/지출 가져오기의 입력: 파일에서 읽은 행, 그 열들을 내역의 어느 항목으로 읽을지에 대한 지정, 그리고 사용자가 직접 한 예산과
+ * 관계자의 매핑. 열은 0부터 세는 위치로 가리킨다.
  * <p>
  * 구분과 금액은 세 가지 방식 중 하나로 읽는다.
  * <ul>
@@ -61,15 +61,15 @@ public class RecordImportRequestDto {
     private Integer remarksColumn;
 
     /**
-     * 사용자가 직접 한 구분 매핑. 구분 열에 적힌 값 -> 그 값을 읽을 구분.
-     * "수입"/"입금"/"지출"/"출금"이 아닌 값(다른 프로그램의 "세입"/"세출" 등)을 읽으려면 여기에 지정해야 한다.
+     * 사용자가 직접 한 구분 매핑. 구분 열에 적힌 값 -> 그 값을 읽을 구분. "수입"/"입금"/"지출"/"출금"이 아닌 값(다른 프로그램의
+     * "세입"/"세출" 등)을 읽으려면 여기에 지정해야 한다.
      */
     @Builder.Default
     private Map<String, FinancialRecordType> typeMappings = Map.of();
 
     /**
-     * 사용자가 직접 한 예산 매핑. 매핑 항목의 식별자({@link ImportMappingDto#getKey()}) -> 예산 ID.
-     * 자동 매핑보다 우선한다.
+     * 사용자가 직접 한 예산 매핑. 매핑 항목의 식별자({@link ImportMappingDto#getKey()}) -> 예산 ID. 자동
+     * 매핑보다 우선한다.
      */
     @Builder.Default
     private Map<String, Long> budgetMappings = Map.of();

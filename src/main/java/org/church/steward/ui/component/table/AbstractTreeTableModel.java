@@ -10,11 +10,10 @@ import javax.swing.table.AbstractTableModel;
 
 /**
  * 행을 접고 펼칠 수 있는 표의 모델. 트리({@link TreeTableNode})를 받아, 펼쳐진 노드의 하위 노드까지만 행으로
- * 보여준다.
- * 하위 클래스는 {@link #getRowValue}로 행의 값을 얻어 칸의 수와 칸의 값을 정한다.
+ * 보여준다. 하위 클래스는 {@link #getRowValue}로 행의 값을 얻어 칸의 수와 칸의 값을 정한다.
  * <p>
- * 펼침 상태는 노드의 키로 기억하므로, 트리를 새로 넣어도 같은 키의 노드는 접거나 펼친 상태를 유지한다.
- * 새 트리에 없는 키의 상태는 버린다.
+ * 펼침 상태는 노드의 키로 기억하므로, 트리를 새로 넣어도 같은 키의 노드는 접거나 펼친 상태를 유지한다. 새 트리에 없는 키의 상태는
+ * 버린다.
  */
 public abstract class AbstractTreeTableModel<T> extends AbstractTableModel {
 
@@ -52,8 +51,8 @@ public abstract class AbstractTreeTableModel<T> extends AbstractTableModel {
     }
 
     /**
-     * 행을 펼치거나 접는다. 하위 노드가 없는 행이면 아무 일도 하지 않는다.
-     * 바뀌는 것은 그 행의 하위 행뿐이므로, 그 행과 앞의 행들의 위치는 그대로다.
+     * 행을 펼치거나 접는다. 하위 노드가 없는 행이면 아무 일도 하지 않는다. 바뀌는 것은 그 행의 하위 행뿐이므로, 그 행과 앞의 행들의
+     * 위치는 그대로다.
      */
     public void toggleExpanded(int row) {
         TreeTableNode<T> node = rows.get(row)
@@ -225,8 +224,8 @@ public abstract class AbstractTreeTableModel<T> extends AbstractTableModel {
     }
 
     /**
-     * 보이는 행 가운데 그 노드의 행을 반환한다. 접힌 노드 아래에 있어 보이지 않으면 -1을 반환한다.
-     * 접거나 펼쳐도 노드 객체는 그대로이므로, 키가 없는 노드도 이것으로 찾을 수 있다.
+     * 보이는 행 가운데 그 노드의 행을 반환한다. 접힌 노드 아래에 있어 보이지 않으면 -1을 반환한다. 접거나 펼쳐도 노드 객체는
+     * 그대로이므로, 키가 없는 노드도 이것으로 찾을 수 있다.
      */
     int indexOfNode(TreeTableNode<?> node) {
         for (int i = 0; i < rows.size(); i++) {

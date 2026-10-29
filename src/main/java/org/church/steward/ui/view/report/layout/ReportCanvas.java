@@ -8,9 +8,8 @@ import java.util.List;
 import org.church.steward.ui.util.UIColors;
 
 /**
- * 보고서의 내용을 위에서 아래로 배치해 나가는 작업대.
- * 현재 페이지와 다음 내용을 놓을 세로 위치를 기억하며, 공간이 모자라면 새 페이지로 넘긴다.
- * 배치를 마치면 {@link #finish()}로 페이지 번호를 붙인 {@link ReportDocument}를 얻는다.
+ * 보고서의 내용을 위에서 아래로 배치해 나가는 작업대. 현재 페이지와 다음 내용을 놓을 세로 위치를 기억하며, 공간이 모자라면 새 페이지로
+ * 넘긴다. 배치를 마치면 {@link #finish()}로 페이지 번호를 붙인 {@link ReportDocument}를 얻는다.
  */
 public final class ReportCanvas {
 
@@ -96,8 +95,8 @@ public final class ReportCanvas {
     }
 
     /**
-     * 지정한 페이지의 지정한 세로 위치로 이동한다. 그 페이지가 아직 없으면 거기까지 새로 만든다.
-     * 좌우로 나란히 놓은 단을 각각 따로 배치할 때, 한 단을 마친 뒤 다른 단의 시작 위치로 돌아오는 데 쓴다.
+     * 지정한 페이지의 지정한 세로 위치로 이동한다. 그 페이지가 아직 없으면 거기까지 새로 만든다. 좌우로 나란히 놓은 단을 각각 따로 배치할
+     * 때, 한 단을 마친 뒤 다른 단의 시작 위치로 돌아오는 데 쓴다.
      */
     public void setPosition(int pageIndex, double y) {
         while (pages.size() <= pageIndex) {
@@ -175,8 +174,8 @@ public final class ReportCanvas {
     }
 
     /**
-     * 배치를 마치고 모든 페이지의 아래 가운데에 "현재 페이지 / 전체 페이지"를 적는다.
-     * 페이지 번호는 글자 크기 조정의 대상이 아니므로 가장 작은 글자를 셀 때 넣지 않는다.
+     * 배치를 마치고 모든 페이지의 아래 가운데에 "현재 페이지 / 전체 페이지"를 적는다. 페이지 번호는 글자 크기 조정의 대상이 아니므로 가장
+     * 작은 글자를 셀 때 넣지 않는다.
      */
     public ReportDocument finish() {
         // 글자가 하나도 없는 문서는 없지만, 있더라도 범위 계산이 깨지지 않게 보고서의 기본 글자 크기로 본다.

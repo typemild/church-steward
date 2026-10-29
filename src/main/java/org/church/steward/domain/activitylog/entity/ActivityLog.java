@@ -54,10 +54,9 @@ public class ActivityLog {
     private String targetName;
 
     /**
-     * @Lob을 사용하여 길이에 제한이 없는 CLOB 타입으로 매핑한다.
-     *       기록된 항목 목록을 담은 JSON이다. 예: {"fields":[{"name":"이름","oldValue":"변경
-     *       전","value":"변경 후"}]}
-     *       "oldValue"는 값이 변경된 항목에만 있다.
+     * 기록된 항목 목록을 담은 JSON이다. 예:
+     * {@code {"fields":[{"name":"이름","oldValue":"변경 전","value":"변경 후"}]}}
+     * "oldValue"는 값이 변경된 항목에만 있다. {@code @Lob}을 사용하여 길이에 제한이 없는 CLOB 타입으로 매핑한다.
      */
     @Lob
     @Column(nullable = false)

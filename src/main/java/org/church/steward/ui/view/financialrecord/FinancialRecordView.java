@@ -145,8 +145,8 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     }
 
     /**
-     * 사이드바에서 선택된 회계 연도로 조회한다. 이 화면이 보이는 동안 회계 연도가 바뀌어도 호출된다.
-     * 회계 연도는 다른 화면에 있는 동안에도 바뀔 수 있으므로, 마지막으로 조회한 회계 연도와 비교해 바뀌었는지 판단한다.
+     * 사이드바에서 선택된 회계 연도로 조회한다. 이 화면이 보이는 동안 회계 연도가 바뀌어도 호출된다. 회계 연도는 다른 화면에 있는 동안에도
+     * 바뀔 수 있으므로, 마지막으로 조회한 회계 연도와 비교해 바뀌었는지 판단한다.
      */
     @Override
     public void onMenuSelected() {
@@ -176,8 +176,8 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     }
 
     /**
-     * 조회한 뒤 지정한 내역이 결과에 있으면 두 탭에서 그 내역을 선택하고 보이도록 스크롤한다.
-     * 새로 추가한 내역은 정렬에 따라 목록의 아래쪽에 놓일 수 있기 때문이다.
+     * 조회한 뒤 지정한 내역이 결과에 있으면 두 탭에서 그 내역을 선택하고 보이도록 스크롤한다. 새로 추가한 내역은 정렬에 따라 목록의 아래쪽에
+     * 놓일 수 있기 때문이다.
      *
      * @param revealRecordId 보여줄 내역의 ID. null이면 조회만 한다.
      */
@@ -407,8 +407,8 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     }
 
     /**
-     * 조회한 관계자들을 내역에 기록된 순서대로 늘어놓는다. 칩의 순서가 내역에 저장되는 관계자의 순서이기 때문이다.
-     * 그 사이에 삭제되어 조회되지 않은 관계자는 뺀다.
+     * 조회한 관계자들을 내역에 기록된 순서대로 늘어놓는다. 칩의 순서가 내역에 저장되는 관계자의 순서이기 때문이다. 그 사이에 삭제되어 조회되지
+     * 않은 관계자는 뺀다.
      */
     private static List<ContactDto> orderByIds(List<ContactDto> contacts, List<Long> contactIds) {
         Map<Long, ContactDto> contactsById = contacts.stream()
@@ -459,9 +459,8 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     }
 
     /**
-     * 수입/지출 내역을 조회한다. 각 내역의 예산명은 최상위부터 나열한 전체 예산명("예산A > 예산B > 예산C")으로 온다.
-     * "예산별 보기" 탭이 예산을 정렬하는 데 쓸 예산의 표시 위치도 함께 조회한다.
-     * 백그라운드 스레드에서 실행된다.
+     * 수입/지출 내역을 조회한다. 각 내역의 예산명은 최상위부터 나열한 전체 예산명("예산A > 예산B > 예산C")으로 온다. "예산별 보기"
+     * 탭이 예산을 정렬하는 데 쓸 예산의 표시 위치도 함께 조회한다. 백그라운드 스레드에서 실행된다.
      */
     private SearchResult loadRecords(FinancialRecordSearchRequestDto request) {
         List<FinancialRecordResponseDto> records = financialRecordController.listFinancialRecords(request);

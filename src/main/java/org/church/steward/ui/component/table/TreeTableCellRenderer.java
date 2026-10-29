@@ -16,8 +16,7 @@ import org.kordamp.ikonli.swing.FontIcon;
 
 /**
  * {@link TreeTable}의 트리 칸 렌더러. 깊이만큼 들여 쓴 자리에 접기/펼치기 화살표(말단 행은 지정한 아이콘)를 그리고 그
- * 오른쪽에 글자를 적는다.
- * 아이콘이 글자 위치를 밀지 않도록 아이콘은 테두리 여백 안에 직접 그린다.
+ * 오른쪽에 글자를 적는다. 아이콘이 글자 위치를 밀지 않도록 아이콘은 테두리 여백 안에 직접 그린다.
  */
 class TreeTableCellRenderer extends DefaultTableCellRenderer {
 

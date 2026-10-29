@@ -28,9 +28,9 @@ import org.church.steward.ui.view.datamanagement.importing.CheckableTableModel;
 import org.church.steward.ui.view.datamanagement.recordimport.RecordImportSession.SelectionSummary;
 
 /**
- * 수입/지출 가져오기의 4단계. 행마다 상태와 사유를 보여주고 가져올 행을 체크박스로 고르게 한다.
- * 오류인 행은 고를 수 없고, 중복 의심인 행은 처음에 선택에서 빠져 있다. "기본 선택으로"는 이 처음 선택으로 되돌린다.
- * 선택한 행의 구분별 건수와 금액을 보여주어 원본 장부의 합계와 맞춰 볼 수 있게 한다.
+ * 수입/지출 가져오기의 4단계. 행마다 상태와 사유를 보여주고 가져올 행을 체크박스로 고르게 한다. 오류인 행은 고를 수 없고, 중복 의심인
+ * 행은 처음에 선택에서 빠져 있다. "기본 선택으로"는 이 처음 선택으로 되돌린다. 선택한 행의 구분별 건수와 금액을 보여주어 원본 장부의
+ * 합계와 맞춰 볼 수 있게 한다.
  */
 class RecordReviewStepPanel extends JPanel {
 
@@ -126,8 +126,7 @@ class RecordReviewStepPanel extends JPanel {
     }
 
     /**
-     * 가져올 행의 선택이 바뀐 것을 화면에 반영한다. 표의 행 선택이 풀리지 않도록 표 전체를 다시 읽게 하지 않고 행만
-     * 다시 그린다.
+     * 가져올 행의 선택이 바뀐 것을 화면에 반영한다. 표의 행 선택이 풀리지 않도록 표 전체를 다시 읽게 하지 않고 행만 다시 그린다.
      */
     private void onChecksChanged() {
         if (tableModel.getRowCount() > 0) {

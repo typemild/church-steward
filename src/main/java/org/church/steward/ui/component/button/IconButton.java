@@ -14,9 +14,9 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
 /**
- * UI 가이드라인의 Icon Button 구현체.
- * 꺼진 동안에는 아이콘을 흐린 회색으로 그리고, 마우스를 올려도 손 모양 커서와 배경색을 보이지 않는다(툴팁은 그대로 뜬다).
- * FontIcon은 FlatLaf가 꺼진 아이콘을 회색으로 바꿔 주지 않으므로 꺼진 아이콘을 직접 지정한다.
+ * UI 가이드라인의 Icon Button 구현체. 꺼진 동안에는 아이콘을 흐린 회색으로 그리고, 마우스를 올려도 손 모양 커서와 배경색을
+ * 보이지 않는다(툴팁은 그대로 뜬다). FontIcon은 FlatLaf가 꺼진 아이콘을 회색으로 바꿔 주지 않으므로 꺼진 아이콘을 직접
+ * 지정한다.
  */
 public class IconButton extends JButton {
     private static final long serialVersionUID = 1L;

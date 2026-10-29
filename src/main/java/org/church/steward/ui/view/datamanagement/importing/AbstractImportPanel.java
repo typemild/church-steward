@@ -29,11 +29,11 @@ import org.church.steward.ui.util.AsyncTask;
 import org.church.steward.ui.util.UIColors;
 
 /**
- * 가져오기를 단계별로 진행하는 패널의 틀. 제목, 단계 표시, 단계 화면, 알림 문구, 이전/다음 버튼을 놓고
- * 단계 이동과 시작/취소/종료를 맡는다. 단계마다 무엇을 하는지는 하위 클래스가 정한다.
+ * 가져오기를 단계별로 진행하는 패널의 틀. 제목, 단계 표시, 단계 화면, 알림 문구, 이전/다음 버튼을 놓고 단계 이동과 시작/취소/종료를
+ * 맡는다. 단계마다 무엇을 하는지는 하위 클래스가 정한다.
  * <p>
- * 다이얼로그가 아니라 탭 안에 놓인다. 가져오는 도중에 다른 메뉴에서 기존 데이터를 확인하거나 고칠 수 있어야 하기
- * 때문이다(모달 다이얼로그는 메뉴 이동을 막는다). 다른 메뉴에 다녀오면 {@link #onReturned}가 불린다.
+ * 다이얼로그가 아니라 탭 안에 놓인다. 가져오는 도중에 다른 메뉴에서 기존 데이터를 확인하거나 고칠 수 있어야 하기 때문이다(모달
+ * 다이얼로그는 메뉴 이동을 막는다). 다른 메뉴에 다녀오면 {@link #onReturned}가 불린다.
  */
 public abstract class AbstractImportPanel extends JPanel {
 
@@ -130,14 +130,14 @@ public abstract class AbstractImportPanel extends JPanel {
     protected abstract boolean canProceed(int step);
 
     /**
-     * 주어진 단계에서 "다음"을 눌렀을 때 할 일. 검증하고 {@link #showStep}으로 다음 단계를 보여주거나,
-     * 마지막 단계이면 반영한다.
+     * 주어진 단계에서 "다음"을 눌렀을 때 할 일. 검증하고 {@link #showStep}으로 다음 단계를 보여주거나, 마지막 단계이면
+     * 반영한다.
      */
     protected abstract void onNext(int step);
 
     /**
-     * 다른 메뉴에 다녀와 이 패널이 다시 보일 때 할 일. 그 사이에 데이터가 바뀌었을 수 있으므로,
-     * 분석 결과를 보고 있는 단계라면 현재 데이터로 다시 분석해야 한다.
+     * 다른 메뉴에 다녀와 이 패널이 다시 보일 때 할 일. 그 사이에 데이터가 바뀌었을 수 있으므로, 분석 결과를 보고 있는 단계라면 현재
+     * 데이터로 다시 분석해야 한다.
      */
     protected abstract void onReturnedToStep(int step);
 
@@ -171,9 +171,8 @@ public abstract class AbstractImportPanel extends JPanel {
     }
 
     /**
-     * 다른 메뉴에 다녀온 뒤에 호출한다. 가져오던 회계 연도가 삭제되었으면 가져오기를 취소하고,
-     * 아니면 회계 연도의 최신 정보를 받아들인 뒤 하위 클래스가 다시 분석하게 한다.
-     * 회계 연도 없이 시작한 가져오기는 회계 연도를 확인하지 않고 바로 다시 분석하게 한다.
+     * 다른 메뉴에 다녀온 뒤에 호출한다. 가져오던 회계 연도가 삭제되었으면 가져오기를 취소하고, 아니면 회계 연도의 최신 정보를 받아들인 뒤
+     * 하위 클래스가 다시 분석하게 한다. 회계 연도 없이 시작한 가져오기는 회계 연도를 확인하지 않고 바로 다시 분석하게 한다.
      *
      * @param fiscalYears 방금 다시 읽은 회계 연도 목록
      */
@@ -214,8 +213,8 @@ public abstract class AbstractImportPanel extends JPanel {
     }
 
     /**
-     * 분석이나 반영처럼 시간이 걸리는 작업을 백그라운드에서 실행한다. 작업하는 동안 진행 표시를 보여주고
-     * 가져오기 취소, 이전, 다음 버튼을 끈다. 작업이 끝나면 진행 표시를 감추고 버튼을 단계에 맞게 되돌린 뒤 결과를 넘긴다.
+     * 분석이나 반영처럼 시간이 걸리는 작업을 백그라운드에서 실행한다. 작업하는 동안 진행 표시를 보여주고 가져오기 취소, 이전, 다음 버튼을
+     * 끈다. 작업이 끝나면 진행 표시를 감추고 버튼을 단계에 맞게 되돌린 뒤 결과를 넘긴다.
      */
     protected <T> void runTask(Supplier<T> work, Consumer<T> onSuccess, Consumer<Throwable> onError) {
         runningTaskCount++;

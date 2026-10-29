@@ -52,8 +52,8 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 선택된 회계 연도의 재정 현황을 한 화면에 보여준다.
- * 위에서부터 요약 카드(총 수입, 총 지출, 차액), 월별 수입·지출 차트와 예산 집행 현황, 최근 내역을 배치한다.
+ * 선택된 회계 연도의 재정 현황을 한 화면에 보여준다. 위에서부터 요약 카드(총 수입, 총 지출, 차액), 월별 수입·지출 차트와 예산 집행
+ * 현황, 최근 내역을 배치한다.
  */
 @UiView
 @Slf4j
@@ -296,8 +296,8 @@ public class DashboardView extends JPanel implements MenuActivatable {
     }
 
     /**
-     * 컴포넌트가 내용의 크기와 상관없이 GridBagLayout의 비율(weight)대로만 공간을 나눠 갖게 한다.
-     * 선호 크기를 그대로 두면 내용이 큰 쪽이 공간을 더 가져가고, 선호 크기의 합이 화면보다 커지면 배치가 무너진다.
+     * 컴포넌트가 내용의 크기와 상관없이 GridBagLayout의 비율(weight)대로만 공간을 나눠 갖게 한다. 선호 크기를 그대로 두면
+     * 내용이 큰 쪽이 공간을 더 가져가고, 선호 크기의 합이 화면보다 커지면 배치가 무너진다.
      */
     private void ignorePreferredSize(JComponent component) {
         component.setPreferredSize(new Dimension(0, 0));

@@ -24,11 +24,9 @@ import org.church.steward.ui.component.label.SubFieldLabel;
 import org.church.steward.ui.util.UIColors;
 
 /**
- * 계층형 관계자 자동 완성 팝업.
- * 메인 목록에는 관계자들과 "신규 추가" 항목(다 담지 못한 관계자가 있으면 그 아래에 누르면 모두 보여주는 안내 항목)을
- * 보여주고, 메인 목록에서 포커스된 관계자가 속한 그룹이 있으면
- * 그 항목의 우측에 그룹들을 담은 서브 목록을 별도 팝업으로 보여준다.
- * 입력 필드가 포커스를 유지할 수 있도록 팝업 자신은 포커스를 받지 않으며, 키 조작은 외부에서 메서드로 전달받는다.
+ * 계층형 관계자 자동 완성 팝업. 메인 목록에는 관계자들과 "신규 추가" 항목(다 담지 못한 관계자가 있으면 그 아래에 누르면 모두 보여주는
+ * 안내 항목)을 보여주고, 메인 목록에서 포커스된 관계자가 속한 그룹이 있으면 그 항목의 우측에 그룹들을 담은 서브 목록을 별도 팝업으로
+ * 보여준다. 입력 필드가 포커스를 유지할 수 있도록 팝업 자신은 포커스를 받지 않으며, 키 조작은 외부에서 메서드로 전달받는다.
  */
 public class ContactAutocompletePopup extends JPopupMenu {
 
@@ -218,8 +216,8 @@ public class ContactAutocompletePopup extends JPopupMenu {
     }
 
     /**
-     * 메인 목록에서 포커스된 관계자의 소속 그룹들로 서브 목록을 다시 채워서 그 항목의 우측에 보여준다.
-     * 소속 그룹이 없으면 서브 목록을 닫는다.
+     * 메인 목록에서 포커스된 관계자의 소속 그룹들로 서브 목록을 다시 채워서 그 항목의 우측에 보여준다. 소속 그룹이 없으면 서브 목록을
+     * 닫는다.
      */
     private void refreshSubPopup() {
         subActive = false;
@@ -256,8 +254,8 @@ public class ContactAutocompletePopup extends JPopupMenu {
     }
 
     /**
-     * 서브 목록을 메인 목록에서 포커스된 항목의 우측에 둔다. 스크롤되어 그 항목이 보이지 않으면 서브 목록을 숨긴다.
-     * 보여줄 그룹이 없으면 아무것도 하지 않는다.
+     * 서브 목록을 메인 목록에서 포커스된 항목의 우측에 둔다. 스크롤되어 그 항목이 보이지 않으면 서브 목록을 숨긴다. 보여줄 그룹이 없으면
+     * 아무것도 하지 않는다.
      */
     private void positionSubPopup() {
         if (subModel.isEmpty() || !isShowing()) {
@@ -292,8 +290,8 @@ public class ContactAutocompletePopup extends JPopupMenu {
     }
 
     /**
-     * 관계자 목록과 맨 아래의 "신규 추가" 항목을 대상 컴포넌트 바로 아래에 보여준다.
-     * 목록에 담지 못한 관계자가 있으면 "신규 추가" 아래에 그 수를 안내하며, 안내를 누르면 모두 보여준다.
+     * 관계자 목록과 맨 아래의 "신규 추가" 항목을 대상 컴포넌트 바로 아래에 보여준다. 목록에 담지 못한 관계자가 있으면 "신규 추가" 아래에
+     * 그 수를 안내하며, 안내를 누르면 모두 보여준다.
      */
     public void showContacts(Component invoker, List<ContactAutocompleteDto> contacts, long remainingCount) {
         setVisible(false);
@@ -330,8 +328,8 @@ public class ContactAutocompletePopup extends JPopupMenu {
     }
 
     /**
-     * 키 조작 대상 목록의 선택 항목을 위(-1) 또는 아래(+1)로 이동한다. 고를 수 없는 안내 항목은 건너뛰며,
-     * 더 갈 곳이 없으면 그대로 둔다.
+     * 키 조작 대상 목록의 선택 항목을 위(-1) 또는 아래(+1)로 이동한다. 고를 수 없는 안내 항목은 건너뛰며, 더 갈 곳이 없으면 그대로
+     * 둔다.
      */
     public void moveSelection(int delta) {
         JList<?> activeList = subActive ? subList : mainList;
@@ -402,10 +400,9 @@ public class ContactAutocompletePopup extends JPopupMenu {
     }
 
     /**
-     * 서브 목록 팝업.
-     * {@link JPopupMenu}는 invoker를 지정해서 띄우면 이미 떠 있는 다른 팝업(메인 목록)을 닫아 버린다.
-     * 그래서 {@link #show}나 {@link #setInvoker}를 쓰지 않고 {@link #getInvoker}만 재정의해서,
-     * 메뉴의 서브 메뉴처럼 메인 목록과 함께 떠 있게 한다. 위치는 화면 좌표로 {@link #setLocation}에 지정한다.
+     * 서브 목록 팝업. {@link JPopupMenu}는 invoker를 지정해서 띄우면 이미 떠 있는 다른 팝업(메인 목록)을 닫아 버린다.
+     * 그래서 {@link #show}나 {@link #setInvoker}를 쓰지 않고 {@link #getInvoker}만 재정의해서, 메뉴의
+     * 서브 메뉴처럼 메인 목록과 함께 떠 있게 한다. 위치는 화면 좌표로 {@link #setLocation}에 지정한다.
      */
     private class SubPopup extends JPopupMenu {
 

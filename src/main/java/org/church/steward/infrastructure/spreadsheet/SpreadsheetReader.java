@@ -26,10 +26,10 @@ import org.springframework.stereotype.Component;
 /**
  * 엑셀(xlsx, xls) 또는 CSV 파일을 표로 읽는다. 형식은 파일의 확장자로 판단한다.
  * <ul>
- * <li>엑셀: 날짜 셀은 날짜로, 숫자 셀은 수로 읽는다. 수식은 엑셀이 마지막으로 계산해 둔 값을 읽는다.
- * 병합된 셀은 엑셀이 저장한 대로 첫 칸에만 값이 있고 나머지는 빈 칸이다.</li>
- * <li>CSV: 모든 값을 글자로 읽는다. 인코딩을 지정하지 않으면 BOM이 있거나 UTF-8로 해석되는 파일은 UTF-8로,
- * 그렇지 않으면 한글 윈도우의 기본 인코딩(MS949)으로 읽는다. 내보낼 때 수식을 막으려고 붙인 작은따옴표는 떼고 읽는다.</li>
+ * <li>엑셀: 날짜 셀은 날짜로, 숫자 셀은 수로 읽는다. 수식은 엑셀이 마지막으로 계산해 둔 값을 읽는다. 병합된 셀은 엑셀이 저장한
+ * 대로 첫 칸에만 값이 있고 나머지는 빈 칸이다.</li>
+ * <li>CSV: 모든 값을 글자로 읽는다. 인코딩을 지정하지 않으면 BOM이 있거나 UTF-8로 해석되는 파일은 UTF-8로, 그렇지
+ * 않으면 한글 윈도우의 기본 인코딩(MS949)으로 읽는다. 내보낼 때 수식을 막으려고 붙인 작은따옴표는 떼고 읽는다.</li>
  * </ul>
  */
 @Component
@@ -186,8 +186,8 @@ public class SpreadsheetReader {
     }
 
     /**
-     * CSV를 해석한다. 큰따옴표로 묶인 값 안에서는 쉼표와 줄바꿈이 값의 일부이고, 큰따옴표 두 개는 큰따옴표 하나다.
-     * 줄바꿈은 CRLF, LF, CR을 모두 받는다.
+     * CSV를 해석한다. 큰따옴표로 묶인 값 안에서는 쉼표와 줄바꿈이 값의 일부이고, 큰따옴표 두 개는 큰따옴표 하나다. 줄바꿈은 CRLF,
+     * LF, CR을 모두 받는다.
      */
     private List<List<Object>> parseCsv(String text) {
         List<List<Object>> rows = new ArrayList<>();
@@ -238,9 +238,9 @@ public class SpreadsheetReader {
     }
 
     /**
-     * CSV의 값 하나를 만든다.
-     * 프로그램이 내보낼 때 수식으로 해석되지 않도록 앞에 붙였던 작은따옴표는 뗀다({@link SpreadsheetWriter}).
-     * 작은따옴표 뒤가 수식으로 해석될 수 있는 글자일 때만 떼므로 "'좋은 소식'" 같은 값은 그대로다.
+     * CSV의 값 하나를 만든다. 프로그램이 내보낼 때 수식으로 해석되지 않도록 앞에 붙였던 작은따옴표는
+     * 뗀다({@link SpreadsheetWriter}). 작은따옴표 뒤가 수식으로 해석될 수 있는 글자일 때만 떼므로 "'좋은 소식'" 같은
+     * 값은 그대로다.
      */
     private String toCsvValue(StringBuilder value) {
         if (value.length() >= 2 && value.charAt(0) == SpreadsheetWriter.FORMULA_ESCAPE

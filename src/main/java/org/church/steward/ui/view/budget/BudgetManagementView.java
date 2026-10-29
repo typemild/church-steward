@@ -17,8 +17,8 @@ import org.church.steward.ui.view.main.ClosedFiscalYearNoticeLabel;
 import org.church.steward.ui.view.main.FiscalYearSelector;
 
 /**
- * 예산 관리 화면. 사이드바에서 선택된 회계 연도의 수입 예산(왼쪽)과 지출 예산(오른쪽)을 진행 현황과 함께 보여주고 편집한다.
- * 마감된 회계 연도의 예산은 조회만 할 수 있다.
+ * 예산 관리 화면. 사이드바에서 선택된 회계 연도의 수입 예산(왼쪽)과 지출 예산(오른쪽)을 진행 현황과 함께 보여주고 편집한다. 마감된
+ * 회계 연도의 예산은 조회만 할 수 있다.
  */
 @UiView
 public class BudgetManagementView extends JPanel implements MenuActivatable {
@@ -57,8 +57,8 @@ public class BudgetManagementView extends JPanel implements MenuActivatable {
     }
 
     /**
-     * 사이드바에서 선택된 회계 연도의 예산을 불러온다. 이 화면이 보이는 동안 회계 연도가 바뀌어도 호출된다.
-     * 다른 화면에서 수입/지출을 입력하면 진행 현황이, 회계 연도 관리에서 마감하면 편집 가능 여부가 달라지므로 매번 다시 불러온다.
+     * 사이드바에서 선택된 회계 연도의 예산을 불러온다. 이 화면이 보이는 동안 회계 연도가 바뀌어도 호출된다. 다른 화면에서 수입/지출을
+     * 입력하면 진행 현황이, 회계 연도 관리에서 마감하면 편집 가능 여부가 달라지므로 매번 다시 불러온다.
      */
     @Override
     public void onMenuSelected() {

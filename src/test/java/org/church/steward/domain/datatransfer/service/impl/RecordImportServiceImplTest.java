@@ -99,8 +99,8 @@ class RecordImportServiceImplTest {
             .build();
 
     /**
-     * 파일 내용: 십일조 수입 두 건(1,000원, 2,000원)과 등록되지 않은 예산을 쓰는 한 건.
-     * 열 구성은 "일자 | 예산 | 금액 | 관계자"이고 파일 전체가 수입이다.
+     * 파일 내용: 십일조 수입 두 건(1,000원, 2,000원)과 등록되지 않은 예산을 쓰는 한 건. 열 구성은 "일자 | 예산 | 금액 |
+     * 관계자"이고 파일 전체가 수입이다.
      */
     private RecordImportRequestDto createRequest() {
         return RecordImportRequestDto.builder()

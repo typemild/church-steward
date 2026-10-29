@@ -17,8 +17,7 @@ import org.church.steward.ui.component.field.StyledTextField;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 /**
- * 예산 선택 박스.
- * 직접 수정할 수 없는 텍스트 필드와 예산 선택 다이얼로그를 여는 버튼으로 구성된다.
+ * 예산 선택 박스. 직접 수정할 수 없는 텍스트 필드와 예산 선택 다이얼로그를 여는 버튼으로 구성된다.
  */
 public class BudgetSelectBox extends JPanel implements CompositeInputField {
 
@@ -106,8 +105,8 @@ public class BudgetSelectBox extends JPanel implements CompositeInputField {
     }
 
     /**
-     * 예산 선택 버튼을 켤지 정한다. 상세 보기 다이얼로그처럼 예산을 바꾸지 못하게 할 때 false로 둔다.
-     * 날짜 피커의 달력 버튼과 모양을 맞추도록 숨기지 않고 끈다.
+     * 예산 선택 버튼을 켤지 정한다. 상세 보기 다이얼로그처럼 예산을 바꾸지 못하게 할 때 false로 둔다. 날짜 피커의 달력 버튼과 모양을
+     * 맞추도록 숨기지 않고 끈다.
      */
     public void setSelectable(boolean selectable) {
         selectButton.setEnabled(selectable);

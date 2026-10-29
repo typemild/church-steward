@@ -29,8 +29,8 @@ import org.church.steward.ui.view.datamanagement.importing.CheckableImportTable;
 import org.church.steward.ui.view.datamanagement.importing.CheckableTableModel;
 
 /**
- * 예산 가져오기의 3단계. 분석한 건마다 상태와 사유를 보여주고 가져올 건을 체크박스로 고르게 한다.
- * 예산은 계층이므로 하위 예산을 고르면 새로 추가되는 상위 예산도 함께 골라지고, 상위 예산을 빼면 하위 예산도 빠진다.
+ * 예산 가져오기의 3단계. 분석한 건마다 상태와 사유를 보여주고 가져올 건을 체크박스로 고르게 한다. 예산은 계층이므로 하위 예산을 고르면
+ * 새로 추가되는 상위 예산도 함께 골라지고, 상위 예산을 빼면 하위 예산도 빠진다.
  */
 class ReviewStepPanel extends JPanel {
 
@@ -123,8 +123,8 @@ class ReviewStepPanel extends JPanel {
     }
 
     /**
-     * 가져올 건의 선택이 바뀐 것을 화면에 반영한다. 상위/하위 예산의 선택도 함께 바뀌므로 모든 행을 다시 그리되,
-     * 표의 행 선택이 풀리지 않도록 표 전체를 다시 읽게 하지는 않는다.
+     * 가져올 건의 선택이 바뀐 것을 화면에 반영한다. 상위/하위 예산의 선택도 함께 바뀌므로 모든 행을 다시 그리되, 표의 행 선택이 풀리지
+     * 않도록 표 전체를 다시 읽게 하지는 않는다.
      */
     private void onChecksChanged() {
         if (tableModel.getRowCount() > 0) {

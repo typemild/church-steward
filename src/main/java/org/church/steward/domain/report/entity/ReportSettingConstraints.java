@@ -11,8 +11,8 @@ public final class ReportSettingConstraints {
     public static final float SMALLEST_FONT_SIZE_MIN = 6f;
     public static final float SMALLEST_FONT_SIZE_MAX = 12f;
     /**
-     * 글자 크기 조정 단계의 절댓값 상한. 실제 범위는 보고서마다 가장 작은 글자의 크기에 따라 화면이 정하므로, 서비스는 이 값으로
-     * 터무니없는 값만 막는다.
+     * 글자 크기 조정 단계의 절댓값 상한. 실제 범위는 보고서마다 가장 작은 글자의 크기에 따라 화면이 정하므로, 서비스는 이 값으로 터무니없는
+     * 값만 막는다.
      */
     public static final int FONT_SIZE_STEP_LIMIT = Math
             .round((SMALLEST_FONT_SIZE_MAX - SMALLEST_FONT_SIZE_MIN) / FONT_SIZE_STEP_POINTS);

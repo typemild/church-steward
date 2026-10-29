@@ -16,9 +16,8 @@ import org.church.steward.ui.view.report.layout.ReportTable.RowStyle;
 import org.church.steward.ui.view.report.layout.ReportText;
 
 /**
- * 수입 현황과 지출 현황. 최상위 예산별로 예산액 대비 실제 금액을 막대와 숫자로 함께 보여준다.
- * 대시보드의 "예산 집행 현황"과 같은 내용이지만, 종이에서는 툴팁을 볼 수 없으므로 금액과 비율을 모두 적는다.
- * 두 현황은 좌우로 나란히 놓는다.
+ * 수입 현황과 지출 현황. 최상위 예산별로 예산액 대비 실제 금액을 막대와 숫자로 함께 보여준다. 대시보드의 "예산 집행 현황"과 같은
+ * 내용이지만, 종이에서는 툴팁을 볼 수 없으므로 금액과 비율을 모두 적는다. 두 현황은 좌우로 나란히 놓는다.
  */
 final class BudgetStatusSection {
 

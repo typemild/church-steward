@@ -27,8 +27,7 @@ import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.util.UIFonts;
 
 /**
- * 월별 수입과 지출을 나란히 세운 막대 차트.
- * 마우스를 올린 달은 배경을 강조하고 툴팁으로 정확한 금액을 보여준다.
+ * 월별 수입과 지출을 나란히 세운 막대 차트. 마우스를 올린 달은 배경을 강조하고 툴팁으로 정확한 금액을 보여준다.
  */
 class MonthlyTrendChart extends JComponent {
 

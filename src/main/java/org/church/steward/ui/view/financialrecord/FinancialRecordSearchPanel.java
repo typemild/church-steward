@@ -171,8 +171,7 @@ public class FinancialRecordSearchPanel extends JPanel {
     }
 
     /**
-     * 상세 조건을 모두 비운다. 조회 기간은 상세 조건이 아니므로 그대로 둔다.
-     * 다른 상세 조건을 바꿀 때와 마찬가지로 자동 조회하지 않는다.
+     * 상세 조건을 모두 비운다. 조회 기간은 상세 조건이 아니므로 그대로 둔다. 다른 상세 조건을 바꿀 때와 마찬가지로 자동 조회하지 않는다.
      */
     private void resetDetailConditions() {
         typeCombo.setSelectedIndex(0);
@@ -196,8 +195,7 @@ public class FinancialRecordSearchPanel extends JPanel {
     }
 
     /**
-     * 상세 조건 버튼의 모양을 현재 상태에 맞춘다.
-     * 접힌 동안에는 숨겨진 조건이 적용 중임을 알 수 있도록 입력된 조건의 개수를 함께 보여준다.
+     * 상세 조건 버튼의 모양을 현재 상태에 맞춘다. 접힌 동안에는 숨겨진 조건이 적용 중임을 알 수 있도록 입력된 조건의 개수를 함께 보여준다.
      */
     private void updateDetailToggleButton() {
         boolean expanded = detailPanel.isVisible();
@@ -300,9 +298,8 @@ public class FinancialRecordSearchPanel extends JPanel {
     }
 
     /**
-     * 현재 입력된 검색 조건으로 검색 요청을 만든다.
-     * 관계자 선택 박스에서 칩으로 확정되지 않은 텍스트는 조건에 포함되지 않는다.
-     * 시작 금액과 종료 금액은 각각 비워 둘 수 있으며, 비운 쪽은 조건에 포함되지 않는다.
+     * 현재 입력된 검색 조건으로 검색 요청을 만든다. 관계자 선택 박스에서 칩으로 확정되지 않은 텍스트는 조건에 포함되지 않는다. 시작 금액과
+     * 종료 금액은 각각 비워 둘 수 있으며, 비운 쪽은 조건에 포함되지 않는다.
      */
     public FinancialRecordSearchRequestDto getSearchRequest() {
         return FinancialRecordSearchRequestDto.builder()

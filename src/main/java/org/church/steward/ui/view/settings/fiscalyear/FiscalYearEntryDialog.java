@@ -34,8 +34,7 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 회계 연도의 이름과 기간을 입력받아 저장하는 다이얼로그.
- * 새 회계 연도를 추가할 때는 기존 회계 연도의 예산을 복사할지도 함께 정한다.
+ * 회계 연도의 이름과 기간을 입력받아 저장하는 다이얼로그. 새 회계 연도를 추가할 때는 기존 회계 연도의 예산을 복사할지도 함께 정한다.
  * 저장은 다이얼로그가 직접 실행하며({@link SaveAction}), 저장에 실패하면 닫지 않고 오류를 보여준다.
  */
 @Slf4j
@@ -67,8 +66,8 @@ class FiscalYearEntryDialog extends JDialog {
     }
 
     /**
-     * 새 회계 연도를 추가하는 다이얼로그를 만든다.
-     * 기간의 기본값은 가장 최근 회계 연도의 종료일 다음 날부터 1년간이며, 회계 연도가 하나도 없으면 올해 1월 1일 ~ 12월 31일이다.
+     * 새 회계 연도를 추가하는 다이얼로그를 만든다. 기간의 기본값은 가장 최근 회계 연도의 종료일 다음 날부터 1년간이며, 회계 연도가 하나도
+     * 없으면 올해 1월 1일 ~ 12월 31일이다.
      *
      * @param existingFiscalYears 기존 회계 연도 목록. 최근 것(시작일이 늦은 것)이 앞에 와야 한다.
      * @param onSaved             저장에 성공한 뒤 실행할 동작
@@ -187,8 +186,7 @@ class FiscalYearEntryDialog extends JDialog {
     }
 
     /**
-     * 저장하지 않은 내용이 있는지 판단할 입력값. 날짜는 아직 날짜로 읽히지 않은 글자도 수정으로 보도록 입력란의 글자로
-     * 비교한다.
+     * 저장하지 않은 내용이 있는지 판단할 입력값. 날짜는 아직 날짜로 읽히지 않은 글자도 수정으로 보도록 입력란의 글자로 비교한다.
      */
     private List<Object> currentState() {
         String name = nameField.getText()
@@ -228,8 +226,8 @@ class FiscalYearEntryDialog extends JDialog {
     }
 
     /**
-     * 입력한 내용을 저장한다. 저장에 성공해야 다이얼로그를 닫으며, 이름이 중복되거나 기간이 겹치는 등 저장할 수 없으면 입력한
-     * 내용을 고칠 수 있도록 다이얼로그를 연 채로 오류를 보여준다.
+     * 입력한 내용을 저장한다. 저장에 성공해야 다이얼로그를 닫으며, 이름이 중복되거나 기간이 겹치는 등 저장할 수 없으면 입력한 내용을 고칠 수
+     * 있도록 다이얼로그를 연 채로 오류를 보여준다.
      */
     private void onSave() {
         String name = nameField.getText()

@@ -262,8 +262,7 @@ public class ProgramInfoTab extends JPanel {
      * 스크롤 영역의 내용 패널.
      * <p>
      * 줄바꿈하는 {@link DescriptionLabel}은 한 번 늘어난 너비를 선호 크기로 유지하므로, 일반 패널을 뷰포트에 넣으면 창을
-     * 다시
-     * 줄여도 내용이 줄어들지 않는다. 너비를 항상 뷰포트에 맞추도록 해 이를 막는다.
+     * 다시 줄여도 내용이 줄어들지 않는다. 너비를 항상 뷰포트에 맞추도록 해 이를 막는다.
      */
     private static class ScrollableContentPanel extends JPanel implements Scrollable {
 

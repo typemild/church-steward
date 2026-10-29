@@ -20,9 +20,8 @@ import org.church.steward.ui.view.report.layout.ReportFonts;
 import org.church.steward.ui.view.report.layout.ReportPaper;
 
 /**
- * 보고서를 PDF 파일로 저장한다.
- * 페이지의 요소들을 그림이 아니라 글자와 선 그대로 옮기므로 확대해도 선명하고 글자를 검색하거나 복사할 수 있다.
- * 글꼴은 쓰인 글자만 추려 파일에 넣는다.
+ * 보고서를 PDF 파일로 저장한다. 페이지의 요소들을 그림이 아니라 글자와 선 그대로 옮기므로 확대해도 선명하고 글자를 검색하거나 복사할 수
+ * 있다. 글꼴은 쓰인 글자만 추려 파일에 넣는다.
  */
 public final class ReportPdfExporter {
 

@@ -26,8 +26,8 @@ import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.view.main.ClosedFiscalYearNoticeLabel;
 
 /**
- * 예산 정보를 입력하거나 수정하기 위한 커스텀 다이얼로그.
- * 마감된 회계 연도의 예산은 {@link #enableViewOnly()}로 바꿀 수 없는 상세 보기로 띄운다.
+ * 예산 정보를 입력하거나 수정하기 위한 커스텀 다이얼로그. 마감된 회계 연도의 예산은 {@link #enableViewOnly()}로 바꿀
+ * 수 없는 상세 보기로 띄운다.
  */
 public class BudgetEntryDialog extends JDialog {
 
@@ -45,8 +45,8 @@ public class BudgetEntryDialog extends JDialog {
     private boolean confirmed = false;
 
     /**
-     * @param owner 이 다이얼로그를 띄운 창. 예산 관리 화면의 메인 창일 수도 있고, 수입/지출 가져오기의 예산 매핑
-     *              다이얼로그처럼 다른 다이얼로그일 수도 있다.
+     * @param owner 이 다이얼로그를 띄운 창. 예산 관리 화면의 메인 창일 수도 있고, 수입/지출 가져오기의 예산 매핑 다이얼로그처럼
+     *              다른 다이얼로그일 수도 있다.
      */
     public BudgetEntryDialog(Window owner, String title, String currentName, long currentAmount, String parentPath,
             boolean amountEditable) {
@@ -164,9 +164,8 @@ public class BudgetEntryDialog extends JDialog {
     }
 
     /**
-     * 내용을 바꿀 수 없는 상세 보기로 바꾼다. 마감된 회계 연도의 예산을 볼 때 쓴다.
-     * 맨 위에 마감 안내를 보이고, 입력란은 포커스를 받아 글자를 고를 수 있지만 내용은 바꿀 수 없으며, 버튼은 "닫기"만 남는다.
-     * 입력값이 바뀌지 않으므로 닫을 때 확인을 받지 않는다.
+     * 내용을 바꿀 수 없는 상세 보기로 바꾼다. 마감된 회계 연도의 예산을 볼 때 쓴다. 맨 위에 마감 안내를 보이고, 입력란은 포커스를 받아
+     * 글자를 고를 수 있지만 내용은 바꿀 수 없으며, 버튼은 "닫기"만 남는다. 입력값이 바뀌지 않으므로 닫을 때 확인을 받지 않는다.
      */
     public void enableViewOnly() {
         add(ClosedFiscalYearNoticeLabel.createDialogNotice(), BorderLayout.NORTH);

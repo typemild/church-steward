@@ -1,8 +1,8 @@
 package org.church.steward.ui.view.financialrecord.contact;
 
 /**
- * {@link ContactChipField}에 입력된 텍스트로 관계자 자동 완성 목록을 보여주는 역할.
- * 목록에서 관계자가 선택되면 구현체가 {@link ContactChipField#addContact}를 호출한다.
+ * {@link ContactChipField}에 입력된 텍스트로 관계자 자동 완성 목록을 보여주는 역할. 목록에서 관계자가 선택되면 구현체가
+ * {@link ContactChipField#addContact}를 호출한다.
  */
 public interface ContactSuggester {
 

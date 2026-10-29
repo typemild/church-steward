@@ -20,8 +20,9 @@ import lombok.extern.slf4j.Slf4j;
  * 관계자 가져오기를 단계별로 진행하는 패널. 관계자 탭 안에 놓인다.
  * <p>
  * 단계: 파일 선택 → 열 지정 → 검토 및 선택 → 백업 및 반영.
- * 진행 상태는 {@link ContactImportSession}이 가지며, 다른 메뉴에 다녀오면 현재 데이터로 다시 분석한다.
- * 관계자는 회계 연도에 속하지 않으므로 회계 연도 없이 시작한다.
+ * <p>
+ * 진행 상태는 {@link ContactImportSession}이 가지며, 다른 메뉴에 다녀오면 현재 데이터로 다시 분석한다. 관계자는
+ * 회계 연도에 속하지 않으므로 회계 연도 없이 시작한다.
  */
 @Slf4j
 public class ContactImportPanel extends AbstractImportPanel {
@@ -111,8 +112,8 @@ public class ContactImportPanel extends AbstractImportPanel {
     }
 
     /**
-     * 파일 선택과 열 지정 단계에서는 다음 단계로 넘어갈 때 어차피 새로 분석하므로, 분석 결과를 보고 있는 단계에서만
-     * 다시 분석한다. 다른 메뉴에서 관계자를 추가하거나 고쳤으면 중복 여부가 달라질 수 있다.
+     * 파일 선택과 열 지정 단계에서는 다음 단계로 넘어갈 때 어차피 새로 분석하므로, 분석 결과를 보고 있는 단계에서만 다시 분석한다. 다른
+     * 메뉴에서 관계자를 추가하거나 고쳤으면 중복 여부가 달라질 수 있다.
      */
     @Override
     protected void onReturnedToStep(int step) {

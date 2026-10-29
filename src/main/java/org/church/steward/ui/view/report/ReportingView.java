@@ -63,11 +63,11 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 보고서 화면. 보고서 종류를 고르면 사이드바에서 선택된 회계 연도의 보고서를 미리보기로 보여주고,
- * 미리보기에 보이는 보고서를 그대로 인쇄하거나 PDF로 저장한다.
+ * 보고서 화면. 보고서 종류를 고르면 사이드바에서 선택된 회계 연도의 보고서를 미리보기로 보여주고, 미리보기에 보이는 보고서를 그대로
+ * 인쇄하거나 PDF로 저장한다.
  * <p>
- * 글꼴, 글자 크기, 행 간격, 한 페이지에 맞춤과 미리보기 설정은 사용자가 보고서마다 정하며, 바꿀 때마다 저장한다.
- * 서식을 바꾸면 데이터를 다시 조회하지 않고 조회해 둔 데이터로 다시 배치한다.
+ * 글꼴, 글자 크기, 행 간격, 한 페이지에 맞춤과 미리보기 설정은 사용자가 보고서마다 정하며, 바꿀 때마다 저장한다. 서식을 바꾸면
+ * 데이터를 다시 조회하지 않고 조회해 둔 데이터로 다시 배치한다.
  */
 @UiView
 @Slf4j
@@ -315,10 +315,9 @@ public class ReportingView extends JPanel implements MenuActivatable {
     }
 
     /**
-     * 설정의 서식으로 배치한다.
-     * 한 페이지에 맞춤이 켜져 있으면 저장된 글자 크기와 행 간격은 쓰지 않고 기본 서식에서 시작해 한 페이지에 담길 때까지 줄인다
-     * ({@link ReportAutoFitter}). 꺼져 있으면 저장된 서식을 쓰되, 글자 크기는 가장 작은 글자가 허용 범위를 벗어나지
-     * 않게 맞춘다.
+     * 설정의 서식으로 배치한다. 한 페이지에 맞춤이 켜져 있으면 저장된 글자 크기와 행 간격은 쓰지 않고 기본 서식에서 시작해 한 페이지에 담길
+     * 때까지 줄인다 ({@link ReportAutoFitter}). 꺼져 있으면 저장된 서식을 쓰되, 글자 크기는 가장 작은 글자가 허용
+     * 범위를 벗어나지 않게 맞춘다.
      */
     private static Composed compose(Function<ReportStyle, ReportDocument> composer, ReportSettingDto setting) {
         if (setting.isAutoFit()) {
@@ -423,9 +422,8 @@ public class ReportingView extends JPanel implements MenuActivatable {
     /**
      * 서식 줄에서 바꾼 값을 설정에 반영하고 다시 배치한다.
      * <p>
-     * 글자 크기와 행 간격은 지금 보이는 문서의 값에서 한 단계씩 바꾸고, 허용 범위를 벗어나지 않게 한다.
-     * 사람이 직접 조정하면 한 페이지에 맞춤을 끈다. 이때 보이던 값(자동으로 줄인 값)에서 이어서 조정하도록, 조정하지 않은 쪽 값도
-     * 보이던 값으로 함께 저장한다.
+     * 글자 크기와 행 간격은 지금 보이는 문서의 값에서 한 단계씩 바꾸고, 허용 범위를 벗어나지 않게 한다. 사람이 직접 조정하면 한 페이지에
+     * 맞춤을 끈다. 이때 보이던 값(자동으로 줄인 값)에서 이어서 조정하도록, 조정하지 않은 쪽 값도 보이던 값으로 함께 저장한다.
      */
     private final class FormatListener implements ReportFormatBar.Listener {
 
@@ -472,8 +470,8 @@ public class ReportingView extends JPanel implements MenuActivatable {
         }
 
         /**
-         * 이 보고서의 글꼴, 글자 크기, 행 간격, 한 페이지에 맞춤(꺼짐)을 기본값으로 되돌리고 바로 저장한다.
-         * 미리보기 설정(페이지 목록, 보기 유형, 배율)은 그대로 둔다.
+         * 이 보고서의 글꼴, 글자 크기, 행 간격, 한 페이지에 맞춤(꺼짐)을 기본값으로 되돌리고 바로 저장한다. 미리보기 설정(페이지 목록, 보기
+         * 유형, 배율)은 그대로 둔다.
          */
         @Override
         public void onReset() {

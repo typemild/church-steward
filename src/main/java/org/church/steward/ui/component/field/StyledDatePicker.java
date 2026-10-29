@@ -82,11 +82,9 @@ public class StyledDatePicker extends DatePicker implements CompositeInputField 
     }
 
     /**
-     * 달력 버튼이 꺼져 있으면 달력을 열지 않는다.
-     * 라이브러리는 버튼의 mousePressed 리스너(→ togglePopup → openPopup)로 달력을 열면서 버튼이 아니라 피커
-     * 전체가 켜져 있는지만
-     * 확인하므로, 버튼만 끄면(상세 보기) 눌러도 달력이 뜬다. 리스너는 등록 순서대로 모두 불려 다른 리스너로 막을 수 없으므로, 달력을
-     * 여는 유일한 경로인 이 메서드에서 막는다.
+     * 달력 버튼이 꺼져 있으면 달력을 열지 않는다. 라이브러리는 버튼의 mousePressed 리스너(→ togglePopup →
+     * openPopup)로 달력을 열면서 버튼이 아니라 피커 전체가 켜져 있는지만 확인하므로, 버튼만 끄면(상세 보기) 눌러도 달력이 뜬다.
+     * 리스너는 등록 순서대로 모두 불려 다른 리스너로 막을 수 없으므로, 달력을 여는 유일한 경로인 이 메서드에서 막는다.
      */
     @Override
     public void openPopup() {
@@ -98,8 +96,7 @@ public class StyledDatePicker extends DatePicker implements CompositeInputField 
 
     /**
      * 선택할 수 있는 날짜를 지정한 기간(양 끝 포함)으로 제한한다. 달력에서 기간 밖의 날짜는 고를 수 없고, 직접 입력해도 받아들이지
-     * 않는다.
-     * 이미 선택된 날짜는 건드리지 않으므로, 호출하는 쪽에서 기간 안의 날짜로 맞춰야 한다. 둘 다 null이면 제한을 푼다.
+     * 않는다. 이미 선택된 날짜는 건드리지 않으므로, 호출하는 쪽에서 기간 안의 날짜로 맞춰야 한다. 둘 다 null이면 제한을 푼다.
      */
     public void setDateRange(LocalDate firstAllowedDate, LocalDate lastAllowedDate) {
         getSettings().setDateRangeLimits(firstAllowedDate, lastAllowedDate);

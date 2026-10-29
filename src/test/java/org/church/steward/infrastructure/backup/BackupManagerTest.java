@@ -51,9 +51,9 @@ class BackupManagerTest {
     }
 
     /**
-     * 지정한 마이그레이션 위치를 쓰는 실행 환경을 만든다.
-     * 실제 위치에 가짜 마이그레이션의 위치를 더해 넘기면, 마이그레이션이 추가된 새 버전의 프로그램을 흉내 낼 수 있다.
-     * 기존 실행 환경과 같은 디렉터리 이름을 주면, 그 환경의 데이터를 새 버전의 프로그램으로 다루는 상황이 된다.
+     * 지정한 마이그레이션 위치를 쓰는 실행 환경을 만든다. 실제 위치에 가짜 마이그레이션의 위치를 더해 넘기면, 마이그레이션이 추가된 새 버전의
+     * 프로그램을 흉내 낼 수 있다. 기존 실행 환경과 같은 디렉터리 이름을 주면, 그 환경의 데이터를 새 버전의 프로그램으로 다루는 상황이
+     * 된다.
      */
     private Installation createInstallation(String directoryName, String programVersion,
             List<String> migrationLocations) throws IOException {

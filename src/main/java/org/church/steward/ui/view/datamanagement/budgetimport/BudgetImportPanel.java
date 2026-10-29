@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
  * 예산 가져오기를 단계별로 진행하는 패널. 예산 탭 안에 놓인다.
  * <p>
  * 단계: 파일 선택 → 열 지정 → 검토 및 선택 → 백업 및 반영.
+ * <p>
  * 진행 상태는 {@link BudgetImportSession}이 가지며, 다른 메뉴에 다녀오면 현재 데이터로 다시 분석한다.
  */
 @Slf4j
@@ -110,8 +111,8 @@ public class BudgetImportPanel extends AbstractImportPanel {
     }
 
     /**
-     * 파일 선택과 열 지정 단계에서는 다음 단계로 넘어갈 때 어차피 새로 분석하므로, 분석 결과를 보고 있는 단계에서만
-     * 다시 분석한다. 사용자가 정한 것(파일, 열 지정, 직접 바꾼 선택)은 유지한다.
+     * 파일 선택과 열 지정 단계에서는 다음 단계로 넘어갈 때 어차피 새로 분석하므로, 분석 결과를 보고 있는 단계에서만 다시 분석한다. 사용자가
+     * 정한 것(파일, 열 지정, 직접 바꾼 선택)은 유지한다.
      */
     @Override
     protected void onReturnedToStep(int step) {

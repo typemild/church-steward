@@ -11,9 +11,8 @@ import org.church.steward.ui.util.UIFonts;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 보고서에 쓰는 글꼴.
- * 어느 PC에서나 줄바꿈과 페이지 나눔이 같도록 시스템 글꼴 대신 프로그램에 포함된 나눔고딕과 나눔명조를 쓴다.
- * 아래의 글자 크기는 기본 크기이며, 사용자가 조정하면 {@link ReportStyle}이 모든 글자에 같은 크기를 더하거나 뺀다.
+ * 보고서에 쓰는 글꼴. 어느 PC에서나 줄바꿈과 페이지 나눔이 같도록 시스템 글꼴 대신 프로그램에 포함된 나눔고딕과 나눔명조를 쓴다. 아래의
+ * 글자 크기는 기본 크기이며, 사용자가 조정하면 {@link ReportStyle}이 모든 글자에 같은 크기를 더하거나 뺀다.
  */
 @Slf4j
 public final class ReportFonts {
@@ -66,8 +65,7 @@ public final class ReportFonts {
 
     /**
      * {@link #regular}이나 {@link #bold}로 만든 글꼴의 파일. PDF로 저장할 때 어느 글꼴 파일을 넣어야 하는지 가리는
-     * 데 쓴다.
-     * 알 수 없는 글꼴이면 기본 글꼴의 보통 굵기 파일이다.
+     * 데 쓴다. 알 수 없는 글꼴이면 기본 글꼴의 보통 굵기 파일이다.
      */
     public static String resourceOf(Font font) {
         for (ReportFontFamily family : ReportFontFamily.values()) {

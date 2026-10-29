@@ -27,15 +27,14 @@ import org.junit.jupiter.params.provider.MethodSource;
  * 백업의 덤프는 그것을 만든 H2 버전의 형식(SQL 문법, 자료형 표기, 암호화·압축 형식)으로 쓰여 있으므로, 같은 H2로 내보내고
  * 되살리는 {@link H2ScriptRoundTripTest}로는 H2를 올렸을 때 과거 백업을 읽지 못하게 되는 것을 알 수 없다.
  * 그래서 H2 버전마다 만들어 커밋해 둔 고정 덤프({@value #FIXTURE_RESOURCE},
- * {@link H2DumpFixtureGenerator}가 만든다)를
- * 모두 {@link DatabaseManager#runDump}로 되살리고, 같은 데이터({@link H2DumpFixtureData})를
- * 지금의 H2에 새로 넣은 결과와 비교한다.
- * Spring Boot를 올리면 H2도 함께 올라가므로 그때 이 테스트가 실패하지 않는지 본다.
+ * {@link H2DumpFixtureGenerator}가 만든다)를 모두 {@link DatabaseManager#runDump}로
+ * 되살리고, 같은 데이터({@link H2DumpFixtureData})를 지금의 H2에 새로 넣은 결과와 비교한다. Spring Boot를
+ * 올리면 H2도 함께 올라가므로 그때 이 테스트가 실패하지 않는지 본다.
  * <p>
  * 고정 덤프는 프로그램의 실제 스키마와 무관한 임의의 구조이므로 Flyway 마이그레이션은 실행하지 않는다.
  * <p>
- * TODO: 과거 버전의 실제 스키마로 만든 백업이 복원할 때 Flyway 마이그레이션으로 현재 스키마까지 올라가는지는 이 테스트가
- * 확인하지 않는다. 첫 스키마 변경(V2 마이그레이션)을 추가할 때 별도 테스트로 만들어야 한다.
+ * TODO: 과거 버전의 실제 스키마로 만든 백업이 복원할 때 Flyway 마이그레이션으로 현재 스키마까지 올라가는지는 이 테스트가 확인하지
+ * 않는다. 첫 스키마 변경(V2 마이그레이션)을 추가할 때 별도 테스트로 만들어야 한다.
  */
 class H2DumpCompatibilityTest {
 

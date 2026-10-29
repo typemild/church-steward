@@ -9,11 +9,9 @@ import org.church.steward.domain.report.entity.ReportSettingConstraints;
  * 보고서의 서식. 글꼴, 글자 크기 조정 단계, 행 간격을 정한다.
  * <p>
  * 글자 크기는 모든 글자에 같은 크기(한 단계에
- * {@link ReportSettingConstraints#FONT_SIZE_STEP_POINTS}pt)를 더하거나 빼서
- * 제목과 본문의 크기 차이를 그대로 둔다. 페이지 번호는 조정하지 않는다.
- * 행 간격은 표의 행과 내역 줄처럼 줄이 이어지는 곳에서 글자 높이(1배)에 대한 한 줄 높이의 비율이며, 늘어난 높이는 글자 위아래에 반씩
- * 나눈다.
- * 제목, 절 제목, 절 사이의 간격에는 적용하지 않는다.
+ * {@link ReportSettingConstraints#FONT_SIZE_STEP_POINTS}pt)를 더하거나 빼서 제목과 본문의 크기
+ * 차이를 그대로 둔다. 페이지 번호는 조정하지 않는다. 행 간격은 표의 행과 내역 줄처럼 줄이 이어지는 곳에서 글자 높이(1배)에 대한 한
+ * 줄 높이의 비율이며, 늘어난 높이는 글자 위아래에 반씩 나눈다. 제목, 절 제목, 절 사이의 간격에는 적용하지 않는다.
  *
  * @param fontSizeStep       글자 크기 조정 단계. 0이 기본 크기다.
  * @param lineSpacingPercent 행 간격(%)

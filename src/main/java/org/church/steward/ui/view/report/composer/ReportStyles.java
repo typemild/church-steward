@@ -8,8 +8,8 @@ import org.church.steward.ui.view.report.layout.ReportCanvas;
 import org.church.steward.ui.view.report.layout.ReportText;
 
 /**
- * 여러 보고서가 함께 쓰는 글자 크기와 간격, 공통 요소.
- * 글자 크기는 기본 크기이며, 실제 크기는 작업대의 서식({@link ReportCanvas#getStyle()})이 정한다.
+ * 여러 보고서가 함께 쓰는 글자 크기와 간격, 공통 요소. 글자 크기는 기본 크기이며, 실제 크기는 작업대의
+ * 서식({@link ReportCanvas#getStyle()})이 정한다.
  */
 final class ReportStyles {
 
@@ -19,8 +19,8 @@ final class ReportStyles {
     static final float ANNUAL_TITLE_SIZE = 13f;
 
     /**
-     * 예산을 한 줄씩 나열하는 보고서(예산안, 결산 세부 내역서)의 글자 크기.
-     * 행이 많지 않으므로 읽기 편하도록 보고서의 기본 크기보다 1pt씩 크게 쓴다.
+     * 예산을 한 줄씩 나열하는 보고서(예산안, 결산 세부 내역서)의 글자 크기. 행이 많지 않으므로 읽기 편하도록 보고서의 기본 크기보다
+     * 1pt씩 크게 쓴다.
      */
     static final float BUDGET_TABLE_SIZE = 9f;
     static final float BUDGET_TABLE_UNIT_SIZE = 8f;

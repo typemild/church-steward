@@ -34,8 +34,8 @@ public class ItemizedTableModel extends AbstractTableModel implements TooltipTab
     private List<FinancialRecordResponseDto> data = new ArrayList<>();
 
     /**
-     * 표시할 수입/지출 내역을 설정한다.
-     * 테이블의 정렬기는 정렬 기준 값이 같은 행을 모델 순서대로 두므로, 그때 나중에 입력한 것이 위에 오도록 ID 내림차순으로 담아 둔다.
+     * 표시할 수입/지출 내역을 설정한다. 테이블의 정렬기는 정렬 기준 값이 같은 행을 모델 순서대로 두므로, 그때 나중에 입력한 것이 위에
+     * 오도록 ID 내림차순으로 담아 둔다.
      */
     public void setData(List<FinancialRecordResponseDto> newData) {
         List<FinancialRecordResponseDto> sorted = new ArrayList<>(newData);
@@ -131,9 +131,8 @@ public class ItemizedTableModel extends AbstractTableModel implements TooltipTab
     }
 
     /**
-     * 날짜 칸의 값. 화면에는 날짜만 보이고, 정렬할 때는 같은 날짜의 내역을 ID로 가른다.
-     * 정렬기는 내림차순이면 비교 결과를 뒤집으므로, 오름차순은 "날짜 오름차순, ID 오름차순",
-     * 내림차순은 "날짜 내림차순, ID 내림차순"이 된다.
+     * 날짜 칸의 값. 화면에는 날짜만 보이고, 정렬할 때는 같은 날짜의 내역을 ID로 가른다. 정렬기는 내림차순이면 비교 결과를 뒤집으므로,
+     * 오름차순은 "날짜 오름차순, ID 오름차순", 내림차순은 "날짜 내림차순, ID 내림차순"이 된다.
      */
     public record RecordDate(LocalDate date, Long id) implements Comparable<RecordDate> {
 

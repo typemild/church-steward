@@ -14,9 +14,9 @@ import org.church.steward.ui.util.UIFonts;
 import org.church.steward.ui.view.financialrecord.FinancialRecordFormats;
 
 /**
- * 관계자 선택 박스에서 선택된 관계자 한 명을 나타내는 칩(chip).
- * 칩에 표시하는 이름과 툴팁의 이름은 다를 수 있다. 칩에는 수입/지출 내역에 기록된 과거 이름이 올 수 있지만,
- * 툴팁은 항상 관계자의 현재 정보를 첫 줄에 "[구분] 성명", 둘째 줄에 비고 형식으로 보여준다.
+ * 관계자 선택 박스에서 선택된 관계자 한 명을 나타내는 칩(chip). 칩에 표시하는 이름과 툴팁의 이름은 다를 수 있다. 칩에는 수입/지출
+ * 내역에 기록된 과거 이름이 올 수 있지만, 툴팁은 항상 관계자의 현재 정보를 첫 줄에 "[구분] 성명", 둘째 줄에 비고 형식으로
+ * 보여준다.
  */
 public class ContactChip extends JLabel {
 

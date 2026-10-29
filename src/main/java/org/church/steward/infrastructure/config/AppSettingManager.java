@@ -41,8 +41,7 @@ import org.yaml.snakeyaml.resolver.Resolver;
  * Spring 컨테이너 없이 application.yml을 직접 조회/수정한다.
  * <p>
  * 대상은 프로그램 폴더({@link AppHome})의 application.yml(사용자별 DB 접근 키, 복원 예약 등 실행 중에
- * 기록하는 설정)이다.
- * jar 안에 포함된 클래스패스의 application.yml(빌드할 때 정해지는 프로그램 정보)과는 다른 파일이며,
+ * 기록하는 설정)이다. jar 안에 포함된 클래스패스의 application.yml(빌드할 때 정해지는 프로그램 정보)과는 다른 파일이며,
  * 프로그램 버전은 {@link ProgramVersion}이 클래스패스 쪽에서 읽는다.
  *
  * <ul>
@@ -115,10 +114,9 @@ public final class AppSettingManager {
     }
 
     /**
-     * 하나의 트랜잭션 안에서 여러 설정을 조회/저장/삭제한다.
-     * 콜백이 정상 종료되고 변경이 있을 때만 한 번 저장한다. 콜백에서 예외가 나면 저장하지 않는다.
-     * 콜백 안에서는 반드시 인자로 받은 Editor를 사용해야 하며,
-     * 이 클래스의 get/set/remove/update를 호출하면 예외가 발생한다.
+     * 하나의 트랜잭션 안에서 여러 설정을 조회/저장/삭제한다. 콜백이 정상 종료되고 변경이 있을 때만 한 번 저장한다. 콜백에서 예외가 나면
+     * 저장하지 않는다. 콜백 안에서는 반드시 인자로 받은 Editor를 사용해야 하며, 이 클래스의 get/set/remove/update를
+     * 호출하면 예외가 발생한다.
      */
     public synchronized void update(Consumer<Editor> action) {
         Objects.requireNonNull(action, "action");
@@ -273,11 +271,9 @@ public final class AppSettingManager {
         }
 
         /**
-         * 따옴표 규칙.
-         * int/float/bool로 해석되고 다시 문자열로 바꿨을 때 원래 값과 같으면(8080, true, 1.5) 해당 태그로 두어 따옴표
-         * 없이 기록한다.
-         * 그 외(010, yes, on, 12:30, null, 빈 문자열 등)는 STR 태그로 두어, 해석이 달라지는 경우 Emitter가
-         * 자동으로 따옴표를 붙이게 한다.
+         * 따옴표 규칙. int/float/bool로 해석되고 다시 문자열로 바꿨을 때 원래 값과 같으면(8080, true, 1.5) 해당 태그로
+         * 두어 따옴표 없이 기록한다. 그 외(010, yes, on, 12:30, null, 빈 문자열 등)는 STR 태그로 두어, 해석이 달라지는
+         * 경우 Emitter가 자동으로 따옴표를 붙이게 한다.
          */
         private Tag plainTag(String value) {
             Tag resolved = resolver.resolve(NodeId.scalar, value, true);
@@ -367,8 +363,8 @@ public final class AppSettingManager {
     // ------------------------------------------------------------------ 공통
 
     /**
-     * synchronized는 재진입을 허용하므로, 콜백 안에서 get/set/remove/update를 부르면 그대로 실행된다.
-     * 그러면 안쪽 호출이 저장한 내용을 바깥 update()가 덮어쓰므로 직접 막는다.
+     * synchronized는 재진입을 허용하므로, 콜백 안에서 get/set/remove/update를 부르면 그대로 실행된다. 그러면 안쪽
+     * 호출이 저장한 내용을 바깥 update()가 덮어쓰므로 직접 막는다.
      */
     private void checkNotNested() {
         if (updating) {

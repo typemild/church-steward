@@ -20,8 +20,7 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
 /**
- * 계층형 자동 완성의 서브 목록(그룹 목록) 렌더러.
- * 좌측에 휴지통(삭제) 아이콘을 수직 가운데로 두고, 우측에 구성원들을 칩으로 표시한다.
+ * 계층형 자동 완성의 서브 목록(그룹 목록) 렌더러. 좌측에 휴지통(삭제) 아이콘을 수직 가운데로 두고, 우측에 구성원들을 칩으로 표시한다.
  * 칩이 한 줄에 다 들어가지 않으면 여러 줄에 나눠 배치하며, 칩에 마우스를 올리면 그 구성원의 정보를 툴팁으로 보여준다.
  */
 public class ContactGroupCellRenderer extends JPanel implements ListCellRenderer<GroupInfoDto> {

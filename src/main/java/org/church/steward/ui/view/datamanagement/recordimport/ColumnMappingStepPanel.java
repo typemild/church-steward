@@ -20,8 +20,8 @@ import org.church.steward.ui.component.label.SubFieldLabel;
 import org.church.steward.ui.view.datamanagement.recordimport.RecordImportSession.TypeMode;
 
 /**
- * 수입/지출 가져오기의 2단계. 파일의 어느 열이 구분, 금액, 일자, 예산, 내용, 관계자, 비고인지 지정한다.
- * 파일의 형식을 정해 두지 않으므로 사용자가 직접 연결하며, 머리글 이름으로 추측한 값을 처음에 채워 둔다.
+ * 수입/지출 가져오기의 2단계. 파일의 어느 열이 구분, 금액, 일자, 예산, 내용, 관계자, 비고인지 지정한다. 파일의 형식을 정해 두지
+ * 않으므로 사용자가 직접 연결하며, 머리글 이름으로 추측한 값을 처음에 채워 둔다.
  */
 class ColumnMappingStepPanel extends JPanel {
 
@@ -213,8 +213,8 @@ class ColumnMappingStepPanel extends JPanel {
     }
 
     /**
-     * 화면의 열 지정을 세션에 담는다. 지정이 달라졌으면 이전의 분석 결과는 쓸 수 없으므로 버린다.
-     * 직접 한 예산·관계자 매핑은 파일의 값에 대한 것이므로 남겨 둔다.
+     * 화면의 열 지정을 세션에 담는다. 지정이 달라졌으면 이전의 분석 결과는 쓸 수 없으므로 버린다. 직접 한 예산·관계자 매핑은 파일의 값에
+     * 대한 것이므로 남겨 둔다.
      */
     void store() {
         String before = describeMapping();

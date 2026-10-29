@@ -18,9 +18,8 @@ import org.church.steward.domain.dashboard.dto.BudgetProgressDto;
 import org.church.steward.ui.component.label.SectionHeaderLabel;
 
 /**
- * 예산 집행 현황 카드.
- * 지출 예산과 수입 예산 중 한쪽의 진행 현황을 보여주며, 제목 줄의 전환 버튼으로 바꾼다.
- * 마우스가 카드 위에 없는 동안에는 일정 시간마다 지출과 수입을 번갈아 보여준다.
+ * 예산 집행 현황 카드. 지출 예산과 수입 예산 중 한쪽의 진행 현황을 보여주며, 제목 줄의 전환 버튼으로 바꾼다. 마우스가 카드 위에 없는
+ * 동안에는 일정 시간마다 지출과 수입을 번갈아 보여준다.
  */
 class BudgetProgressCard extends DashboardCard {
 

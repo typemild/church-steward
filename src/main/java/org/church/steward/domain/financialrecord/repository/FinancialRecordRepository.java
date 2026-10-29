@@ -14,9 +14,9 @@ import org.springframework.data.repository.query.Param;
 public interface FinancialRecordRepository
         extends JpaRepository<FinancialRecord, Long>, JpaSpecificationExecutor<FinancialRecord> {
     /**
-     * 회계 연도에 속한 최근 내역 100건을 조회한다. 예산은 함께 조회한다.
-     * 관계자는 함께 조회하지 않는다. 컬렉션을 fetch join하면 Hibernate가 건수 제한을 쿼리가 아니라 메모리에서 적용하기
-     * 때문이며, 관계자는 처음 접근할 때 batch fetch로 한 번에 조회된다.
+     * 회계 연도에 속한 최근 내역 100건을 조회한다. 예산은 함께 조회한다. 관계자는 함께 조회하지 않는다. 컬렉션을 fetch join하면
+     * Hibernate가 건수 제한을 쿼리가 아니라 메모리에서 적용하기 때문이며, 관계자는 처음 접근할 때 batch fetch로 한 번에
+     * 조회된다.
      */
     @EntityGraph(attributePaths = "budget")
     List<FinancialRecord> findTop100ByFiscalYearIdOrderByDateDescIdDesc(Long fiscalYearId);

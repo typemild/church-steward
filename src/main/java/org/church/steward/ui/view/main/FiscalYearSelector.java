@@ -30,10 +30,9 @@ import org.kordamp.ikonli.swing.FontIcon;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 사이드바 상단의 회계 연도 선택란.
- * 회계 연도에 영향을 받는 화면(대시보드, 수입/지출 관리, 보고서, 예산 관리)이 함께 쓰는 회계 연도를 보관한다.
- * 선택한 회계 연도는 사용자 설정에 저장되어 다음 실행 때 초기값으로 쓰인다.
- * 레이블 오른쪽의 버튼은 설정의 회계 연도 관리 화면으로 이동한다.
+ * 사이드바 상단의 회계 연도 선택란. 회계 연도에 영향을 받는 화면(대시보드, 수입/지출 관리, 보고서, 예산 관리)이 함께 쓰는 회계
+ * 연도를 보관한다. 선택한 회계 연도는 사용자 설정에 저장되어 다음 실행 때 초기값으로 쓰인다. 레이블 오른쪽의 버튼은 설정의 회계 연도
+ * 관리 화면으로 이동한다.
  */
 @UiView
 @Slf4j
@@ -91,8 +90,8 @@ public class FiscalYearSelector extends JPanel {
     }
 
     /**
-     * 회계 연도 관리 화면으로 이동하는 버튼을 만든다.
-     * 공용 IconButton은 밝은 배경에 맞춰져 있으므로, 사이드바에 맞게 아이콘 색과 마우스를 올렸을 때의 배경색을 바꾼다.
+     * 회계 연도 관리 화면으로 이동하는 버튼을 만든다. 공용 IconButton은 밝은 배경에 맞춰져 있으므로, 사이드바에 맞게 아이콘 색과
+     * 마우스를 올렸을 때의 배경색을 바꾼다.
      */
     private IconButton createManageButton() {
         IconButton button = new IconButton(FontAwesomeSolid.COG, ComponentSize.SMALL);
@@ -145,9 +144,9 @@ public class FiscalYearSelector extends JPanel {
     }
 
     /**
-     * 선택된 회계 연도가 바뀌었을 때 실행할 동작을 등록한다. 목록을 다시 불러온 결과로 바뀐 경우에도 실행된다.
-     * 선택된 회계 연도는 그대로이고 그 이름, 기간, 마감 여부만 바뀐 경우에는 실행되지 않으므로,
-     * 각 화면은 {@code onMenuSelected()}에서 {@link #getSelectedFiscalYear()}를 다시 읽어야 한다.
+     * 선택된 회계 연도가 바뀌었을 때 실행할 동작을 등록한다. 목록을 다시 불러온 결과로 바뀐 경우에도 실행된다. 선택된 회계 연도는 그대로이고
+     * 그 이름, 기간, 마감 여부만 바뀐 경우에는 실행되지 않으므로, 각 화면은 {@code onMenuSelected()}에서
+     * {@link #getSelectedFiscalYear()}를 다시 읽어야 한다.
      */
     public void addChangeListener(Runnable listener) {
         changeListeners.add(listener);
@@ -161,8 +160,8 @@ public class FiscalYearSelector extends JPanel {
     }
 
     /**
-     * 회계 연도 목록을 다시 불러온다. 회계 연도를 추가, 수정, 삭제하거나 마감 또는 마감 취소한 뒤 호출해야 한다.
-     * 기존 선택을 유지하되, 아직 선택한 적이 없거나 선택된 회계 연도가 삭제되었으면 사용자 설정에 저장된 회계 연도를 선택한다.
+     * 회계 연도 목록을 다시 불러온다. 회계 연도를 추가, 수정, 삭제하거나 마감 또는 마감 취소한 뒤 호출해야 한다. 기존 선택을 유지하되,
+     * 아직 선택한 적이 없거나 선택된 회계 연도가 삭제되었으면 사용자 설정에 저장된 회계 연도를 선택한다.
      */
     public void reload() {
         AsyncTask.run(fiscalYearCombo,

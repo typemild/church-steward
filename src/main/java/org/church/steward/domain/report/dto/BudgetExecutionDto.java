@@ -6,8 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 예산 하나의 예산액과 집행액(수입 예산이면 실제 수입액).
- * 하위 예산이 있는 예산은 하위 예산들의 합계를 담는다.
+ * 예산 하나의 예산액과 집행액(수입 예산이면 실제 수입액). 하위 예산이 있는 예산은 하위 예산들의 합계를 담는다.
  */
 @Getter
 @Builder

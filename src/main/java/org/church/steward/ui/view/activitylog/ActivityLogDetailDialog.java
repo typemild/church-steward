@@ -128,8 +128,7 @@ class ActivityLogDetailDialog extends JDialog {
     }
 
     /**
-     * 기록된 항목을 표로 만든다.
-     * 값이 변경된 항목이 있으면 "변경 전"/"변경 후"를 나누어 보여주고, 변경된 항목의 변경 후 값을 강조한다.
+     * 기록된 항목을 표로 만든다. 값이 변경된 항목이 있으면 "변경 전"/"변경 후"를 나누어 보여주고, 변경된 항목의 변경 후 값을 강조한다.
      */
     private JTable createFieldTable(List<ActivityLogFieldDto> fields) {
         boolean hasChange = fields.stream()

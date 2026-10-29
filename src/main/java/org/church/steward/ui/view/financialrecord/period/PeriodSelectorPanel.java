@@ -18,10 +18,8 @@ import org.church.steward.ui.component.label.FieldLabel;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 /**
- * 조회 기간 선택 영역.
- * 기간 단위를 고르고 좌/우 화살표로 해당 단위만큼 과거/미래로 이동하거나, 시작일과 종료일을 직접 고른다.
- * 조회 기간은 회계 연도의 기간({@link #setLimits})을 벗어날 수 없다.
- * 기간이 바뀌면 생성자에서 받은 동작을 실행한다.
+ * 조회 기간 선택 영역. 기간 단위를 고르고 좌/우 화살표로 해당 단위만큼 과거/미래로 이동하거나, 시작일과 종료일을 직접 고른다. 조회
+ * 기간은 회계 연도의 기간({@link #setLimits})을 벗어날 수 없다. 기간이 바뀌면 생성자에서 받은 동작을 실행한다.
  */
 public class PeriodSelectorPanel extends JPanel {
 
@@ -121,9 +119,9 @@ public class PeriodSelectorPanel extends JPanel {
     }
 
     /**
-     * 조회 기간을 회계 연도의 기간 안으로 제한한다. 이후로는 어떤 방법으로도 이 범위 밖의 날짜를 조회 기간에 넣을 수 없다.
-     * 현재 조회 기간이 새 범위와 겹치면 겹치는 부분만 남기고, 전혀 겹치지 않으면(회계 연도를 바꾼 경우) 오늘이 속한 단위 기간으로 옮긴다.
-     * 오늘이 범위 밖이면 범위에서 오늘과 가장 가까운 날을 기준으로 삼는다. 기간이 바뀌어도 변경 동작은 실행하지 않는다.
+     * 조회 기간을 회계 연도의 기간 안으로 제한한다. 이후로는 어떤 방법으로도 이 범위 밖의 날짜를 조회 기간에 넣을 수 없다. 현재 조회
+     * 기간이 새 범위와 겹치면 겹치는 부분만 남기고, 전혀 겹치지 않으면(회계 연도를 바꾼 경우) 오늘이 속한 단위 기간으로 옮긴다. 오늘이
+     * 범위 밖이면 범위에서 오늘과 가장 가까운 날을 기준으로 삼는다. 기간이 바뀌어도 변경 동작은 실행하지 않는다.
      *
      * @param firstAllowedDate 회계 연도의 시작일
      * @param lastAllowedDate  회계 연도의 종료일
@@ -178,9 +176,8 @@ public class PeriodSelectorPanel extends JPanel {
     }
 
     /**
-     * 현재 시작일이 속한 단위 기간을 기준으로 이동한다.
-     * 날짜를 직접 골라 단위와 어긋난 기간도 이동하면 단위에 맞는 기간으로 돌아온다.
-     * 이동할 기간이 허용 범위를 완전히 벗어나면 이동하지 않는다.
+     * 현재 시작일이 속한 단위 기간을 기준으로 이동한다. 날짜를 직접 골라 단위와 어긋난 기간도 이동하면 단위에 맞는 기간으로 돌아온다. 이동할
+     * 기간이 허용 범위를 완전히 벗어나면 이동하지 않는다.
      */
     private void shift(int direction) {
         LocalDate shiftedStart = shiftedStart(direction);
@@ -209,8 +206,8 @@ public class PeriodSelectorPanel extends JPanel {
     }
 
     /**
-     * 날짜 피커에서 날짜를 직접 바꾸면 단위는 그대로 두고 기간만 바꾼다.
-     * 시작일이 종료일보다 늦어지면 방금 바꾼 쪽에 맞춰 반대쪽 날짜를 같은 날로 옮긴다.
+     * 날짜 피커에서 날짜를 직접 바꾸면 단위는 그대로 두고 기간만 바꾼다. 시작일이 종료일보다 늦어지면 방금 바꾼 쪽에 맞춰 반대쪽 날짜를 같은
+     * 날로 옮긴다.
      *
      * @param startChanged 시작일을 바꿨으면 true, 종료일을 바꿨으면 false
      */
@@ -250,8 +247,7 @@ public class PeriodSelectorPanel extends JPanel {
 
     /**
      * 기간을 바꾼다. 허용 범위가 있으면 범위를 벗어난 부분은 잘라낸다(예: 회계 연도가 12월 15일에 시작하면 12월의 월간 기간은
-     * 15일부터다).
-     * 주어진 기간은 허용 범위와 하루 이상 겹쳐야 한다.
+     * 15일부터다). 주어진 기간은 허용 범위와 하루 이상 겹쳐야 한다.
      */
     private void setRange(LocalDate start, LocalDate end) {
         if (firstAllowedDate != null) {

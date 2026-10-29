@@ -22,8 +22,8 @@ import org.church.steward.domain.datatransfer.dto.BudgetImportRequestDto;
 import org.church.steward.domain.datatransfer.dto.ImportItemStatus;
 
 /**
- * 예산 가져오기의 분석기. 파일의 행들을 예산의 계층으로 읽고, 이미 있는 예산과 견주어 건마다 무엇을 할지 정한다.
- * 데이터베이스를 직접 읽지 않고 필요한 것을 인자로 받으므로, 같은 입력에는 항상 같은 결과를 낸다.
+ * 예산 가져오기의 분석기. 파일의 행들을 예산의 계층으로 읽고, 이미 있는 예산과 견주어 건마다 무엇을 할지 정한다. 데이터베이스를 직접
+ * 읽지 않고 필요한 것을 인자로 받으므로, 같은 입력에는 항상 같은 결과를 낸다.
  * <p>
  * 분석은 세 단계다.
  * <ol>

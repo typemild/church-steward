@@ -45,12 +45,12 @@ import tools.jackson.databind.node.ObjectNode;
  * ({@link BackupManifest})</li>
  * <li>{@value #DUMP_ENTRY}: 데이터베이스 전체의 SQL 덤프. DB 파일 비밀번호로 암호화되어 있다.</li>
  * </ul>
- * DB 파일 비밀번호는 사용자별 DB 접근 키 안에 각 사용자의 비밀번호로 암호화되어 있으므로, 백업 파일은 백업한 시점의
- * 계정과 비밀번호가 있어야 풀 수 있다. 별도의 백업 암호는 두지 않는다.
+ * DB 파일 비밀번호는 사용자별 DB 접근 키 안에 각 사용자의 비밀번호로 암호화되어 있으므로, 백업 파일은 백업한 시점의 계정과 비밀번호가
+ * 있어야 풀 수 있다. 별도의 백업 암호는 두지 않는다.
  * <p>
  * 복원은 데이터베이스 파일을 교체하므로 Spring 컨텍스트를 띄우기 전에만 할 수 있다. 실행 중에는 복원을 예약만 하고
- * ({@link #scheduleRestore}), 다음 실행 때 로그인 전에 수행한다.
- * {@link DatabaseManager}처럼 Spring 빈이 아니라 애플리케이션 클래스가 직접 만든다.
+ * ({@link #scheduleRestore}), 다음 실행 때 로그인 전에 수행한다. {@link DatabaseManager}처럼
+ * Spring 빈이 아니라 애플리케이션 클래스가 직접 만든다.
  */
 @Slf4j
 public class BackupManager {

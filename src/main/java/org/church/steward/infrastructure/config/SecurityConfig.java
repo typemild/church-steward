@@ -18,9 +18,10 @@ public class SecurityConfig {
      */
     @Bean
     PasswordEncoder passwordEncoder() {
-        // Argon2PasswordEncoder(saltLength, hashLength, parallelism, memory,
-        // iterations)
-        // 기본적으로 보안성이 높은 파라미터를 설정한다.
+        /*
+         * 기본적으로 보안성이 높은 파라미터를 설정한다. 인자는 Argon2PasswordEncoder(saltLength, hashLength,
+         * parallelism, memory, iterations) 순이다.
+         */
         return new Argon2PasswordEncoder(16, 32, 1, 65536, 3);
     }
 }

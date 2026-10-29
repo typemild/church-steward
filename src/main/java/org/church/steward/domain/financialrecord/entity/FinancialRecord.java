@@ -36,8 +36,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 수입 또는 지출 내역. 구분({@link FinancialRecordType})은 생성할 때 정해지며 이후 바꿀 수 없다.
- * 관계자는 수입이면 봉헌자(1명 이상), 지출이면 수취인(1명)이다.
+ * 수입 또는 지출 내역. 구분({@link FinancialRecordType})은 생성할 때 정해지며 이후 바꿀 수 없다. 관계자는
+ * 수입이면 봉헌자(1명 이상), 지출이면 수취인(1명)이다.
  */
 @Entity
 @Table(name = "FINANCIAL_RECORD")

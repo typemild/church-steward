@@ -49,8 +49,8 @@ import org.church.steward.ui.view.main.ClosedFiscalYearNoticeLabel;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 수입/지출을 추가하거나 수정하기 위한 다이얼로그.
- * 마감된 회계 연도의 내역은 {@link #enableViewOnly()}로 바꿀 수 없는 상세 보기로 띄운다.
+ * 수입/지출을 추가하거나 수정하기 위한 다이얼로그. 마감된 회계 연도의 내역은 {@link #enableViewOnly()}로 바꿀 수 없는
+ * 상세 보기로 띄운다.
  */
 @Slf4j
 public class FinancialRecordEntryDialog extends JDialog {
@@ -205,9 +205,8 @@ public class FinancialRecordEntryDialog extends JDialog {
     }
 
     /**
-     * 버튼을 배치한다. 주 버튼은 항상 맨 오른쪽에 둔다.
-     * 연속 입력을 쓰면 여러 건을 이어서 입력하는 것이 주된 흐름이므로 "저장 후 계속"이 주 버튼이 되고, "저장"은 "저장 후 닫기"라는
-     * 보조 버튼이 된다.
+     * 버튼을 배치한다. 주 버튼은 항상 맨 오른쪽에 둔다. 연속 입력을 쓰면 여러 건을 이어서 입력하는 것이 주된 흐름이므로 "저장 후 계속"이
+     * 주 버튼이 되고, "저장"은 "저장 후 닫기"라는 보조 버튼이 된다.
      */
     private void layoutButtons(boolean continuousEntry) {
         buttonPanel.removeAll();
@@ -247,8 +246,8 @@ public class FinancialRecordEntryDialog extends JDialog {
     }
 
     /**
-     * 저장하지 않은 내용이 있는지 판단할 입력값. 날짜는 아직 날짜로 읽히지 않은 글자도 수정으로 보도록 입력란의 글자로
-     * 비교하고, 관계자는 칩으로 확정된 것만 본다.
+     * 저장하지 않은 내용이 있는지 판단할 입력값. 날짜는 아직 날짜로 읽히지 않은 글자도 수정으로 보도록 입력란의 글자로 비교하고, 관계자는
+     * 칩으로 확정된 것만 본다.
      */
     private List<Object> currentState() {
         String description = descriptionField.getText()
@@ -269,9 +268,9 @@ public class FinancialRecordEntryDialog extends JDialog {
     }
 
     /**
-     * 내용을 바꿀 수 없는 상세 보기로 바꾼다. 마감된 회계 연도의 내역을 볼 때 쓴다.
-     * 맨 위에 마감 안내를 보이고, 입력란은 포커스를 받아 글자를 고르거나 툴팁을 볼 수 있지만 내용은 바꿀 수 없으며, 버튼은
-     * "닫기"만 남는다. 입력값이 바뀌지 않으므로 닫을 때 확인을 받지 않는다.
+     * 내용을 바꿀 수 없는 상세 보기로 바꾼다. 마감된 회계 연도의 내역을 볼 때 쓴다. 맨 위에 마감 안내를 보이고, 입력란은 포커스를 받아
+     * 글자를 고르거나 툴팁을 볼 수 있지만 내용은 바꿀 수 없으며, 버튼은 "닫기"만 남는다. 입력값이 바뀌지 않으므로 닫을 때 확인을 받지
+     * 않는다.
      */
     public void enableViewOnly() {
         add(ClosedFiscalYearNoticeLabel.createDialogNotice(), BorderLayout.NORTH);
@@ -300,9 +299,8 @@ public class FinancialRecordEntryDialog extends JDialog {
     }
 
     /**
-     * 구분에 맞게 예산 유형, 관계자 명칭과 입력 가능 인원, 그룹 기능 사용 여부를 바꾼다.
-     * 수입은 봉헌자를 여러 명 입력할 수 있고 그룹 기능을 쓰지만, 지출은 수취인 한 명만 입력하며 그룹 기능을 쓰지 않는다.
-     * 어느 쪽이든 최소 한 명은 입력해야 한다.
+     * 구분에 맞게 예산 유형, 관계자 명칭과 입력 가능 인원, 그룹 기능 사용 여부를 바꾼다. 수입은 봉헌자를 여러 명 입력할 수 있고 그룹
+     * 기능을 쓰지만, 지출은 수취인 한 명만 입력하며 그룹 기능을 쓰지 않는다. 어느 쪽이든 최소 한 명은 입력해야 한다.
      */
     private void applyFinancialRecordType(FinancialRecordType type) {
         boolean income = type == FinancialRecordType.INCOME;

@@ -22,8 +22,8 @@ public interface FiscalYearService {
     void createFiscalYearWithCopy(String name, LocalDate startDate, LocalDate endDate, Long sourceFiscalYearId);
 
     /**
-     * 회계 연도의 이름과 기간을 바꾼다. 기간은 다른 회계 연도와 겹칠 수 없고, 이미 등록된 수입/지출의 날짜를 모두 포함해야 한다.
-     * 마감된 회계 연도는 바꿀 수 없다.
+     * 회계 연도의 이름과 기간을 바꾼다. 기간은 다른 회계 연도와 겹칠 수 없고, 이미 등록된 수입/지출의 날짜를 모두 포함해야 한다. 마감된
+     * 회계 연도는 바꿀 수 없다.
      */
     void updateFiscalYear(Long id, String name, LocalDate startDate, LocalDate endDate);
 
@@ -33,8 +33,8 @@ public interface FiscalYearService {
     void deleteFiscalYear(Long id);
 
     /**
-     * 회계 연도를 마감한다. 마감 시점의 총 수입, 총 지출, 차액을 계산해 저장하며,
-     * 이후로는 마감을 취소할 때까지 회계 연도와 그에 속한 예산, 수입/지출을 바꿀 수 없다.
+     * 회계 연도를 마감한다. 마감 시점의 총 수입, 총 지출, 차액을 계산해 저장하며, 이후로는 마감을 취소할 때까지 회계 연도와 그에 속한
+     * 예산, 수입/지출을 바꿀 수 없다.
      */
     void closeFiscalYear(Long id);
 

@@ -13,8 +13,8 @@ import org.church.steward.ui.MenuActivatable;
 import org.church.steward.ui.util.UIColors;
 
 /**
- * 데이터 관리 화면. 전체 데이터 백업/복원, 관계자·예산·수입/지출의 가져오기/내보내기를 탭으로 묶는다.
- * 수입/지출을 가져오려면 관계자와 예산이 먼저 있어야 하므로 그 순서로 탭을 둔다.
+ * 데이터 관리 화면. 전체 데이터 백업/복원, 관계자·예산·수입/지출의 가져오기/내보내기를 탭으로 묶는다. 수입/지출을 가져오려면 관계자와
+ * 예산이 먼저 있어야 하므로 그 순서로 탭을 둔다.
  */
 @UiView
 public class DataManagementView extends JPanel implements MenuActivatable {

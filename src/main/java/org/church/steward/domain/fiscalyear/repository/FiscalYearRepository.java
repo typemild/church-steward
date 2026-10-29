@@ -30,8 +30,8 @@ public interface FiscalYearRepository extends JpaRepository<FiscalYear, Long> {
     boolean existsByNameAndIdNot(String name, Long id);
 
     /**
-     * 기간이 주어진 기간과 하루라도 겹치는 회계 연도를 찾는다.
-     * 두 기간은 한쪽의 시작일이 다른 쪽의 종료일 이전이고 종료일이 다른 쪽의 시작일 이후일 때 겹친다.
+     * 기간이 주어진 기간과 하루라도 겹치는 회계 연도를 찾는다. 두 기간은 한쪽의 시작일이 다른 쪽의 종료일 이전이고 종료일이 다른 쪽의 시작일
+     * 이후일 때 겹친다.
      *
      * @param endDate   주어진 기간의 종료일
      * @param startDate 주어진 기간의 시작일

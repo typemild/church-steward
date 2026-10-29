@@ -188,8 +188,8 @@ public class MainView extends JFrame {
     }
 
     /**
-     * 회계 연도가 바뀌면 현재 화면이 회계 연도에 영향을 받는 화면일 때만 다시 조회한다.
-     * 보이지 않는 화면은 메뉴를 선택할 때 바뀐 회계 연도로 조회한다.
+     * 회계 연도가 바뀌면 현재 화면이 회계 연도에 영향을 받는 화면일 때만 다시 조회한다. 보이지 않는 화면은 메뉴를 선택할 때 바뀐 회계
+     * 연도로 조회한다.
      */
     private void onFiscalYearChanged() {
         if (selectedCardName == null || !FISCAL_YEAR_CARDS.contains(selectedCardName)) {

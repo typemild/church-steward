@@ -37,8 +37,8 @@ import org.church.steward.ui.component.field.CompositeInputField;
  * <ul>
  * <li>Esc, 창의 닫기 버튼, 취소 버튼은 모두 {@link #requestClose()}를 거친다. 취소 버튼이 꺼져 있으면 닫지
  * 않고, 입력한 내용이 바뀌었으면 닫을지 묻는다.</li>
- * <li>입력란에서 Enter를 누르면 다음 입력란으로 옮기고, 마지막 입력란이면 주 버튼을 누른다. 꺼진 입력란은 건너뛴다.
- * 여러 줄 입력란({@link JTextArea})도 같으며, 줄바꿈은 Shift+Enter로 하고 Tab은 포커스를 옮긴다.</li>
+ * <li>입력란에서 Enter를 누르면 다음 입력란으로 옮기고, 마지막 입력란이면 주 버튼을 누른다. 꺼진 입력란은 건너뛴다. 여러 줄
+ * 입력란({@link JTextArea})도 같으며, 줄바꿈은 Shift+Enter로 하고 Tab은 포커스를 옮긴다.</li>
  * <li>이 다이얼로그가 띄운 창(예산 선택 다이얼로그, 날짜 피커의 달력 등)이 닫히면 마지막으로 쓰던 입력란에 포커스를 되돌려
  * Enter와 Esc를 이어서 쓸 수 있게 한다.</li>
  * <li>등록한 입력란에는 포커스 테두리를 보인다({@link FocusIndicator}).</li>
@@ -176,12 +176,12 @@ public final class DialogKeyHandler {
     }
 
     /**
-     * 다이얼로그 어디서든 Enter를 누르면 주 버튼을 누르게 한다. 입력란 없이 목록에서 고르기만 하는 다이얼로그(예산 선택 등)에
-     * 쓰며, 입력란을 등록한 다이얼로그에는 쓰지 않는다.
+     * 다이얼로그 어디서든 Enter를 누르면 주 버튼을 누르게 한다. 입력란 없이 목록에서 고르기만 하는 다이얼로그(예산 선택 등)에 쓰며,
+     * 입력란을 등록한 다이얼로그에는 쓰지 않는다.
      *
-     * @param tables Enter를 자신이 쓰는(다음 행으로 이동, 또는 ListTable의 행 더블클릭 처리기) 표. 이 표에
-     *               포커스가 있을 때 누른 Enter도 주 버튼을 누르게 바꾼다. 같은 키를 덮어쓰므로 표에 행 더블클릭
-     *               처리기를 등록한 뒤에 호출해야 한다.
+     * @param tables Enter를 자신이 쓰는(다음 행으로 이동, 또는 ListTable의 행 더블클릭 처리기) 표. 이 표에 포커스가
+     *               있을 때 누른 Enter도 주 버튼을 누르게 바꾼다. 같은 키를 덮어쓰므로 표에 행 더블클릭 처리기를 등록한 뒤에
+     *               호출해야 한다.
      */
     public DialogKeyHandler pressPrimaryOnEnter(JComponent... tables) {
         AbstractAction pressPrimary = new AbstractAction() {
@@ -213,8 +213,7 @@ public final class DialogKeyHandler {
     }
 
     /**
-     * 입력한 내용이 바뀌었는지 판단할 값을 지정한다. 다이얼로그를 띄운 시점의 값과 닫으려는 시점의 값이 다르면
-     * 닫기 전에 확인을 받는다.
+     * 입력한 내용이 바뀌었는지 판단할 값을 지정한다. 다이얼로그를 띄운 시점의 값과 닫으려는 시점의 값이 다르면 닫기 전에 확인을 받는다.
      *
      * @param stateSupplier 입력값을 담은 객체를 만드는 함수. 반환값은 {@link Object#equals}로 비교한다.
      */

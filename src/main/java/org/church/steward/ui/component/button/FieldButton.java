@@ -18,11 +18,10 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
 /**
- * 입력란 바로 옆에 붙는 아이콘 버튼(날짜 피커의 달력 버튼, 예산 선택 버튼).
- * 툴바의 {@link IconButton}과 달리 입력란과 한 덩어리로 보이도록 테두리와 흰 배경을 두고, 입력란 높이에 맞춘 정사각형으로
- * 만든다. 꺼진 동안에는 아이콘을 흐린 회색으로 그리고, 마우스를 올려도 손 모양 커서와 배경색을 보이지 않는다(툴팁은 그대로 뜬다).
- * 라이브러리가 만든 버튼(LGoodDatePicker의 달력 버튼)은 클래스를 바꿀 수 없으므로 {@link #decorate}로 같은
- * 모양을 입힌다.
+ * 입력란 바로 옆에 붙는 아이콘 버튼(날짜 피커의 달력 버튼, 예산 선택 버튼). 툴바의 {@link IconButton}과 달리 입력란과
+ * 한 덩어리로 보이도록 테두리와 흰 배경을 두고, 입력란 높이에 맞춘 정사각형으로 만든다. 꺼진 동안에는 아이콘을 흐린 회색으로 그리고,
+ * 마우스를 올려도 손 모양 커서와 배경색을 보이지 않는다(툴팁은 그대로 뜬다). 라이브러리가 만든 버튼(LGoodDatePicker의 달력
+ * 버튼)은 클래스를 바꿀 수 없으므로 {@link #decorate}로 같은 모양을 입힌다.
  */
 public class FieldButton extends JButton {
     private static final long serialVersionUID = 1L;

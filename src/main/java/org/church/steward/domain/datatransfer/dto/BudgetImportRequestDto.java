@@ -10,8 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 예산 가져오기의 입력: 파일에서 읽은 행과, 그 열들을 예산의 어느 항목으로 읽을지에 대한 지정.
- * 열은 0부터 세는 위치로 가리킨다.
+ * 예산 가져오기의 입력: 파일에서 읽은 행과, 그 열들을 예산의 어느 항목으로 읽을지에 대한 지정. 열은 0부터 세는 위치로 가리킨다.
  */
 @Getter
 @NoArgsConstructor

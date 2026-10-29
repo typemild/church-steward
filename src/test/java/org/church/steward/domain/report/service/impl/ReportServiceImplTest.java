@@ -83,8 +83,8 @@ class ReportServiceImplTest {
             .build();
 
     /**
-     * 직전 회계 연도. 한 해에 회계 연도가 둘 이상일 수 있으므로 연도가 아니라 시작일로 찾는다.
-     * 리포지토리가 이것을 돌려주도록 스텁하지 않으면 빈 Optional이 나와 직전 회계 연도가 없는 것이 된다.
+     * 직전 회계 연도. 한 해에 회계 연도가 둘 이상일 수 있으므로 연도가 아니라 시작일로 찾는다. 리포지토리가 이것을 돌려주도록 스텁하지
+     * 않으면 빈 Optional이 나와 직전 회계 연도가 없는 것이 된다.
      */
     private final FiscalYear previousFiscalYear = FiscalYear.builder()
             .id(PREVIOUS_ID)

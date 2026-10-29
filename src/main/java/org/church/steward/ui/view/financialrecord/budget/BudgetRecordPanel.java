@@ -35,8 +35,7 @@ import org.church.steward.util.NumberUtils;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 /**
- * "예산별 보기" 탭의 수입 또는 지출 예산 목록.
- * 조회된 내역이 속한 예산만 보여주며, 예산 행을 펼치면 그 예산의 내역들이 나타난다.
+ * "예산별 보기" 탭의 수입 또는 지출 예산 목록. 조회된 내역이 속한 예산만 보여주며, 예산 행을 펼치면 그 예산의 내역들이 나타난다.
  */
 public class BudgetRecordPanel extends JPanel {
 
@@ -166,8 +165,8 @@ public class BudgetRecordPanel extends JPanel {
     }
 
     /**
-     * 내역을 추가, 수정, 삭제할 수 있는지 정한다. 마감된 회계 연도의 내역은 조회만 할 수 있으므로 false로 둔다.
-     * 편집할 수 없으면 일괄 변경/추가/수정/삭제 버튼과 그 사이의 간격을 숨기고 상세 보기 버튼을 보인다.
+     * 내역을 추가, 수정, 삭제할 수 있는지 정한다. 마감된 회계 연도의 내역은 조회만 할 수 있으므로 false로 둔다. 편집할 수 없으면
+     * 일괄 변경/추가/수정/삭제 버튼과 그 사이의 간격을 숨기고 상세 보기 버튼을 보인다.
      */
     public void setEditable(boolean editable) {
         this.editable = editable;
@@ -241,8 +240,7 @@ public class BudgetRecordPanel extends JPanel {
     }
 
     /**
-     * 내역 행을 더블클릭하면 수정한다. 편집할 수 없으면(마감된 회계 연도) 상세 보기를 연다.
-     * 예산 행은 더블클릭해도 선택만 된다.
+     * 내역 행을 더블클릭하면 수정한다. 편집할 수 없으면(마감된 회계 연도) 상세 보기를 연다. 예산 행은 더블클릭해도 선택만 된다.
      */
     private void onRowDoubleClicked(int modelRow) {
         if (tableModel.getRowValue(modelRow)

@@ -28,8 +28,8 @@ import org.church.steward.ui.view.financialrecord.contact.ContactChipField;
 import org.church.steward.ui.view.financialrecord.contact.HierarchicalContactSuggester;
 
 /**
- * 선택한 여러 수입/지출 내역의 관계자를 한 번에 바꾸기 위해 관계자를 고르는 다이얼로그.
- * 입력 다이얼로그와 같이 수입은 봉헌자를 여러 명 고를 수 있고 그룹 기능을 쓰며, 지출은 그룹 기능 없이 수취인 한 명만 고른다.
+ * 선택한 여러 수입/지출 내역의 관계자를 한 번에 바꾸기 위해 관계자를 고르는 다이얼로그. 입력 다이얼로그와 같이 수입은 봉헌자를 여러 명
+ * 고를 수 있고 그룹 기능을 쓰며, 지출은 그룹 기능 없이 수취인 한 명만 고른다.
  */
 class BulkContactChangeDialog extends JDialog {
 

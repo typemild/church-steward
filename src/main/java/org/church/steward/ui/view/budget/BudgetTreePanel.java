@@ -41,12 +41,10 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 예산 테이블을 포함하는 패널.
- * 예산 관리 화면에서는 예산마다 진행 현황(수입액/집행액, 달성률/집행률)을 함께 보여주고 툴바와 더블클릭으로 편집한다.
- * 마감된 회계 연도처럼 편집을 막아야 할 때는 {@link #setEditable}로 편집 툴바를 상세 보기 버튼으로 바꾸고, 더블클릭도
- * 상세 보기로 바꾼다.
- * 읽기 전용 모드에서는 편집 툴바와 진행 현황 없이 예산 선택 용도로만 쓸 수 있다.
- * 예산을 고르는 다이얼로그는 {@link #setRowDoubleClickHandler}로 더블클릭을 수정 대신 선택 확인으로 바꾼다.
+ * 예산 테이블을 포함하는 패널. 예산 관리 화면에서는 예산마다 진행 현황(수입액/집행액, 달성률/집행률)을 함께 보여주고 툴바와 더블클릭으로
+ * 편집한다. 마감된 회계 연도처럼 편집을 막아야 할 때는 {@link #setEditable}로 편집 툴바를 상세 보기 버튼으로 바꾸고,
+ * 더블클릭도 상세 보기로 바꾼다. 읽기 전용 모드에서는 편집 툴바와 진행 현황 없이 예산 선택 용도로만 쓸 수 있다. 예산을 고르는
+ * 다이얼로그는 {@link #setRowDoubleClickHandler}로 더블클릭을 수정 대신 선택 확인으로 바꾼다.
  */
 @Slf4j
 public class BudgetTreePanel extends JPanel {
@@ -57,8 +55,8 @@ public class BudgetTreePanel extends JPanel {
 
     /**
      * 예산 관리 화면에서 쓰는 금액 칸과 비율 칸의 폭. 수입 예산과 지출 예산을 좌우로 나란히 놓으면 표 하나가 320px 남짓이어서,
-     * 항목명에 폭을 남기도록 금액 칸은 억 단위("100,000,000")까지, 비율 칸은 "100.0%"까지 들어갈 만큼만 둔다.
-     * 칸에 넘치는 금액은 툴팁으로 확인할 수 있다.
+     * 항목명에 폭을 남기도록 금액 칸은 억 단위("100,000,000")까지, 비율 칸은 "100.0%"까지 들어갈 만큼만 둔다. 칸에 넘치는
+     * 금액은 툴팁으로 확인할 수 있다.
      */
     private static final int AMOUNT_COLUMN_WIDTH = 78;
     private static final int RATE_COLUMN_WIDTH = 54;
@@ -131,8 +129,8 @@ public class BudgetTreePanel extends JPanel {
     }
 
     /**
-     * 제목과 모두 펼치기/접기 버튼, 편집 툴바(읽기 전용 모드가 아닐 때)를 담은 머리 영역을 만든다.
-     * 모두 펼치기/접기는 보기만 바꾸므로 읽기 전용 모드나 마감된 회계 연도에서도 쓸 수 있다.
+     * 제목과 모두 펼치기/접기 버튼, 편집 툴바(읽기 전용 모드가 아닐 때)를 담은 머리 영역을 만든다. 모두 펼치기/접기는 보기만 바꾸므로
+     * 읽기 전용 모드나 마감된 회계 연도에서도 쓸 수 있다.
      */
     private JPanel createHeaderPanel() {
         // 제목과 버튼을 머리 영역의 세로 가운데에 나란히 둔다.
@@ -466,12 +464,12 @@ public class BudgetTreePanel extends JPanel {
     }
 
     /**
-     * 행을 더블클릭했을 때 할 일을 정한다. 등록하면 편집 모드의 더블클릭 수정 대신 이 처리기를 부른다.
-     * 예산을 고르는 다이얼로그가 더블클릭한 예산으로 확인할 때 쓴다. 표가 더블클릭한 행을 선택한 뒤에 부르므로,
-     * 처리기는 {@link #getSelectedBudget()}을 그대로 쓰면 된다.
+     * 행을 더블클릭했을 때 할 일을 정한다. 등록하면 편집 모드의 더블클릭 수정 대신 이 처리기를 부른다. 예산을 고르는 다이얼로그가 더블클릭한
+     * 예산으로 확인할 때 쓴다. 표가 더블클릭한 행을 선택한 뒤에 부르므로, 처리기는 {@link #getSelectedBudget()}을
+     * 그대로 쓰면 된다.
      * <p>
-     * 표는 행을 고른 채 누른 Enter에도 같은 처리기를 부르므로, 다이얼로그가 Enter를 따로 다루려면 이 메서드를 부른 뒤에
-     * 표의 키 동작을 바꾼다.
+     * 표는 행을 고른 채 누른 Enter에도 같은 처리기를 부르므로, 다이얼로그가 Enter를 따로 다루려면 이 메서드를 부른 뒤에 표의 키
+     * 동작을 바꾼다.
      */
     public void setRowDoubleClickHandler(Runnable handler) {
         table.setRowDoubleClickHandler(_ -> handler.run());

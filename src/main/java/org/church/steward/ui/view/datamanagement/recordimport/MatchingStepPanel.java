@@ -43,9 +43,8 @@ import com.formdev.flatlaf.util.SystemInfo;
 /**
  * 수입/지출 가져오기의 3단계. 파일에 나온 예산 값과 관계자 이름을 등록된 예산과 관계자에 매핑한다.
  * <p>
- * 예산과 관계자는 자동으로 만들지 않으므로, 자동 매핑에 실패한 값을 여기서 사용자가 직접 매핑한다.
- * 같은 값은 여러 행에 나와도 한 줄이고, 그 한 줄을 매핑하면 그 값을 쓰는 모든 행에 적용된다.
- * 여러 줄을 골라 한 대상에 한꺼번에 매핑할 수도 있다.
+ * 예산과 관계자는 자동으로 만들지 않으므로, 자동 매핑에 실패한 값을 여기서 사용자가 직접 매핑한다. 같은 값은 여러 행에 나와도 한
+ * 줄이고, 그 한 줄을 매핑하면 그 값을 쓰는 모든 행에 적용된다. 여러 줄을 골라 한 대상에 한꺼번에 매핑할 수도 있다.
  */
 class MatchingStepPanel extends JPanel {
 
@@ -282,8 +281,8 @@ class MatchingStepPanel extends JPanel {
         private final JPanel bottomPanel = new JPanel(new BorderLayout());
 
         /**
-         * @param showTypeColumn 구분 칸을 보여줄지 여부. 표에서 칸을 빼도 모델의 칸 번호는 그대로이므로, 렌더러는 모델
-         *                       기준 칸 번호로 판단한다.
+         * @param showTypeColumn 구분 칸을 보여줄지 여부. 표에서 칸을 빼도 모델의 칸 번호는 그대로이므로, 렌더러는 모델 기준 칸
+         *                       번호로 판단한다.
          */
         private MappingTablePanel(Supplier<List<ImportMappingDto>> source, Consumer<List<ImportMappingDto>> onMap,
                 Consumer<List<ImportMappingDto>> onUnmap, Set<Integer> centeredColumns, boolean showTypeColumn) {
@@ -337,9 +336,8 @@ class MatchingStepPanel extends JPanel {
         /**
          * 기본으로는 모든 항목을 보여주고, "자동 매핑에 실패한 항목만 표시"를 켜면 아직 매핑되지 않은 항목만 보여준다.
          * <p>
-         * 고르고 있던 항목은 다시 고른 상태로 둔다. 매핑 다이얼로그를 닫으면 다시 분석해 표를 새로 채우는데, 그 뒤에도
-         * 마지막으로 고른 항목에서 이어서 작업할 수 있게 하기 위함이다. 표에서 빠진 항목(실패한 항목만 표시할 때
-         * 매핑된 항목)은 고르지 않는다.
+         * 고르고 있던 항목은 다시 고른 상태로 둔다. 매핑 다이얼로그를 닫으면 다시 분석해 표를 새로 채우는데, 그 뒤에도 마지막으로 고른 항목에서
+         * 이어서 작업할 수 있게 하기 위함이다. 표에서 빠진 항목(실패한 항목만 표시할 때 매핑된 항목)은 고르지 않는다.
          */
         private void refresh() {
             Set<String> selectedKeys = new HashSet<>(keysOf(selectedMappings()));

@@ -23,9 +23,8 @@ import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.util.UIFonts;
 
 /**
- * 최상위 예산별로 예산 금액 대비 실제 금액을 진행 막대로 보여주는 목록.
- * 수입 예산과 지출 예산 중 한쪽만 보여주며, 예산마다 한 줄에 예산명, 진행 막대, 진행률을 그린다.
- * 진행률이 높은 예산부터 나열하고, 금액은 툴팁으로 보여준다.
+ * 최상위 예산별로 예산 금액 대비 실제 금액을 진행 막대로 보여주는 목록. 수입 예산과 지출 예산 중 한쪽만 보여주며, 예산마다 한 줄에
+ * 예산명, 진행 막대, 진행률을 그린다. 진행률이 높은 예산부터 나열하고, 금액은 툴팁으로 보여준다.
  */
 class BudgetProgressList extends JComponent implements Scrollable {
 

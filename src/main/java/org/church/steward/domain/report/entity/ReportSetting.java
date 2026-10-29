@@ -17,8 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 사용자가 보고서마다 정한 서식과 미리보기 설정.
- * 사용자를 삭제하면 스키마의 외래 키(ON DELETE CASCADE)가 함께 지운다.
+ * 사용자가 보고서마다 정한 서식과 미리보기 설정. 사용자를 삭제하면 스키마의 외래 키(ON DELETE CASCADE)가 함께 지운다.
  */
 @Entity
 @Table(name = "REPORT_SETTING")

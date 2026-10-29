@@ -20,8 +20,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * @Loggable 어노테이션을 분석하여 엔터티의 로그 대상 정보(논리명 및 필드 목록)를 추출하고,
- *           성능 최적화를 위해 캐싱하여 관리하는 유틸리티 클래스다.
+ * {@link Loggable} 어노테이션을 분석하여 엔터티의 로그 대상 정보(논리명 및 필드 목록)를 추출하고, 성능 최적화를 위해
+ * 캐싱하여 관리하는 유틸리티 클래스다.
  */
 public class LoggableMetadataExtractor {
 
@@ -55,8 +55,8 @@ public class LoggableMetadataExtractor {
     }
 
     /**
-     * @Loggable 어노테이션이 붙은 클래스의 논리명을 가져온다.
-     *           대상 객체가 {@link DynamicLoggable}이면 객체가 반환한 논리명을 사용한다.
+     * {@link Loggable} 어노테이션이 붙은 클래스의 논리명을 가져온다. 대상 객체가 {@link DynamicLoggable}이면
+     * 객체가 반환한 논리명을 사용한다.
      *
      * @param entity 대상 객체
      * @return 엔터티의 논리명, 어노테이션이 없으면 null
@@ -69,8 +69,7 @@ public class LoggableMetadataExtractor {
     }
 
     /**
-     * 로그에 표시할 필드의 논리명을 가져온다.
-     * 대상 객체가 {@link DynamicLoggable}이면 객체가 반환한 논리명을 사용한다.
+     * 로그에 표시할 필드의 논리명을 가져온다. 대상 객체가 {@link DynamicLoggable}이면 객체가 반환한 논리명을 사용한다.
      *
      * @param entity 대상 객체
      * @param info   필드 정보
@@ -84,7 +83,7 @@ public class LoggableMetadataExtractor {
     }
 
     /**
-     * @Loggable 어노테이션이 붙은 클래스의 논리명을 가져온다.
+     * {@link Loggable} 어노테이션이 붙은 클래스의 논리명을 가져온다.
      *
      * @param clazz 대상 클래스
      * @return 엔터티의 논리명, 어노테이션이 없으면 null
@@ -96,8 +95,8 @@ public class LoggableMetadataExtractor {
     }
 
     /**
-     * 클래스 타입을 기반으로 로그 가능한 필드/메소드 정보를 가져오며, 캐싱을 활용한다.
-     * 식별자 항목이 먼저 오도록 정렬하며, 그 안에서도 선언 순서를 유지한다.
+     * 클래스 타입을 기반으로 로그 가능한 필드/메소드 정보를 가져오며, 캐싱을 활용한다. 식별자 항목이 먼저 오도록 정렬하며, 그 안에서도 선언
+     * 순서를 유지한다.
      */
     public static List<LoggableFieldInfo> getLoggableFields(Class<?> clazz) {
         return getMetadata(clazz).getFields();
@@ -146,9 +145,8 @@ public class LoggableMetadataExtractor {
     }
 
     /**
-     * 추출된 필드/메소드 정보를 바탕으로 대상 객체의 실제 값을 가져오고,
-     *
-     * @LoggableField에 정의된 포맷을 적용하여 문자열로 반환한다.
+     * 추출된 필드/메소드 정보를 바탕으로 대상 객체의 실제 값을 가져오고, {@link LoggableField}에 정의된 포맷을 적용하여
+     * 문자열로 반환한다.
      */
     public static String getValue(Object entity, LoggableFieldInfo info) {
         try {
@@ -178,8 +176,8 @@ public class LoggableMetadataExtractor {
     }
 
     /**
-     * 값의 타입(Number, TemporalAccessor 등)에 따라 지정된 포맷 패턴을 적용하여 문자열로 변환한다.
-     * 포맷이 유효하지 않거나 지원되지 않는 경우 기본 toString()을 사용한다.
+     * 값의 타입(Number, TemporalAccessor 등)에 따라 지정된 포맷 패턴을 적용하여 문자열로 변환한다. 포맷이 유효하지 않거나
+     * 지원되지 않는 경우 기본 toString()을 사용한다.
      */
     private static String formatValue(Object value, String format) {
         if (value == null) {

@@ -232,8 +232,8 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
     }
 
     /**
-     * 예산의 구분은 내역의 구분과 같아야 한다. 수입에는 수입 예산만, 지출에는 지출 예산만 쓸 수 있다.
-     * 등록(가져오기 포함), 수정, 예산 일괄 변경이 모두 검증한다.
+     * 예산의 구분은 내역의 구분과 같아야 한다. 수입에는 수입 예산만, 지출에는 지출 예산만 쓸 수 있다. 등록(가져오기 포함), 수정, 예산
+     * 일괄 변경이 모두 검증한다.
      */
     private void validateBudgetType(Budget budget, FinancialRecordType type) {
         BudgetType expectedType = type == FinancialRecordType.INCOME ? BudgetType.INCOME : BudgetType.EXPENSE;
@@ -251,9 +251,8 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
     }
 
     /**
-     * 수입의 봉헌자가 2명 이상이면, 같은 구성원의 그룹이 없는 경우 그룹으로 등록한다.
-     * 다음 수입 입력 시 자동 완성에서 그룹을 골라 구성원 전체를 한 번에 입력할 수 있게 하기 위함이다.
-     * 지출은 그룹 기능을 쓰지 않는다.
+     * 수입의 봉헌자가 2명 이상이면, 같은 구성원의 그룹이 없는 경우 그룹으로 등록한다. 다음 수입 입력 시 자동 완성에서 그룹을 골라 구성원
+     * 전체를 한 번에 입력할 수 있게 하기 위함이다. 지출은 그룹 기능을 쓰지 않는다.
      */
     private void registerContactGroup(FinancialRecordType type, Set<Long> contactIds) {
         if (type != FinancialRecordType.INCOME || contactIds.size() < 2) {

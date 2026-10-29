@@ -16,9 +16,8 @@ import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.view.financialrecord.FinancialRecordFormats;
 
 /**
- * 단순 자동 완성 목록의 항목 렌더러.
- * {@link ContactAutocompleteCellRenderer}에서 아이콘을 뺀 형태로, "[구분] 성명"과 작은 글씨의 비고를 두
- * 줄로 표시한다. 비고가 없으면 비고 줄을 빼므로 항목마다 높이가 다르다.
+ * 단순 자동 완성 목록의 항목 렌더러. {@link ContactAutocompleteCellRenderer}에서 아이콘을 뺀 형태로,
+ * "[구분] 성명"과 작은 글씨의 비고를 두 줄로 표시한다. 비고가 없으면 비고 줄을 빼므로 항목마다 높이가 다르다.
  */
 public class ContactSuggestionCellRenderer extends JPanel implements ListCellRenderer<ContactSummaryDto> {
 

@@ -14,9 +14,8 @@ import org.church.steward.ui.view.report.layout.ReportDocument;
 import org.church.steward.ui.view.report.layout.ReportPaper;
 
 /**
- * 보고서를 프린터로 인쇄한다.
- * 인쇄 대화상자는 EDT에서 {@link #showDialog}로 띄우고, 시간이 걸리는 실제 인쇄는 백그라운드에서
- * {@link #print}로 한다.
+ * 보고서를 프린터로 인쇄한다. 인쇄 대화상자는 EDT에서 {@link #showDialog}로 띄우고, 시간이 걸리는 실제 인쇄는
+ * 백그라운드에서 {@link #print}로 한다.
  */
 public final class ReportPrinter {
 
@@ -74,8 +73,7 @@ public final class ReportPrinter {
     }
 
     /**
-     * 보고서의 페이지를 용지에 맞춰 그린다.
-     * 용지가 A4이고 프린터가 보고서의 여백 안쪽을 모두 인쇄할 수 있으면 실제 크기 그대로 그린다.
+     * 보고서의 페이지를 용지에 맞춰 그린다. 용지가 A4이고 프린터가 보고서의 여백 안쪽을 모두 인쇄할 수 있으면 실제 크기 그대로 그린다.
      * 그렇지 않으면 내용이 잘리지 않도록 페이지 전체를 인쇄할 수 있는 영역 안으로 같은 비율로 줄인다.
      */
     private static final class DocumentPrintable implements Printable {

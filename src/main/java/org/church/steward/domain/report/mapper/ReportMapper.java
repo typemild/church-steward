@@ -12,8 +12,8 @@ import org.church.steward.domain.report.dto.ReportRecordGroupDto;
 import org.springframework.stereotype.Component;
 
 /**
- * 예산과 수입/지출 내역 엔터티를 보고서 DTO로 바꾼다.
- * 금액 합산이나 비율 계산 같은 집계는 서비스가 하고, 여기서는 엔터티의 값과 서비스가 계산해 넘긴 값을 DTO에 옮겨 담기만 한다.
+ * 예산과 수입/지출 내역 엔터티를 보고서 DTO로 바꾼다. 금액 합산이나 비율 계산 같은 집계는 서비스가 하고, 여기서는 엔터티의 값과
+ * 서비스가 계산해 넘긴 값을 DTO에 옮겨 담기만 한다.
  */
 @Component
 public class ReportMapper {

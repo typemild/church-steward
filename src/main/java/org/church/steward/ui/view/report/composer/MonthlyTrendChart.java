@@ -13,9 +13,8 @@ import org.church.steward.ui.view.report.layout.ReportCanvas;
 import org.church.steward.ui.view.report.layout.ReportText;
 
 /**
- * 월별 수입과 지출을 나란히 세운 막대 차트. 대시보드의 월별 차트와 같은 구조다.
- * 흑백으로 인쇄해도 구분되도록 수입은 진한 회색으로 채우고 지출은 테두리만 그린다.
- * 눈금은 어림값으로 적으며, 정확한 금액은 차트 옆의 표가 보여준다.
+ * 월별 수입과 지출을 나란히 세운 막대 차트. 대시보드의 월별 차트와 같은 구조다. 흑백으로 인쇄해도 구분되도록 수입은 진한 회색으로 채우고
+ * 지출은 테두리만 그린다. 눈금은 어림값으로 적으며, 정확한 금액은 차트 옆의 표가 보여준다.
  */
 final class MonthlyTrendChart {
 
@@ -166,8 +165,7 @@ final class MonthlyTrendChart {
 
     /**
      * 달 이름에 연도를 붙여야 하는지 판단한다. 회계 연도는 두 해에 걸칠 수 있으므로(예: 12월 ~ 이듬해 11월) 연도가 달라도 달 이름만
-     * 적고,
-     * 기간이 열두 달을 넘어 같은 달이 두 번 나올 때만 연도를 붙여 구분한다.
+     * 적고, 기간이 열두 달을 넘어 같은 달이 두 번 나올 때만 연도를 붙여 구분한다.
      */
     static boolean needsYear(List<MonthlyTrendDto> data) {
         Set<Integer> monthValues = new HashSet<>();

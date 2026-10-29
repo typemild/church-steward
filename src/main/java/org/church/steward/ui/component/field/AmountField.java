@@ -38,10 +38,12 @@ import org.church.steward.util.NumberUtils;
 
 /**
  * 금액 입력 전용 텍스트 필드.
- * - 숫자만 입력 가능
- * - 타이핑 중 실시간 천 단위 콤마(,) 표시
- * - 포커스 상태에서 하단에 한글 금액 팝업 표시
- * - Long 타입 값으로 get/set (빈 값을 허용하는 경우 null 가능)
+ * <ul>
+ * <li>숫자만 입력 가능</li>
+ * <li>타이핑 중 실시간 천 단위 콤마(,) 표시</li>
+ * <li>포커스 상태에서 하단에 한글 금액 팝업 표시</li>
+ * <li>Long 타입 값으로 get/set (빈 값을 허용하는 경우 null 가능)</li>
+ * </ul>
  */
 public class AmountField extends JFormattedTextField {
 
@@ -160,8 +162,7 @@ public class AmountField extends JFormattedTextField {
     }
 
     /**
-     * 현재 입력된 금액을 반환한다.
-     * 비어있으면 빈 값을 허용하는 경우 null을, 그렇지 않은 경우 0을 반환한다.
+     * 현재 입력된 금액을 반환한다. 비어있으면 빈 값을 허용하는 경우 null을, 그렇지 않은 경우 0을 반환한다.
      */
     public Long getAmount() {
         String digits = getText().replace(",", "");
@@ -176,8 +177,7 @@ public class AmountField extends JFormattedTextField {
     }
 
     /**
-     * 금액을 설정한다.
-     * null이면 빈 값을 허용하는 경우 필드를 비우고, 그렇지 않은 경우 0으로 설정한다.
+     * 금액을 설정한다. null이면 빈 값을 허용하는 경우 필드를 비우고, 그렇지 않은 경우 0으로 설정한다.
      */
     public void setAmount(Long amount) {
         if (amount == null) {
@@ -266,8 +266,8 @@ public class AmountField extends JFormattedTextField {
     }
 
     /**
-     * 필드의 화면 위치나 크기가 바뀌면 팝업을 숨기고, 변경이 멈춘 뒤 새 위치에 다시 띄운다.
-     * 드래그 중에는 이벤트가 연달아 오므로 그때마다 타이머를 다시 시작한다.
+     * 필드의 화면 위치나 크기가 바뀌면 팝업을 숨기고, 변경이 멈춘 뒤 새 위치에 다시 띄운다. 드래그 중에는 이벤트가 연달아 오므로 그때마다
+     * 타이머를 다시 시작한다.
      */
     private void relocateKoreanPopup() {
         if (koreanPopup == null) {

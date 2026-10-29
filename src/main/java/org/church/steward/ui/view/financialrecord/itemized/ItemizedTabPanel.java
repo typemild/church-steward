@@ -170,8 +170,8 @@ public class ItemizedTabPanel extends JPanel {
     }
 
     /**
-     * 내역을 추가, 수정, 삭제할 수 있는지 정한다. 마감된 회계 연도의 내역은 조회만 할 수 있으므로 false로 둔다.
-     * 편집할 수 없으면 일괄 변경/추가/수정/삭제 버튼과 그 사이의 간격을 숨기고 상세 보기 버튼을 보인다.
+     * 내역을 추가, 수정, 삭제할 수 있는지 정한다. 마감된 회계 연도의 내역은 조회만 할 수 있으므로 false로 둔다. 편집할 수 없으면
+     * 일괄 변경/추가/수정/삭제 버튼과 그 사이의 간격을 숨기고 상세 보기 버튼을 보인다.
      */
     public void setEditable(boolean editable) {
         this.editable = editable;
@@ -186,8 +186,8 @@ public class ItemizedTabPanel extends JPanel {
     }
 
     /**
-     * 일괄 변경 버튼은 같은 구분의 내역이 한 건 이상 선택되었을 때만 켠다.
-     * 예산과 관계자의 규칙이 구분마다 다르므로 수입과 지출이 함께 선택되면 끄고, 그 이유를 툴팁으로 알린다.
+     * 일괄 변경 버튼은 같은 구분의 내역이 한 건 이상 선택되었을 때만 켠다. 예산과 관계자의 규칙이 구분마다 다르므로 수입과 지출이 함께
+     * 선택되면 끄고, 그 이유를 툴팁으로 알린다.
      */
     private void updateBulkChangeButtons() {
         List<FinancialRecordResponseDto> selected = getSelectedRecords();

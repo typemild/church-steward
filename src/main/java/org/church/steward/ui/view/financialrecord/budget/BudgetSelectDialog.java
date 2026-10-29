@@ -25,8 +25,7 @@ import org.church.steward.ui.view.budget.BudgetTreePanel;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 /**
- * 수입/지출 예산 선택 다이얼로그.
- * 좌측에 수입 예산, 우측에 지출 예산 목록을 보여주며 둘 중 한 곳에서만 행을 선택할 수 있다.
+ * 수입/지출 예산 선택 다이얼로그. 좌측에 수입 예산, 우측에 지출 예산 목록을 보여주며 둘 중 한 곳에서만 행을 선택할 수 있다.
  */
 public class BudgetSelectDialog extends JDialog {
 
@@ -47,8 +46,8 @@ public class BudgetSelectDialog extends JDialog {
 
     /**
      * @param allowedType 선택할 수 있는 예산 유형. null이면 수입/지출 예산을 모두 보여준다.
-     * @param leafOnly    true이면 하위 예산이 없는 말단 예산을 반드시 선택해야 한다.
-     *                    false이면 상위 예산도 선택할 수 있고, 선택 없이 확인하면 예산 조건을 해제한다.
+     * @param leafOnly    true이면 하위 예산이 없는 말단 예산을 반드시 선택해야 한다. false이면 상위 예산도 선택할 수
+     *                    있고, 선택 없이 확인하면 예산 조건을 해제한다.
      */
     public BudgetSelectDialog(Window owner, BudgetController budgetController, Long fiscalYearId,
             BudgetType allowedType, boolean leafOnly) {

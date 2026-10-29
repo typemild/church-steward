@@ -68,18 +68,22 @@ public class ChurchStewardApplication {
 
         // 1. 테마 설정
         if (SystemInfo.isMacOS) {
-            /*
-             * [macOS 툴팁 깜빡임 우회] 2026-10-13
-             * 1. 증상: 최신 macOS에서 버튼 툴팁이 처음 표시될 때 깜빡이며 바로 닫히고,
-             * 마우스를 다시 올려야만 정상 표시됨. (Windows에서는 재현 안 됨)
-             * 2. 원인: FlatLaf의 macOS 네이티브 라운드 팝업 테두리 적용 과정과 최신 macOS 간의 충돌로 추정.
-             * 이 속성을 false로 하면 증상 사라짐.
-             * 3. 본 우회 조치에 의한 영향: macOS에서 툴팁, 메뉴, 콤보박스 팝업이 사각 테두리로 표시됨.
-             * (그림자는 macOS가 계속 그려줌)
-             * 4. 주의: 반드시 FlatLaf.setup() 이전에 설정해야 함.
-             * 5. TODO: FlatLaf 업데이트 후 이 설정 없이도 증상이 없으면 삭제.
-             * 6. 확인 환경: macOS 27, FlatLaf 3.7.2, JDK 25
-             */
+            // [macOS 툴팁 깜빡임 우회] 2026-10-13
+            //
+            // 1. 증상: 최신 macOS에서 버튼 툴팁이 처음 표시될 때 깜빡이며 바로 닫히고,
+            // 마우스를 다시 올려야만 정상 표시됨. (Windows에서는 재현 안 됨)
+            //
+            // 2. 원인: FlatLaf의 macOS 네이티브 라운드 팝업 테두리 적용 과정과 최신 macOS 간의 충돌로 추정.
+            // 이 속성을 false로 하면 증상 사라짐.
+            //
+            // 3. 본 우회 조치에 의한 영향: macOS에서 툴팁, 메뉴, 콤보박스 팝업이 사각 테두리로 표시됨.
+            // (그림자는 macOS가 계속 그려줌)
+            //
+            // 4. 주의: 반드시 FlatLaf.setup() 이전에 설정해야 함.
+            //
+            // 5. TODO: FlatLaf 업데이트 후 이 설정 없이도 증상이 없으면 삭제.
+            //
+            // 6. 확인 환경: macOS 27, FlatLaf 3.7.2, JDK 25
             System.setProperty("flatlaf.useRoundedPopupBorder", "false");
         }
         // 포커스 색을 프로그램의 Primary 색으로 맞춘다. setup() 전에 지정해야 이 값을 참조하는 다른 색에도 반영된다.
@@ -116,8 +120,7 @@ public class ChurchStewardApplication {
     }
 
     /**
-     * 데이터베이스 초기화 프로세스를 수행한다.
-     * 초기화가 실패하거나 사용자가 취소한 경우 예외를 던진다.
+     * 데이터베이스 초기화 프로세스를 수행한다. 초기화가 실패하거나 사용자가 취소한 경우 예외를 던진다.
      */
     private static void runDatabaseInitialization(String[] args)
             throws InvocationTargetException, InterruptedException {
@@ -157,9 +160,8 @@ public class ChurchStewardApplication {
     }
 
     /**
-     * 데이터 관리 화면에서 예약한 복원이 있으면 복원 화면을 띄운다.
-     * 복원은 데이터베이스 파일을 교체하므로 Spring 컨텍스트를 띄우기 전인 이 시점에 수행한다.
-     * 예약은 한 번만 유효하며, 복원을 취소하면 기존 데이터로 로그인 화면이 이어진다.
+     * 데이터 관리 화면에서 예약한 복원이 있으면 복원 화면을 띄운다. 복원은 데이터베이스 파일을 교체하므로 Spring 컨텍스트를 띄우기 전인
+     * 이 시점에 수행한다. 예약은 한 번만 유효하며, 복원을 취소하면 기존 데이터로 로그인 화면이 이어진다.
      */
     private static void runScheduledRestore(String[] args) throws InvocationTargetException, InterruptedException {
         Optional<Path> scheduledFile = backupManager.getScheduledRestore();
@@ -181,11 +183,10 @@ public class ChurchStewardApplication {
     /**
      * 백업 파일로 복원하고 그 사실을 활동 기록에 남기는 동작을 만든다.
      *
-     * 복원은 데이터베이스 파일을 교체하므로 Spring 컨텍스트 없이 수행한다.
-     * 그 뒤 복원한 데이터베이스로 컨텍스트를 잠깐 띄워 "복원" 기록을 남기고 닫는다(최초 실행 때 관리자 계정을 만드는 방식과 같다).
-     * 기록자는 복원 화면에 입력한 계정이다.
-     * 복원은 이미 끝났으므로 기록에 실패해도 복원은 성공으로 보고, 실패했다는 것만 알린다.
-     * 과거 버전의 백업은 복원 단계에서 이미 현재 스키마로 올라가 있다({@link DatabaseManager#restore}).
+     * 복원은 데이터베이스 파일을 교체하므로 Spring 컨텍스트 없이 수행한다. 그 뒤 복원한 데이터베이스로 컨텍스트를 잠깐 띄워 "복원"
+     * 기록을 남기고 닫는다(최초 실행 때 관리자 계정을 만드는 방식과 같다). 기록자는 복원 화면에 입력한 계정이다. 복원은 이미 끝났으므로
+     * 기록에 실패해도 복원은 성공으로 보고, 실패했다는 것만 알린다. 과거 버전의 백업은 복원 단계에서 이미 현재 스키마로 올라가
+     * 있다({@link DatabaseManager#restore}).
      */
     private static DatabaseRestoreView.RestoreAction restoreAction(String[] args) {
         return (file, userId, userPassword) -> {
@@ -249,8 +250,8 @@ public class ChurchStewardApplication {
     }
 
     /**
-     * 사용자에게 에러 메시지를 알림창으로 표시하고, 사용자가 닫을 때까지 기다린다.
-     * 호출한 쪽이 곧바로 프로그램을 끝내므로, 기다리지 않으면 알림창이 뜨기 전에 끝날 수 있다.
+     * 사용자에게 에러 메시지를 알림창으로 표시하고, 사용자가 닫을 때까지 기다린다. 호출한 쪽이 곧바로 프로그램을 끝내므로, 기다리지 않으면
+     * 알림창이 뜨기 전에 끝날 수 있다.
      */
     private static void showErrorDialog(String message, Throwable cause) {
         String detail = cause.getMessage() != null ? cause.getMessage() : cause.getClass().getSimpleName();

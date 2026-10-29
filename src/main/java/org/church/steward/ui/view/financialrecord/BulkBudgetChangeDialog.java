@@ -24,8 +24,8 @@ import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.view.financialrecord.budget.BudgetSelectBox;
 
 /**
- * 선택한 여러 수입/지출 내역의 예산을 한 번에 바꾸기 위해 예산을 고르는 다이얼로그.
- * 내역과 같은 구분, 같은 회계 연도의 말단 예산만 고를 수 있다.
+ * 선택한 여러 수입/지출 내역의 예산을 한 번에 바꾸기 위해 예산을 고르는 다이얼로그. 내역과 같은 구분, 같은 회계 연도의 말단 예산만
+ * 고를 수 있다.
  */
 class BulkBudgetChangeDialog extends JDialog {
 

@@ -3,8 +3,8 @@ package org.church.steward.infrastructure.config;
 import ch.qos.logback.core.PropertyDefinerBase;
 
 /**
- * logback.xml의 로그 파일 경로({@code LOG_FILE})를 프로그램 폴더 기준으로 정한다.
- * Logback은 {@code main}보다 먼저(로거를 가진 클래스가 초기화될 때) 설정을 읽으므로 시스템 속성으로 넘길 수 없어서 쓴다.
+ * logback.xml의 로그 파일 경로({@code LOG_FILE})를 프로그램 폴더 기준으로 정한다. Logback은
+ * {@code main}보다 먼저(로거를 가진 클래스가 초기화될 때) 설정을 읽으므로 시스템 속성으로 넘길 수 없어서 쓴다.
  */
 public class LogFilePropertyDefiner extends PropertyDefinerBase {
 

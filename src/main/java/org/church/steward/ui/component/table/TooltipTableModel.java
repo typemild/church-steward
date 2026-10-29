@@ -3,8 +3,7 @@ package org.church.steward.ui.component.table;
 import javax.swing.table.TableModel;
 
 /**
- * 셀마다 툴팁을 제공하는 표 모델. {@link ListTable}은 모델이 이 인터페이스를 구현하면 마우스가 놓인 셀의
- * 툴팁을 보여준다.
+ * 셀마다 툴팁을 제공하는 표 모델. {@link ListTable}은 모델이 이 인터페이스를 구현하면 마우스가 놓인 셀의 툴팁을 보여준다.
  */
 public interface TooltipTableModel extends TableModel {
 
