@@ -107,16 +107,16 @@ public class MainView extends JFrame {
                 System.exit(0);
             }
         });
-        Dimension frameSize = new Dimension(880, 600);
+        Dimension frameSize = new Dimension(900, 600);
         setSize(frameSize);
         setMinimumSize(frameSize);
         setLocationRelativeTo(null);
 
-        // 사이드바 설정: 너비를 160px로 고정
+        // 사이드바 설정: 너비를 180px로 고정
         sidebarPanel.setLayout(new BoxLayout(sidebarPanel, BoxLayout.Y_AXIS));
         sidebarPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
         sidebarPanel.setBackground(UIColors.SIDEBAR);
-        sidebarPanel.setPreferredSize(new Dimension(160, 0));
+        sidebarPanel.setPreferredSize(new Dimension(180, 0));
 
         // 메인 레이아웃 설정
         setLayout(new BorderLayout());
