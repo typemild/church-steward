@@ -172,6 +172,12 @@ public class PasswordChangePanelView extends JPanel implements MenuActivatable {
                 return;
             }
 
+            if (newPw.equals(oldPw)) {
+                JOptionPane.showMessageDialog(this, "새 비밀번호가 현재 비밀번호와 같습니다.", "입력 오류",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
             List<Violation> result = PasswordPolicy.validate(newPw, List.of());
             if (!result.isEmpty()) {
                 JOptionPane.showMessageDialog(this, result.getFirst().getMessage());

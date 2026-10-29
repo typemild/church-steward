@@ -517,6 +517,64 @@ class UserServiceImplTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("현재 비밀번호가 일치하지 않습니다");
         }
+
+        @Test
+        @DisplayName("updateUserPassword_새 비밀번호가 현재 비밀번호와 같으면 IllegalArgumentException이 발생해야 한다.")
+        void updateUserPassword_SamePassword_ThrowsException() {
+            // Given
+            String userId = "user1";
+            String password = "same_password";
+            String encodedPassword = "encoded_for_same";
+            User user = User.builder().id(userId).password(encodedPassword).build();
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches(password, encodedPassword)).thenReturn(true);
+
+            // When & Then
+            assertThatThrownBy(() -> userService.updateUserPassword(userId, password, password))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("새 비밀번호가 현재 비밀번호와 같습니다.");
+        }
+
+        @Test
+        @DisplayName("updateUserPassword_새 비밀번호가 현재 비밀번호와 같으면 저장하지 않아야 한다.")
+        void updateUserPassword_SamePassword_NotSaved() {
+            // Given
+            String userId = "user1";
+            String password = "same_password";
+            String encodedPassword = "encoded_for_same";
+            User user = User.builder().id(userId).password(encodedPassword).build();
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches(password, encodedPassword)).thenReturn(true);
+
+            // When
+            assertThatThrownBy(() -> userService.updateUserPassword(userId, password, password))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            // Then
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("updateUserPassword_새 비밀번호가 현재 비밀번호와 같으면 DatabaseManager의 비밀번호를 바꾸지 않아야 한다.")
+        void updateUserPassword_SamePassword_DatabaseManagerNotUpdated() throws Exception {
+            // Given
+            String userId = "user1";
+            String password = "same_password";
+            String encodedPassword = "encoded_for_same";
+            User user = User.builder().id(userId).password(encodedPassword).build();
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches(password, encodedPassword)).thenReturn(true);
+
+            // When
+            assertThatThrownBy(() -> userService.updateUserPassword(userId, password, password))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            // Then
+            verify(databaseManager, never()).saveOrUpdateUserPassword(any(), any());
+        }
     }
 
     @Nested
