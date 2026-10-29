@@ -46,6 +46,12 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           draft: true
+          # body는 자동으로 만든 변경 목록 앞에 붙는다.
+          body: |
+            ## 업데이트 방법
+
+            이전 버전을 쓰고 계셨다면 [업데이트 안내](https://github.com/typemild/church-steward/blob/main/docs/update.md)를 따라 주세요.
+            업데이트하기 전에 반드시 백업 파일을 만들어 두세요.
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
