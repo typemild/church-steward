@@ -28,6 +28,8 @@
 | 패널 | `WarningNoticePanel`(경고 아이콘이 붙은 주의 사항) |
 | 표 | `ListTable`(목록 표), `TreeTable`(접고 펼치는 표), `ExpandCollapseAllButton` |
 
+`IconButton`은 꺼져 있으면 아이콘을 흐린 회색(`UIColors.ICON_DISABLED`)으로 그리고, 마우스를 올려도 손 모양 커서와 배경색을 보이지 않는다. 툴팁은 꺼진 동안에도 뜨므로 꺼진 이유를 툴팁에 적을 수 있다. FontIcon은 FlatLaf가 꺼진 아이콘을 회색으로 바꿔 주지 않으므로 `IconButton#setIcon(FontAwesomeSolid)`가 꺼진 아이콘을 함께 지정한다. 아이콘을 바꿀 때는 이 메서드를 쓴다.
+
 `AmountField`는 생성자 옵션으로 빈 값을 허용할 수 있으며, 이때 `getAmount()`는 `null`을 반환한다(검색 조건처럼 비워 둘 수 있는 금액에 쓴다).
 
 ## 입력란의 최대 길이

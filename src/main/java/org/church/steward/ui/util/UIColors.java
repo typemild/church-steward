@@ -21,6 +21,9 @@ public final class UIColors {
     public static final Color SECONDARY_BACKGROUND_HOVER = new Color(236, 240, 241); // #ECF0F1
     public static final Color SECONDARY_TEXT = new Color(44, 62, 80); // #2C3E50
 
+    // Icon Button
+    public static final Color ICON_DISABLED = new Color(189, 195, 199); // #BDC3C7
+
     // Text Field
     public static final Color TEXT_FIELD_BACKGROUND = Color.WHITE; // #FFFFFF
 
