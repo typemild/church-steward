@@ -36,8 +36,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 수입 또는 지출 내역. 구분({@link FinancialRecordType})은 생성할 때 정해지며 이후 바꿀 수 없다.
- * 관계자는 수입이면 봉헌자(1명 이상), 지출이면 수취인(1명)이다.
+ * 수입 또는 지출 내역. 구분({@link FinancialRecordType})은 생성할 때 정해지며 이후 바꿀 수 없다. 관계자는
+ * 수입이면 봉헌자(1명 이상), 지출이면 수취인(1명)이다.
  */
 @Entity
 @Table(name = "FINANCIAL_RECORD")
@@ -108,6 +108,21 @@ public class FinancialRecord implements DynamicLoggable {
         this.description = description;
         this.amount = amount;
         this.remarks = remarks;
+    }
+
+    /**
+     * 예산만 바꾼다. 여러 내역의 예산을 한 번에 바꿀 때 쓴다.
+     */
+    public void changeBudget(Budget budget) {
+        this.budget = budget;
+    }
+
+    /**
+     * 관계자를 모두 지우고 주어진 관계자로 바꾼다. 관계자가 그대로여도 이름은 현재 이름으로 다시 기록된다.
+     */
+    public void replaceContacts(List<Contact> contacts) {
+        this.contacts.clear(); // orphanRemoval = true 이므로 clear 후 다시 추가
+        contacts.forEach(this::addContact);
     }
 
     /**

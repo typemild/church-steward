@@ -34,8 +34,8 @@ import org.church.steward.domain.financialrecord.entity.FinancialRecordContact;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
 
 /**
- * 수입/지출 가져오기의 분석기. 파일의 행들을 내역으로 읽고, 예산과 관계자를 등록된 것에 연결하고,
- * 행마다 가져올 수 있는지를 정한다. 데이터베이스를 직접 읽지 않고 필요한 것을 인자로 받는다.
+ * 수입/지출 가져오기의 분석기. 파일의 행들을 내역으로 읽고, 예산과 관계자를 등록된 것에 연결하고, 행마다 가져올 수 있는지를 정한다.
+ * 데이터베이스를 직접 읽지 않고 필요한 것을 인자로 받는다.
  * <p>
  * 분석은 네 단계다.
  * <ol>
@@ -318,8 +318,7 @@ final class RecordImportAnalyzer {
     }
 
     /**
-     * 수입 금액과 지출 금액의 열이 따로 있는 파일에서, 금액이 적힌 쪽으로 구분을 정한다.
-     * 한쪽에 0이 적혀 있으면 비어 있는 것으로 본다.
+     * 수입 금액과 지출 금액의 열이 따로 있는 파일에서, 금액이 적힌 쪽으로 구분을 정한다. 한쪽에 0이 적혀 있으면 비어 있는 것으로 본다.
      */
     private void readSplitAmounts(Row row, List<Object> values) {
         Long income = ImportCells.amount(ImportCells.cell(values, request.getIncomeAmountColumn()));
@@ -340,8 +339,8 @@ final class RecordImportAnalyzer {
     }
 
     /**
-     * 구분을 읽는다. 구분 열에서 읽을 때는 열에 나온 값마다 매핑 항목을 만들어, 알 수 없는 값을 사용자가
-     * 수입 또는 지출로 지정할 수 있게 한다.
+     * 구분을 읽는다. 구분 열에서 읽을 때는 열에 나온 값마다 매핑 항목을 만들어, 알 수 없는 값을 사용자가 수입 또는 지출로 지정할 수 있게
+     * 한다.
      *
      * @return 구분. 구분이 비어 있거나 알 수 없는 값이면 null이며 이때 행은 오류가 된다.
      */
@@ -365,8 +364,8 @@ final class RecordImportAnalyzer {
     }
 
     /**
-     * 구분 열의 값을 어느 구분으로 읽을지 정한다. 직접 한 매핑이 있으면 그것을 따르고,
-     * 없으면 "수입"/"입금"은 수입, "지출"/"출금"은 지출로 읽는다.
+     * 구분 열의 값을 어느 구분으로 읽을지 정한다. 직접 한 매핑이 있으면 그것을 따르고, 없으면 "수입"/"입금"은 수입, "지출"/"출금"은
+     * 지출로 읽는다.
      */
     private Mapping resolveType(String text) {
         Mapping mapping = new Mapping(text, text, null);
@@ -401,8 +400,7 @@ final class RecordImportAnalyzer {
 
     /**
      * 날짜를 읽는다. 엑셀의 날짜 셀과 "2026-03-05", "2026.3.5", "2026년 3월 5일", "20260305",
-     * "26.3.5" 형식의 글자를 받는다.
-     * "3/5", "3월 5일"처럼 연도가 없으면 회계 연도의 기간으로 연도를 정한다.
+     * "26.3.5" 형식의 글자를 받는다. "3/5", "3월 5일"처럼 연도가 없으면 회계 연도의 기간으로 연도를 정한다.
      */
     private LocalDate parseDate(Object value) {
         if (value instanceof LocalDate date) {
@@ -507,9 +505,8 @@ final class RecordImportAnalyzer {
     }
 
     /**
-     * 한 칸에 쉼표로 구분해 적힌 이름들을 읽는다. 같은 이름은 한 번만 센다.
-     * 칸 전체가 매핑 항목 하나이며, 앞뒤 공백과 중복을 정리한 값이 같으면 같은 항목이다. 이름의 순서는 내역에 저장되는
-     * 관계자의 순서이므로, 순서만 다른 값은 다른 항목이다.
+     * 한 칸에 쉼표로 구분해 적힌 이름들을 읽는다. 같은 이름은 한 번만 센다. 칸 전체가 매핑 항목 하나이며, 앞뒤 공백과 중복을 정리한 값이
+     * 같으면 같은 항목이다. 이름의 순서는 내역에 저장되는 관계자의 순서이므로, 순서만 다른 값은 다른 항목이다.
      */
     private void readContacts(Row row, List<Object> values) {
         Set<String> names = new LinkedHashSet<>();
@@ -643,8 +640,8 @@ final class RecordImportAnalyzer {
     }
 
     /**
-     * 칸에 적힌 이름마다 관계자를 찾는다. 모든 이름을 찾았을 때만 연결하고, 일부만 찾았으면 찾은 관계자와 찾지 못한 이름을
-     * 남겨 직접 매핑할 때 쓰게 한다.
+     * 칸에 적힌 이름마다 관계자를 찾는다. 모든 이름을 찾았을 때만 연결하고, 일부만 찾았으면 찾은 관계자와 찾지 못한 이름을 남겨 직접 매핑할
+     * 때 쓰게 한다.
      *
      * @param names 칸에 적힌 이름들. 빈 칸 항목이면 빈 목록
      */
@@ -766,9 +763,9 @@ final class RecordImportAnalyzer {
     }
 
     /**
-     * 일자, 구분, 예산, 금액, 내용, 관계자가 모두 같은 내역이 이미 있는 행을 중복 의심으로 표시한다.
-     * 건수로 비교한다: 같은 내역이 이미 2건 있고 파일에 3건 있으면 앞의 2건만 중복 의심이다.
-     * 같은 금액의 무명 헌금처럼, 내용이 같은 내역이 여러 건 있는 것은 정상일 수 있기 때문이다.
+     * 일자, 구분, 예산, 금액, 내용, 관계자가 모두 같은 내역이 이미 있는 행을 중복 의심으로 표시한다. 건수로 비교한다: 같은 내역이 이미
+     * 2건 있고 파일에 3건 있으면 앞의 2건만 중복 의심이다. 같은 금액의 무명 헌금처럼, 내용이 같은 내역이 여러 건 있는 것은 정상일 수
+     * 있기 때문이다.
      */
     private void markDuplicates() {
         Map<String, Integer> existingCounts = new HashMap<>();
@@ -853,8 +850,8 @@ final class RecordImportAnalyzer {
     }
 
     /**
-     * 매핑 항목을 화면에 보여줄 순서로 바꾼다. 빈 칸 항목을 맨 앞에 두고, 나머지는 파일의 값 오름차순이며,
-     * 값이 같으면 수입 항목을 지출 항목보다 앞에 둔다. 파일에 나온 순서로 두면 원하는 값을 찾기 어렵기 때문이다.
+     * 매핑 항목을 화면에 보여줄 순서로 바꾼다. 빈 칸 항목을 맨 앞에 두고, 나머지는 파일의 값 오름차순이며, 값이 같으면 수입 항목을 지출
+     * 항목보다 앞에 둔다. 파일에 나온 순서로 두면 원하는 값을 찾기 어렵기 때문이다.
      */
     private static List<ImportMappingDto> toDtos(Map<String, Mapping> mappings) {
         return mappings.values()

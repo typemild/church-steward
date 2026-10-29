@@ -126,6 +126,11 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
         }
 
+        // 현재 비밀번호는 위에서 확인했으므로 입력값끼리 비교한다.
+        if (newPassword.equals(oldPassword)) {
+            throw new IllegalArgumentException("새 비밀번호가 현재 비밀번호와 같습니다.");
+        }
+
         // 3. 변경 전 스냅샷 캡처
         EntitySnapshot<User> oldSnapshot = entitySnapshotCapturer.capture(user);
 

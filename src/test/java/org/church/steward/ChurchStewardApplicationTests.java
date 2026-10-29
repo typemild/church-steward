@@ -15,15 +15,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * 실제 실행과 다른 점은 두 가지다.
  * <ul>
  * <li>{@code ChurchStewardApplication#dataSource()}는 로그인에서 복호화한 DB 비밀번호가 있어야 만들
- * 수 있고, 그대로 쓰면 저장소 루트의
- * {@code ./data}를 가리키므로 내장 H2로 바꾼다.</li>
+ * 수 있고, 그대로 쓰면 저장소 루트의 {@code ./data}를 가리키므로 내장 H2로 바꾼다.</li>
  * <li>{@link MainView}는 {@code JFrame}이라 headless 환경({@code SpringApplication}의
- * 기본값)에서 만들 수 없으므로 mock으로 바꾼다.
- * 나머지 화면 빈은 그대로 만들어 생성자 주입까지 확인한다.</li>
+ * 기본값)에서 만들 수 없으므로 mock으로 바꾼다. 나머지 화면 빈은 그대로 만들어 생성자 주입까지 확인한다.</li>
  * </ul>
  * 기동 절차({@code ChurchStewardApplication.main}의 최초 실행, 로그인, 복원)는 테스트하지
- * 않는다(docs/architecture.md의
- * "기동 절차와 데이터베이스 암호화" 참조).
+ * 않는다(docs/architecture.md의 "기동 절차와 데이터베이스 암호화" 참조).
  */
 // application.yml의 "${version}"은 Gradle(processResources)이 빌드할 때 채운다. IDE가 빌드한 결과로 실행하면
 // 채워지지 않은 채 placeholder로 남아 기동에 실패하므로, 그때만 쓰이도록 값을 넣어 둔다.

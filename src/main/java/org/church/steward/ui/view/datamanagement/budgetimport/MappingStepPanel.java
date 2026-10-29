@@ -23,8 +23,8 @@ import org.church.steward.ui.component.label.FieldLabel;
 import org.church.steward.ui.component.label.SubFieldLabel;
 
 /**
- * 예산 가져오기의 2단계. 파일의 어느 열이 구분, 예산명, 금액인지 지정한다.
- * 파일의 형식을 정해 두지 않으므로 사용자가 직접 연결하며, 머리글 이름으로 추측한 값을 처음에 채워 둔다.
+ * 예산 가져오기의 2단계. 파일의 어느 열이 구분, 예산명, 금액인지 지정한다. 파일의 형식을 정해 두지 않으므로 사용자가 직접 연결하며,
+ * 머리글 이름으로 추측한 값을 처음에 채워 둔다.
  */
 class MappingStepPanel extends JPanel {
 

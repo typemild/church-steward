@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 가져오기에서 파일의 칸을 읽는 도구. 예산 가져오기와 수입/지출 가져오기가 함께 쓴다.
- * 칸의 값은 글자, 정수({@link Long}), 소수({@link Double}), 날짜 또는 빈 칸(null)이다.
+ * 가져오기에서 파일의 칸을 읽는 도구. 예산 가져오기와 수입/지출 가져오기가 함께 쓴다. 칸의 값은 글자, 정수({@link Long}),
+ * 소수({@link Double}), 날짜 또는 빈 칸(null)이다.
  */
 final class ImportCells {
 

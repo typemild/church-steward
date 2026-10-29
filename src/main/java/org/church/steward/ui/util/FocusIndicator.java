@@ -10,12 +10,11 @@ import javax.swing.SwingUtilities;
 import com.formdev.flatlaf.FlatClientProperties;
 
 /**
- * 입력란의 포커스 테두리(FlatLaf가 포커스를 받은 입력란의 테두리를 포커스 색으로 그리는 것)를 켜고 끈다.
- * 포커스 테두리는 입력/수정 다이얼로그에서만 보인다. 공용 입력 컴포넌트는 만들 때 끄고, {@link DialogKeyHandler}가
- * 등록한 입력란만 켠다. 그래서 목록 화면의 검색란이나 사이드바의 회계 연도 선택란에는 포커스 테두리가 생기지 않는다.
- * FlatLaf가 테두리를 그릴 때 포커스 여부를 묻는
- * {@link FlatClientProperties#COMPONENT_FOCUS_OWNER}를 바꾸는 방식이다.
- * 표에는 쓰지 않는다. 표는 같은 값으로 선택 색(포커스가 없으면 비활성 색)도 정하기 때문이다.
+ * 입력란의 포커스 테두리(FlatLaf가 포커스를 받은 입력란의 테두리를 포커스 색으로 그리는 것)를 켜고 끈다. 포커스 테두리는 입력/수정
+ * 다이얼로그에서만 보인다. 공용 입력 컴포넌트는 만들 때 끄고, {@link DialogKeyHandler}가 등록한 입력란만 켠다. 그래서
+ * 목록 화면의 검색란이나 사이드바의 회계 연도 선택란에는 포커스 테두리가 생기지 않는다. FlatLaf가 테두리를 그릴 때 포커스 여부를
+ * 묻는 {@link FlatClientProperties#COMPONENT_FOCUS_OWNER}를 바꾸는 방식이다. 표에는 쓰지 않는다.
+ * 표는 같은 값으로 선택 색(포커스가 없으면 비활성 색)도 정하기 때문이다.
  */
 public final class FocusIndicator {
 

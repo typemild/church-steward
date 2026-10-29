@@ -24,9 +24,9 @@ import org.church.steward.ui.view.datamanagement.BackupFileChooser;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 가져오기의 마지막 단계. 반영하기 전에 전체 데이터를 백업하게 한다. 백업에 성공해야 반영할 수 있다.
- * 가져오기는 한 번에 여러 건을 바꾸고 되돌리는 기능이 없으므로, 잘못 가져왔을 때 돌아갈 수 있는 지점을 만들어 두는 것이다.
- * 예산 가져오기와 수입/지출 가져오기가 함께 쓴다.
+ * 가져오기의 마지막 단계. 반영하기 전에 전체 데이터를 백업하게 한다. 백업에 성공해야 반영할 수 있다. 가져오기는 한 번에 여러 건을
+ * 바꾸고 되돌리는 기능이 없으므로, 잘못 가져왔을 때 돌아갈 수 있는 지점을 만들어 두는 것이다. 예산 가져오기와 수입/지출 가져오기가 함께
+ * 쓴다.
  */
 @Slf4j
 public class CommitStepPanel extends JPanel {

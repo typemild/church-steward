@@ -136,12 +136,11 @@ public class DatabaseManager {
     }
 
     /**
-     * 데이터베이스의 스키마를 이 프로그램의 버전에 맞게 올린다.
-     * {@link #loadDatabasePassword} 이후, Spring 컨텍스트를 띄우기 전(데이터베이스가 열려 있지 않을 때)에
-     * 호출해야 한다.
+     * 데이터베이스의 스키마를 이 프로그램의 버전에 맞게 올린다. {@link #loadDatabasePassword} 이후, Spring
+     * 컨텍스트를 띄우기 전(데이터베이스가 열려 있지 않을 때)에 호출해야 한다.
      * <p>
-     * H2는 DDL을 문장마다 바로 커밋하므로 마이그레이션이 중간에 실패하면 되돌릴 수 없다.
-     * 그래서 올릴 마이그레이션이 있으면 먼저 데이터베이스 파일을 데이터 디렉터리 아래의 보관 디렉터리에 복사해 둔다.
+     * H2는 DDL을 문장마다 바로 커밋하므로 마이그레이션이 중간에 실패하면 되돌릴 수 없다. 그래서 올릴 마이그레이션이 있으면 먼저
+     * 데이터베이스 파일을 데이터 디렉터리 아래의 보관 디렉터리에 복사해 둔다.
      *
      * @return 마이그레이션 직전의 데이터베이스 파일을 복사해 둔 디렉터리. 올릴 마이그레이션이 없었으면 비어 있음
      * @throws SQLException 마이그레이션에 실패했을 때 발생. 메시지에 복사해 둔 디렉터리를 적는다.
@@ -272,8 +271,8 @@ public class DatabaseManager {
     }
 
     /**
-     * 연결된 데이터베이스 전체를 주어진 DB 파일 비밀번호로 암호화한 SQL 덤프로 내보낸다.
-     * 테스트가 정해 둔 비밀번호로 덤프를 만들 때도 쓴다(H2 버전 사이의 덤프 호환성 확인).
+     * 연결된 데이터베이스 전체를 주어진 DB 파일 비밀번호로 암호화한 SQL 덤프로 내보낸다. 테스트가 정해 둔 비밀번호로 덤프를 만들 때도
+     * 쓴다(H2 버전 사이의 덤프 호환성 확인).
      */
     void writeDump(Connection connection, Path dumpFile, byte[] filePassword) throws SQLException {
         try (Statement statement = connection.createStatement()) {
@@ -282,12 +281,11 @@ public class DatabaseManager {
     }
 
     /**
-     * 데이터베이스를 덤프의 내용으로 교체하고, 설정 파일의 사용자별 DB 접근 키도 덤프와 함께 백업된 키로 교체한다.
-     * 데이터베이스가 열려 있지 않을 때(Spring 컨텍스트를 띄우기 전)에만 호출해야 한다.
+     * 데이터베이스를 덤프의 내용으로 교체하고, 설정 파일의 사용자별 DB 접근 키도 덤프와 함께 백업된 키로 교체한다. 데이터베이스가 열려 있지
+     * 않을 때(Spring 컨텍스트를 띄우기 전)에만 호출해야 한다.
      * <p>
-     * 덤프를 새 파일에 먼저 되살리고 스키마를 이 프로그램의 버전에 맞게 올린 뒤에 기존 파일과 바꾸므로,
-     * 되살리거나 스키마를 올리다가 실패하면 기존 데이터는 그대로 남는다.
-     * 기존 데이터베이스 파일과 설정 파일은 데이터 디렉터리 아래의 보관 디렉터리로 옮겨 둔다.
+     * 덤프를 새 파일에 먼저 되살리고 스키마를 이 프로그램의 버전에 맞게 올린 뒤에 기존 파일과 바꾸므로, 되살리거나 스키마를 올리다가 실패하면
+     * 기존 데이터는 그대로 남는다. 기존 데이터베이스 파일과 설정 파일은 데이터 디렉터리 아래의 보관 디렉터리로 옮겨 둔다.
      *
      * @param dumpFile     {@link #writeDump}로 만든 덤프 파일
      * @param userKeys     덤프와 함께 백업된 사용자별 DB 접근 키
@@ -356,8 +354,8 @@ public class DatabaseManager {
     }
 
     /**
-     * 주어진 경로에 암호화된 데이터베이스를 새로 만들고 덤프를 실행한다.
-     * 테스트가 과거 H2 버전이 만든 덤프를 되살릴 때도 쓴다(H2 버전 사이의 덤프 호환성 확인).
+     * 주어진 경로에 암호화된 데이터베이스를 새로 만들고 덤프를 실행한다. 테스트가 과거 H2 버전이 만든 덤프를 되살릴 때도 쓴다(H2 버전
+     * 사이의 덤프 호환성 확인).
      */
     void runDump(Path dumpFile, String databaseFilePath, byte[] filePassword, byte[] userPassword)
             throws SQLException {
@@ -426,10 +424,9 @@ public class DatabaseManager {
     }
 
     /**
-     * 사용자 비밀번호에서 DB 접근 키를 암호화할 키를 유도한다.
-     * 입력이 틀려서 실패하는 일은 없고 실행 환경에 알고리즘이 없을 때만 실패하므로, 진단을 위해 원인 예외를 담는다.
-     * JDK의 예외 메시지에는 비밀번호나 키 값이 들어가지 않는다. 저장된 값을 다루는 코드는 메시지에 값이 섞일 수 있으므로
-     * {@code try} 안에 넣지 않는다.
+     * 사용자 비밀번호에서 DB 접근 키를 암호화할 키를 유도한다. 입력이 틀려서 실패하는 일은 없고 실행 환경에 알고리즘이 없을 때만
+     * 실패하므로, 진단을 위해 원인 예외를 담는다. JDK의 예외 메시지에는 비밀번호나 키 값이 들어가지 않는다. 저장된 값을 다루는 코드는
+     * 메시지에 값이 섞일 수 있으므로 {@code try} 안에 넣지 않는다.
      */
     private SecretKeySpec deriveKeyFromUserPassword(String password, byte[] salt) {
         try {
@@ -465,9 +462,8 @@ public class DatabaseManager {
     }
 
     /**
-     * 사용자 비밀번호에서 유도한 키로 DB 접근 키를 복호화한다.
-     * 보안을 위해 실패 사유(암호문 형식 오류, 인증 태그 불일치 등)를 구분하지 않고 같은 예외 하나로 답하며,
-     * 원인 예외도 담지 않는다.
+     * 사용자 비밀번호에서 유도한 키로 DB 접근 키를 복호화한다. 보안을 위해 실패 사유(암호문 형식 오류, 인증 태그 불일치 등)를 구분하지
+     * 않고 같은 예외 하나로 답하며, 원인 예외도 담지 않는다.
      */
     private byte[] decryptWithDerivedKey(String encryptedData, SecretKeySpec key) throws InvalidPasswordException {
         byte[] decoded = decodeStoredValue(encryptedData);
@@ -494,9 +490,8 @@ public class DatabaseManager {
     }
 
     /**
-     * 설정 파일이나 백업에 저장된 Base64 값(salt, 암호문)을 푼다.
-     * 값이 없거나 깨져 있으면 비밀번호가 틀렸을 때와 같은 예외 하나로 답하고 원인 예외도 담지 않는다.
-     * Base64 오류의 메시지에는 저장된 값의 글자가 들어가기 때문이다.
+     * 설정 파일이나 백업에 저장된 Base64 값(salt, 암호문)을 푼다. 값이 없거나 깨져 있으면 비밀번호가 틀렸을 때와 같은 예외 하나로
+     * 답하고 원인 예외도 담지 않는다. Base64 오류의 메시지에는 저장된 값의 글자가 들어가기 때문이다.
      */
     private byte[] decodeStoredValue(String value) throws InvalidPasswordException {
         if (value == null) {

@@ -8,13 +8,11 @@ import java.util.List;
 import org.church.steward.ui.util.UIColors;
 
 /**
- * 머리글과 여러 행으로 이루어진 표.
- * 칸의 내용이 길면 칸 안에서 줄을 바꾼다. 세로선 없이 가로선과 머리글의 회색 바탕만으로 구분한다.
+ * 머리글과 여러 행으로 이루어진 표. 칸의 내용이 길면 칸 안에서 줄을 바꾼다. 세로선 없이 가로선과 머리글의 회색 바탕만으로 구분한다.
  * <p>
  * 페이지 전체 폭으로 흘려 그리면({@link #render(ReportCanvas)}) 행이 페이지 끝에 걸릴 때 행 전체를 다음 페이지로
- * 넘기며
- * 머리글을 다시 그린다.
- * 정해진 자리에 그리면({@link #renderAt}) 페이지를 넘기지 않으므로 여러 표를 좌우로 나란히 놓을 수 있다.
+ * 넘기며 머리글을 다시 그린다. 정해진 자리에 그리면({@link #renderAt}) 페이지를 넘기지 않으므로 여러 표를 좌우로 나란히
+ * 놓을 수 있다.
  */
 public final class ReportTable {
 
@@ -23,8 +21,7 @@ public final class ReportTable {
      *
      * @param header 머리글
      * @param width  열의 폭. 0 이하이면 폭이 정해진 열들을 뺀 나머지를 차지한다. 머리글이나 내용이 이 폭의 한 줄에 들어가지
-     *               않으면
-     *               들어갈 만큼 넓힌다(글자 크기를 키운 경우).
+     *               않으면 들어갈 만큼 넓힌다(글자 크기를 키운 경우).
      * @param align  내용의 정렬. 머리글은 항상 가운데 정렬한다.
      */
     public record Column(String header, double width, ReportAlign align) {
@@ -316,8 +313,8 @@ public final class ReportTable {
     }
 
     /**
-     * 폭이 정해지지 않은 열들이 남은 폭을 똑같이 나눠 갖도록 열의 폭을 정한다.
-     * 폭이 정해진 열이라도 글자를 키워 머리글이나 내용이 한 줄에 들어가지 않으면 들어갈 만큼 넓힌다.
+     * 폭이 정해지지 않은 열들이 남은 폭을 똑같이 나눠 갖도록 열의 폭을 정한다. 폭이 정해진 열이라도 글자를 키워 머리글이나 내용이 한 줄에
+     * 들어가지 않으면 들어갈 만큼 넓힌다.
      */
     private double[] resolveWidths(double tableWidth) {
         double[] widths = new double[columns.size()];

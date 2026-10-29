@@ -67,8 +67,7 @@ class ContactImportServiceImplTest {
             .build();
 
     /**
-     * 파일 내용: 새 관계자 두 명과 구분을 읽을 수 없는 한 명.
-     * 열 구성은 "구분 | 이름 | 비고 | 상태"다.
+     * 파일 내용: 새 관계자 두 명과 구분을 읽을 수 없는 한 명. 열 구성은 "구분 | 이름 | 비고 | 상태"다.
      */
     private ContactImportRequestDto createRequest() {
         return ContactImportRequestDto.builder()

@@ -14,8 +14,7 @@ public class EntitySnapshot<T> {
     private final Map<String, String> snapshot;
 
     /**
-     * 엔터티의 상태를 스냅샷으로 저장한다.
-     * 외부에서 직접 생성하는 것을 방지하기 위해 protected로 설정한다.
+     * 엔터티의 상태를 스냅샷으로 저장한다. 외부에서 직접 생성하는 것을 방지하기 위해 protected로 설정한다.
      */
     protected EntitySnapshot(T oldEntity) {
         List<LoggableFieldInfo> fields = LoggableMetadataExtractor.getLoggableFields(oldEntity);

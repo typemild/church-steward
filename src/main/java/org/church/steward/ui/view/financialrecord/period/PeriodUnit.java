@@ -24,8 +24,7 @@ public enum PeriodUnit {
     private final String label;
 
     /**
-     * 기준일이 포함되는 기간의 시작일을 반환한다.
-     * 주간 단위는 일요일부터 시작한다.
+     * 기준일이 포함되는 기간의 시작일을 반환한다. 주간 단위는 일요일부터 시작한다.
      *
      * @param base 기준일
      * @return 기간의 시작일

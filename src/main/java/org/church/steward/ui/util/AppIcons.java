@@ -18,9 +18,8 @@ import lombok.extern.slf4j.Slf4j;
  * 프로그램 아이콘을 창(제목줄, 작업 표시줄)과 macOS의 Dock에 붙인다.
  * <p>
  * 원본 그림은 src/main/packaging에 있고 빌드할 때 클래스패스의 icons/로 복사된다(build.gradle의
- * processResources).
- * 실행 파일(exe)의 아이콘은 jpackage가 따로 붙이므로, 이 클래스는 실행 중인 창의 아이콘만 다룬다.
- * 아이콘을 읽지 못해도 프로그램은 계속 쓸 수 있어야 하므로 실패는 로그만 남기고 기본 아이콘으로 둔다.
+ * processResources). 실행 파일(exe)의 아이콘은 jpackage가 따로 붙이므로, 이 클래스는 실행 중인 창의 아이콘만
+ * 다룬다. 아이콘을 읽지 못해도 프로그램은 계속 쓸 수 있어야 하므로 실패는 로그만 남기고 기본 아이콘으로 둔다.
  */
 @Slf4j
 public final class AppIcons {
@@ -30,8 +29,8 @@ public final class AppIcons {
     private static final String LARGE_ICON_RESOURCE = "/icons/ChurchSteward.png";
 
     /**
-     * 창에 넘길 크기들. OS는 제목줄, 작업 표시줄, Alt+Tab마다 가장 가까운 크기를 골라 쓰므로,
-     * 큰 그림 하나를 OS가 거칠게 줄이지 않도록 작은 크기용으로 다듬은 그림을 함께 준다.
+     * 창에 넘길 크기들. OS는 제목줄, 작업 표시줄, Alt+Tab마다 가장 가까운 크기를 골라 쓰므로, 큰 그림 하나를 OS가 거칠게 줄이지
+     * 않도록 작은 크기용으로 다듬은 그림을 함께 준다.
      */
     private static final int[] WINDOW_ICON_SIZES = { 16, 24, 32, 48, 64, 128, 256 };
 
@@ -59,8 +58,8 @@ public final class AppIcons {
     }
 
     /**
-     * 창에 프로그램 아이콘을 붙인다. 부모 창이 없는 창(로그인, 최초 실행, 복원, 메인 화면)에서 호출한다.
-     * 부모 창이 있는 다이얼로그는 부모 창의 아이콘을 따른다.
+     * 창에 프로그램 아이콘을 붙인다. 부모 창이 없는 창(로그인, 최초 실행, 복원, 메인 화면)에서 호출한다. 부모 창이 있는 다이얼로그는
+     * 부모 창의 아이콘을 따른다.
      */
     public static void apply(Window window) {
         List<Image> icons = getWindowIcons();

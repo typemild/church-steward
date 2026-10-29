@@ -13,8 +13,8 @@ import org.church.steward.infrastructure.spreadsheet.SpreadsheetFormat;
 import org.church.steward.ui.view.datamanagement.contactimport.ContactImportPanel;
 
 /**
- * 데이터 관리의 "관계자" 탭. 관계자(봉헌자/수취인)를 파일에서 가져오거나 파일로 내보낸다.
- * 관계자는 회계 연도에 속하지 않으므로 회계 연도 선택란이 없다.
+ * 데이터 관리의 "관계자" 탭. 관계자(봉헌자/수취인)를 파일에서 가져오거나 파일로 내보낸다. 관계자는 회계 연도에 속하지 않으므로 회계
+ * 연도 선택란이 없다.
  */
 @UiView
 public class ContactTransferPanelView extends AbstractTransferPanelView {

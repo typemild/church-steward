@@ -17,9 +17,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * 진행 중인 관계자 가져오기 한 번의 상태. 파일과 백업은 {@link ImportSession}이 가지고, 여기서는 열 지정과
- * 분석 결과, 가져올 행의 선택을 가진다. 분석 결과와 그에 따른 선택은 {@link #applyAnalysis}로 언제든 다시 계산한다.
- * 관계자는 회계 연도에 속하지 않으므로 회계 연도는 늘 null이다.
+ * 진행 중인 관계자 가져오기 한 번의 상태. 파일과 백업은 {@link ImportSession}이 가지고, 여기서는 열 지정과 분석 결과,
+ * 가져올 행의 선택을 가진다. 분석 결과와 그에 따른 선택은 {@link #applyAnalysis}로 언제든 다시 계산한다. 관계자는 회계
+ * 연도에 속하지 않으므로 회계 연도는 늘 null이다.
  */
 @Getter
 public class ContactImportSession extends ImportSession {
@@ -100,9 +100,8 @@ public class ContactImportSession extends ImportSession {
     // ------------------------------------------------------------------ 열 지정
 
     /**
-     * 머리글 이름으로 열을 추측해 열 지정을 채운다. 같은 파일과 머리글 행에 대해서는 한 번만 한다.
-     * 프로그램이 내보낸 파일과 빈 양식의 머리글("구분", "이름", "비고", "상태")은 모두 알아본다.
-     * 구분 열이 없으면 파일 전체를 개인으로 읽게 둔다.
+     * 머리글 이름으로 열을 추측해 열 지정을 채운다. 같은 파일과 머리글 행에 대해서는 한 번만 한다. 프로그램이 내보낸 파일과 빈 양식의
+     * 머리글("구분", "이름", "비고", "상태")은 모두 알아본다. 구분 열이 없으면 파일 전체를 개인으로 읽게 둔다.
      */
     public void guessMappingIfNeeded() {
         if (mappingGuessed) {
@@ -167,11 +166,10 @@ public class ContactImportSession extends ImportSession {
     // ------------------------------------------------------------------ 분석과 선택
 
     /**
-     * 새 분석 결과를 받아들이고 선택을 다시 계산한다.
-     * 사용자가 직접 바꾼 선택은 유지하고, 손대지 않은 행은 가져올 수 있고 중복 의심이 아니면 선택한다.
+     * 새 분석 결과를 받아들이고 선택을 다시 계산한다. 사용자가 직접 바꾼 선택은 유지하고, 손대지 않은 행은 가져올 수 있고 중복 의심이
+     * 아니면 선택한다.
      *
-     * @return 이전 분석 결과와 비교해 상태나 설명이 달라졌거나 새로 생기거나 없어진 행의 수.
-     *         이전 분석 결과가 없었으면 0
+     * @return 이전 분석 결과와 비교해 상태나 설명이 달라졌거나 새로 생기거나 없어진 행의 수. 이전 분석 결과가 없었으면 0
      */
     public int applyAnalysis(ContactImportAnalysisDto newAnalysis) {
         int changedCount = analysis == null ? 0 : countChanges(analysis, newAnalysis);
@@ -231,8 +229,8 @@ public class ContactImportSession extends ImportSession {
     }
 
     /**
-     * 분석 결과와 사용자가 직접 바꾼 선택으로 선택된 행을 다시 정한다.
-     * 가져올 수 없는 행은 빼고, 손대지 않은 행은 중복 의심이 아닐 때만 선택한다.
+     * 분석 결과와 사용자가 직접 바꾼 선택으로 선택된 행을 다시 정한다. 가져올 수 없는 행은 빼고, 손대지 않은 행은 중복 의심이 아닐 때만
+     * 선택한다.
      */
     private void recomputeSelection() {
         selectedKeys.clear();

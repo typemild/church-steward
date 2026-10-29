@@ -22,8 +22,7 @@ public class ProgramVersion {
     /**
      * 클래스패스의 application.yml에서 버전을 읽는다.
      * <p>
-     * jar 안에 포함된 읽기 전용 파일을 읽는다.
-     * 프로그램 폴더의 application.yml과는 다른 파일이며, 그 파일에는 버전이 없다.
+     * jar 안에 포함된 읽기 전용 파일을 읽는다. 프로그램 폴더의 application.yml과는 다른 파일이며, 그 파일에는 버전이 없다.
      * (프로그램 폴더의 application.yml : {@link AppSettingManager}가 관리하는 사용자 설정)
      */
     public ProgramVersion() {

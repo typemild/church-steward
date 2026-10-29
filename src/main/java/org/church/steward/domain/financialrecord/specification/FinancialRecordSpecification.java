@@ -16,8 +16,7 @@ import jakarta.persistence.criteria.Subquery;
 public class FinancialRecordSpecification {
 
     /**
-     * 검색 조건에 맞는 수입/지출 내역을 찾는 Specification을 만든다.
-     * 금액 조건은 여기서 다루지 않는다.
+     * 검색 조건에 맞는 수입/지출 내역을 찾는 Specification을 만든다. 금액 조건은 여기서 다루지 않는다.
      *
      * @param dto       검색 조건
      * @param budgetIds 하위 예산까지 확장한 예산 ID 목록. null이거나 비어 있으면 예산 조건을 적용하지 않는다.

@@ -71,12 +71,8 @@ class DataExportServiceImplTest {
             .name("2026년")
             .build();
 
-    private void givenFiscalYear() {
-        when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
-    }
-
-    private BudgetDto budgetDto(Long id, Long parentId, BudgetType type, String name, int sortOrder, long totalAmount,
-            long actualAmount) {
+    private BudgetDto createBudgetDto(Long id, Long parentId, BudgetType type, String name, int sortOrder,
+            long totalAmount, long actualAmount) {
         return BudgetDto.builder()
                 .id(id)
                 .parentId(parentId)
@@ -89,18 +85,23 @@ class DataExportServiceImplTest {
     }
 
     /**
-     * 수입 예산: 헌금(십일조, 감사헌금) / 지출 예산: 운영비. 조회 결과는 일부러 정렬 순서와 다르게 섞어 둔다.
+     * 수입 예산: 헌금(십일조, 감사헌금). 조회 결과는 일부러 정렬 순서와 다르게 섞어 둔다.
      */
-    private void givenBudgets() {
-        when(budgetService.getBudgetsWithActualAmount(FISCAL_YEAR_ID, BudgetType.INCOME)).thenReturn(List.of(
-                budgetDto(3L, 1L, BudgetType.INCOME, "감사헌금", 1, 300L, 30L),
-                budgetDto(1L, null, BudgetType.INCOME, "헌금", 0, 1300L, 130L),
-                budgetDto(2L, 1L, BudgetType.INCOME, "십일조", 0, 1000L, 100L)));
-        when(budgetService.getBudgetsWithActualAmount(FISCAL_YEAR_ID, BudgetType.EXPENSE)).thenReturn(List.of(
-                budgetDto(4L, null, BudgetType.EXPENSE, "운영비", 0, 500L, 50L)));
+    private List<BudgetDto> createIncomeBudgetDtos() {
+        return List.of(
+                createBudgetDto(3L, 1L, BudgetType.INCOME, "감사헌금", 1, 300L, 30L),
+                createBudgetDto(1L, null, BudgetType.INCOME, "헌금", 0, 1300L, 130L),
+                createBudgetDto(2L, 1L, BudgetType.INCOME, "십일조", 0, 1000L, 100L));
     }
 
-    private Budget budget(Long id, String name, Budget parent) {
+    /**
+     * 지출 예산: 운영비.
+     */
+    private List<BudgetDto> createExpenseBudgetDtos() {
+        return List.of(createBudgetDto(4L, null, BudgetType.EXPENSE, "운영비", 0, 500L, 50L));
+    }
+
+    private Budget createBudget(Long id, String name, Budget parent) {
         return Budget.builder()
                 .id(id)
                 .fiscalYear(fiscalYear)
@@ -110,7 +111,7 @@ class DataExportServiceImplTest {
                 .build();
     }
 
-    private FinancialRecord incomeRecord(Budget budget, String... contactNames) {
+    private FinancialRecord createIncomeRecord(Budget budget, String... contactNames) {
         return FinancialRecord.builder()
                 .id(1L)
                 .type(FinancialRecordType.INCOME)
@@ -127,6 +128,16 @@ class DataExportServiceImplTest {
                 .build();
     }
 
+    private Contact createContact(Long id, ContactType type, String name, String remarks, boolean hidden) {
+        return Contact.builder()
+                .id(id)
+                .type(type)
+                .name(name)
+                .remarks(remarks)
+                .isHidden(hidden)
+                .build();
+    }
+
     @Nested
     @DisplayName("exportBudgets 테스트")
     class ExportBudgetsTest {
@@ -135,8 +146,11 @@ class DataExportServiceImplTest {
         @DisplayName("머리글은 구분, 가장 깊은 단계까지의 예산명, 예산액, 수입액/집행액이다")
         void exportBudgets_TwoLevels_WritesHeadersForDeepestLevel() {
             // Given
-            givenFiscalYear();
-            givenBudgets();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetService.getBudgetsWithActualAmount(FISCAL_YEAR_ID, BudgetType.INCOME))
+                    .thenReturn(createIncomeBudgetDtos());
+            when(budgetService.getBudgetsWithActualAmount(FISCAL_YEAR_ID, BudgetType.EXPENSE))
+                    .thenReturn(createExpenseBudgetDtos());
 
             // When
             dataExportService.exportBudgets(FISCAL_YEAR_ID, TARGET, SpreadsheetFormat.XLSX, null);
@@ -151,8 +165,11 @@ class DataExportServiceImplTest {
         @DisplayName("수입 예산 다음에 지출 예산을, 상위 예산 바로 아래에 하위 예산을 정렬 순서대로 적는다")
         void exportBudgets_Hierarchy_WritesRowsInTreeOrder() {
             // Given
-            givenFiscalYear();
-            givenBudgets();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetService.getBudgetsWithActualAmount(FISCAL_YEAR_ID, BudgetType.INCOME))
+                    .thenReturn(createIncomeBudgetDtos());
+            when(budgetService.getBudgetsWithActualAmount(FISCAL_YEAR_ID, BudgetType.EXPENSE))
+                    .thenReturn(createExpenseBudgetDtos());
 
             // When
             dataExportService.exportBudgets(FISCAL_YEAR_ID, TARGET, SpreadsheetFormat.XLSX, null);
@@ -170,8 +187,11 @@ class DataExportServiceImplTest {
         @DisplayName("내보낸 예산의 수를 반환한다")
         void exportBudgets_FourBudgets_ReturnsCount() {
             // Given
-            givenFiscalYear();
-            givenBudgets();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetService.getBudgetsWithActualAmount(FISCAL_YEAR_ID, BudgetType.INCOME))
+                    .thenReturn(createIncomeBudgetDtos());
+            when(budgetService.getBudgetsWithActualAmount(FISCAL_YEAR_ID, BudgetType.EXPENSE))
+                    .thenReturn(createExpenseBudgetDtos());
 
             // When
             int count = dataExportService.exportBudgets(FISCAL_YEAR_ID, TARGET, SpreadsheetFormat.XLSX, null);
@@ -184,8 +204,11 @@ class DataExportServiceImplTest {
         @DisplayName("활동 기록에 회계 연도의 이름, 파일 이름, 건수를 남긴다")
         void exportBudgets_Success_LogsExport() {
             // Given
-            givenFiscalYear();
-            givenBudgets();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetService.getBudgetsWithActualAmount(FISCAL_YEAR_ID, BudgetType.INCOME))
+                    .thenReturn(createIncomeBudgetDtos());
+            when(budgetService.getBudgetsWithActualAmount(FISCAL_YEAR_ID, BudgetType.EXPENSE))
+                    .thenReturn(createExpenseBudgetDtos());
 
             // When
             dataExportService.exportBudgets(FISCAL_YEAR_ID, TARGET, SpreadsheetFormat.XLSX, null);
@@ -198,8 +221,11 @@ class DataExportServiceImplTest {
         @DisplayName("입력한 암호를 그대로 넘겨 파일을 저장한다")
         void exportBudgets_WithPassword_PassesPassword() {
             // Given
-            givenFiscalYear();
-            givenBudgets();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetService.getBudgetsWithActualAmount(FISCAL_YEAR_ID, BudgetType.INCOME))
+                    .thenReturn(createIncomeBudgetDtos());
+            when(budgetService.getBudgetsWithActualAmount(FISCAL_YEAR_ID, BudgetType.EXPENSE))
+                    .thenReturn(createExpenseBudgetDtos());
 
             // When
             dataExportService.exportBudgets(FISCAL_YEAR_ID, TARGET, SpreadsheetFormat.XLSX, "secret");
@@ -230,10 +256,10 @@ class DataExportServiceImplTest {
         @DisplayName("머리글은 구분, 일자, 단계별 예산명, 금액, 내용, 봉헌자/수취인, 비고다")
         void exportFinancialRecords_TwoLevels_WritesHeaders() {
             // Given
-            Budget tithe = budget(2L, "십일조", budget(1L, "헌금", null));
-            givenFiscalYear();
+            Budget tithe = createBudget(2L, "십일조", createBudget(1L, "헌금", null));
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
             when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
-                    .thenReturn(List.of(incomeRecord(tithe, "홍길동")));
+                    .thenReturn(List.of(createIncomeRecord(tithe, "홍길동")));
 
             // When
             dataExportService.exportFinancialRecords(FISCAL_YEAR_ID, TARGET, SpreadsheetFormat.XLSX, null);
@@ -248,10 +274,10 @@ class DataExportServiceImplTest {
         @DisplayName("내역 하나를 한 행으로 적고, 여러 봉헌자는 쉼표로 이어 적는다")
         void exportFinancialRecords_MultipleContacts_JoinsNamesWithComma() {
             // Given
-            Budget tithe = budget(2L, "십일조", budget(1L, "헌금", null));
-            givenFiscalYear();
+            Budget tithe = createBudget(2L, "십일조", createBudget(1L, "헌금", null));
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
             when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
-                    .thenReturn(List.of(incomeRecord(tithe, "홍길동", "김철수")));
+                    .thenReturn(List.of(createIncomeRecord(tithe, "홍길동", "김철수")));
 
             // When
             dataExportService.exportFinancialRecords(FISCAL_YEAR_ID, TARGET, SpreadsheetFormat.XLSX, null);
@@ -266,12 +292,12 @@ class DataExportServiceImplTest {
         @DisplayName("예산의 단계가 얕은 내역은 남는 예산 칸을 비워 둔다")
         void exportFinancialRecords_ShallowBudget_LeavesRemainingLevelsEmpty() {
             // Given
-            Budget offering = budget(1L, "헌금", null);
-            Budget interest = budget(3L, "이자수입", null);
-            Budget tithe = budget(2L, "십일조", offering);
-            givenFiscalYear();
+            Budget offering = createBudget(1L, "헌금", null);
+            Budget interest = createBudget(3L, "이자수입", null);
+            Budget tithe = createBudget(2L, "십일조", offering);
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
             when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
-                    .thenReturn(List.of(incomeRecord(tithe, "홍길동"), incomeRecord(interest, "OO은행")));
+                    .thenReturn(List.of(createIncomeRecord(tithe, "홍길동"), createIncomeRecord(interest, "OO은행")));
 
             // When
             dataExportService.exportFinancialRecords(FISCAL_YEAR_ID, TARGET, SpreadsheetFormat.XLSX, null);
@@ -286,9 +312,9 @@ class DataExportServiceImplTest {
         @DisplayName("활동 기록에 회계 연도의 이름, 파일 이름, 건수를 남긴다")
         void exportFinancialRecords_Success_LogsExport() {
             // Given
-            givenFiscalYear();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
             when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
-                    .thenReturn(List.of(incomeRecord(budget(1L, "헌금", null), "홍길동")));
+                    .thenReturn(List.of(createIncomeRecord(createBudget(1L, "헌금", null), "홍길동")));
 
             // When
             dataExportService.exportFinancialRecords(FISCAL_YEAR_ID, TARGET, SpreadsheetFormat.XLSX, null);
@@ -301,7 +327,7 @@ class DataExportServiceImplTest {
         @DisplayName("내역이 없어도 머리글만 있는 파일을 저장한다")
         void exportFinancialRecords_NoRecords_WritesHeadersOnly() {
             // Given
-            givenFiscalYear();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
             when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
                     .thenReturn(List.of());
 
@@ -312,16 +338,6 @@ class DataExportServiceImplTest {
             verify(spreadsheetWriter).write(any(), any(), tableCaptor.capture(), any());
             assertThat(tableCaptor.getValue().rows()).isEmpty();
         }
-    }
-
-    private Contact contact(Long id, ContactType type, String name, String remarks, boolean hidden) {
-        return Contact.builder()
-                .id(id)
-                .type(type)
-                .name(name)
-                .remarks(remarks)
-                .isHidden(hidden)
-                .build();
     }
 
     @Nested
@@ -347,10 +363,10 @@ class DataExportServiceImplTest {
         void exportContacts_Contacts_WritesRowsInOrder() {
             // Given
             when(contactRepository.findAll()).thenReturn(List.of(
-                    contact(3L, ContactType.VENDOR, "한빛은행", "교회 통장", false),
-                    contact(2L, ContactType.INDIVIDUAL, "홍길동", null, true),
-                    contact(1L, ContactType.INDIVIDUAL, "홍길동", "1구역", false),
-                    contact(4L, ContactType.INDIVIDUAL, "김찬양", null, false)));
+                    createContact(3L, ContactType.VENDOR, "한빛은행", "교회 통장", false),
+                    createContact(2L, ContactType.INDIVIDUAL, "홍길동", null, true),
+                    createContact(1L, ContactType.INDIVIDUAL, "홍길동", "1구역", false),
+                    createContact(4L, ContactType.INDIVIDUAL, "김찬양", null, false)));
 
             // When
             dataExportService.exportContacts(TARGET, SpreadsheetFormat.XLSX, null);
@@ -369,8 +385,8 @@ class DataExportServiceImplTest {
         void exportContacts_TwoContacts_ReturnsCount() {
             // Given
             when(contactRepository.findAll()).thenReturn(List.of(
-                    contact(1L, ContactType.INDIVIDUAL, "홍길동", null, false),
-                    contact(2L, ContactType.OTHER, "무명", null, false)));
+                    createContact(1L, ContactType.INDIVIDUAL, "홍길동", null, false),
+                    createContact(2L, ContactType.OTHER, "무명", null, false)));
 
             // When
             int count = dataExportService.exportContacts(TARGET, SpreadsheetFormat.CSV, null);
@@ -384,7 +400,7 @@ class DataExportServiceImplTest {
         void exportContacts_Success_LogsExportWithoutFiscalYear() {
             // Given
             when(contactRepository.findAll()).thenReturn(List.of(
-                    contact(1L, ContactType.INDIVIDUAL, "홍길동", null, false)));
+                    createContact(1L, ContactType.INDIVIDUAL, "홍길동", null, false)));
 
             // When
             dataExportService.exportContacts(TARGET, SpreadsheetFormat.XLSX, "secret");

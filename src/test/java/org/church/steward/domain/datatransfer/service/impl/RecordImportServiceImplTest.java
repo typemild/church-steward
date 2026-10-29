@@ -99,8 +99,8 @@ class RecordImportServiceImplTest {
             .build();
 
     /**
-     * 파일 내용: 십일조 수입 두 건(1,000원, 2,000원)과 등록되지 않은 예산을 쓰는 한 건.
-     * 열 구성은 "일자 | 예산 | 금액 | 관계자"이고 파일 전체가 수입이다.
+     * 파일 내용: 십일조 수입 두 건(1,000원, 2,000원)과 등록되지 않은 예산을 쓰는 한 건. 열 구성은 "일자 | 예산 | 금액 |
+     * 관계자"이고 파일 전체가 수입이다.
      */
     private RecordImportRequestDto createRequest() {
         return RecordImportRequestDto.builder()
@@ -117,23 +117,9 @@ class RecordImportServiceImplTest {
                 .build();
     }
 
-    private void givenFiscalYear() {
-        when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
-    }
-
-    private void givenCurrentData() {
-        when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of(tithe));
-        when(contactRepository.findAll()).thenReturn(List.of(hong));
-        when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
-                .thenReturn(List.of());
-    }
-
-    private RecordImportAnalysisDto analyzeCurrentData() {
-        givenFiscalYear();
-        givenCurrentData();
-        return recordImportService.analyze(FISCAL_YEAR_ID, createRequest());
-    }
-
+    /**
+     * 고를 수 있는 건을 모두 고른다.
+     */
     private Set<String> selectableKeys(RecordImportAnalysisDto analysis) {
         return analysis.getItems()
                 .stream()
@@ -150,8 +136,11 @@ class RecordImportServiceImplTest {
         @DisplayName("회계 연도의 예산, 등록된 관계자, 기존 내역과 견주어 분석한 결과를 반환한다")
         void analyze_CurrentData_ReturnsAnalysis() {
             // Given
-            givenFiscalYear();
-            givenCurrentData();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of(tithe));
+            when(contactRepository.findAll()).thenReturn(List.of(hong));
+            when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
+                    .thenReturn(List.of());
 
             // When
             RecordImportAnalysisDto analysis = recordImportService.analyze(FISCAL_YEAR_ID, createRequest());
@@ -170,7 +159,7 @@ class RecordImportServiceImplTest {
         void analyze_ClosedFiscalYear_Failure() {
             // Given
             fiscalYear.close(0L, 0L);
-            givenFiscalYear();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
             assertThatThrownBy(() -> recordImportService.analyze(FISCAL_YEAR_ID, createRequest()))
@@ -187,7 +176,12 @@ class RecordImportServiceImplTest {
         @DisplayName("고른 행마다 연결된 예산과 관계자로 내역을 등록한다")
         void importRecords_SelectedRows_CreatesRecordsWithResolvedTargets() {
             // Given
-            RecordImportAnalysisDto analysis = analyzeCurrentData();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of(tithe));
+            when(contactRepository.findAll()).thenReturn(List.of(hong));
+            when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
+                    .thenReturn(List.of());
+            RecordImportAnalysisDto analysis = recordImportService.analyze(FISCAL_YEAR_ID, createRequest());
             when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
 
             // When
@@ -211,7 +205,12 @@ class RecordImportServiceImplTest {
         @DisplayName("등록한 건수를 반환한다")
         void importRecords_SelectedRows_ReturnsCreatedCount() {
             // Given
-            RecordImportAnalysisDto analysis = analyzeCurrentData();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of(tithe));
+            when(contactRepository.findAll()).thenReturn(List.of(hong));
+            when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
+                    .thenReturn(List.of());
+            RecordImportAnalysisDto analysis = recordImportService.analyze(FISCAL_YEAR_ID, createRequest());
             when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
 
             // When
@@ -226,7 +225,12 @@ class RecordImportServiceImplTest {
         @DisplayName("활동 기록에 가져오기 한 건으로 남기고, 구분별 건수와 금액을 요약에 적는다")
         void importRecords_SelectedRows_LogsOneImportWithSummary() {
             // Given
-            RecordImportAnalysisDto analysis = analyzeCurrentData();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of(tithe));
+            when(contactRepository.findAll()).thenReturn(List.of(hong));
+            when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
+                    .thenReturn(List.of());
+            RecordImportAnalysisDto analysis = recordImportService.analyze(FISCAL_YEAR_ID, createRequest());
             when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
             List<ActivityLogFieldDto> description = List.of(ActivityLogFieldDto.builder()
                     .name("금액")
@@ -250,7 +254,12 @@ class RecordImportServiceImplTest {
         @DisplayName("백업한 뒤에 활동 기록이 새로 생겼으면 반영하지 않고 백업을 다시 받게 한다")
         void importRecords_BackupOutdated_Failure() {
             // Given
-            RecordImportAnalysisDto analysis = analyzeCurrentData();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of(tithe));
+            when(contactRepository.findAll()).thenReturn(List.of(hong));
+            when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
+                    .thenReturn(List.of());
+            RecordImportAnalysisDto analysis = recordImportService.analyze(FISCAL_YEAR_ID, createRequest());
             when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID + 1);
 
             // When & Then
@@ -263,7 +272,12 @@ class RecordImportServiceImplTest {
         @DisplayName("분석한 뒤에 데이터가 바뀌어 분석 결과가 달라졌으면 반영하지 않는다")
         void importRecords_AnalysisChanged_Failure() {
             // Given
-            RecordImportAnalysisDto analysis = analyzeCurrentData();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of(tithe));
+            when(contactRepository.findAll()).thenReturn(List.of(hong));
+            when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
+                    .thenReturn(List.of());
+            RecordImportAnalysisDto analysis = recordImportService.analyze(FISCAL_YEAR_ID, createRequest());
             when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
             // 분석한 뒤에 다른 메뉴에서 관계자 "홍길동"을 삭제한 상황
             when(contactRepository.findAll()).thenReturn(List.of());
@@ -278,7 +292,12 @@ class RecordImportServiceImplTest {
         @DisplayName("분석 결과가 달라졌으면 내역을 하나도 등록하지 않는다")
         void importRecords_AnalysisChanged_CreatesNothing() {
             // Given
-            RecordImportAnalysisDto analysis = analyzeCurrentData();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of(tithe));
+            when(contactRepository.findAll()).thenReturn(List.of(hong));
+            when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
+                    .thenReturn(List.of());
+            RecordImportAnalysisDto analysis = recordImportService.analyze(FISCAL_YEAR_ID, createRequest());
             when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
             when(contactRepository.findAll()).thenReturn(List.of());
 
@@ -294,7 +313,12 @@ class RecordImportServiceImplTest {
         @DisplayName("오류인 행을 고르면 반영하지 않는다")
         void importRecords_ErrorRowSelected_Failure() {
             // Given
-            RecordImportAnalysisDto analysis = analyzeCurrentData();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of(tithe));
+            when(contactRepository.findAll()).thenReturn(List.of(hong));
+            when(financialRecordRepository.findAllByFiscalYearIdOrderByDateAscIdAsc(FISCAL_YEAR_ID))
+                    .thenReturn(List.of());
+            RecordImportAnalysisDto analysis = recordImportService.analyze(FISCAL_YEAR_ID, createRequest());
             when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
             Set<String> errorRow = Set.of(analysis.getItems().getLast().getKey());
 
@@ -309,7 +333,7 @@ class RecordImportServiceImplTest {
         @DisplayName("가져올 행을 하나도 고르지 않으면 반영하지 않는다")
         void importRecords_NothingSelected_Failure() {
             // Given
-            givenFiscalYear();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
             assertThatThrownBy(() -> recordImportService.importRecords(FISCAL_YEAR_ID, createRequest(), Set.of(),

@@ -14,8 +14,7 @@ public interface DashboardService {
     List<BudgetProgressDto> getBudgetProgress(Long fiscalYearId);
 
     /**
-     * 회계 연도의 월별 수입/지출 합계를 달 순서대로 반환한다.
-     * 회계 연도 기간의 시작월부터 종료월까지는 내역이 없어도 항상 포함한다.
+     * 회계 연도의 월별 수입/지출 합계를 달 순서대로 반환한다. 회계 연도 기간의 시작월부터 종료월까지는 내역이 없어도 항상 포함한다.
      */
     List<MonthlyTrendDto> getMonthlyTrend(Long fiscalYearId);
 

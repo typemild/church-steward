@@ -9,8 +9,8 @@ import org.springframework.boot.system.ApplicationHome;
  * 프로그램 폴더를 정한다. 설정 파일(application.yml), 데이터베이스(data/), 로그(logs/)는 모두 이 폴더 아래에
  * 생긴다.
  * <ul>
- * <li>jpackage로 만든 실행 파일로 실행하면 실행 파일이 있는 폴더다. 바로 가기의 "시작 위치"와 무관하게
- * 압축을 푼 폴더에 데이터가 모이게 하기 위함이다.</li>
+ * <li>jpackage로 만든 실행 파일로 실행하면 실행 파일이 있는 폴더다. 바로 가기의 "시작 위치"와 무관하게 압축을 푼 폴더에
+ * 데이터가 모이게 하기 위함이다.</li>
  * <li>jar로 실행하면 jar가 있는 폴더다. 더블클릭으로 실행하면 작업 디렉터리가 OS마다 다르기 때문이다.</li>
  * <li>그 밖의 경우(IDE, {@code bootRun}, 테스트)는 작업 디렉터리다.</li>
  * </ul>

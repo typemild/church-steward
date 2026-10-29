@@ -23,8 +23,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * 진행 중인 예산 가져오기 한 번의 상태. 파일과 백업은 {@link ImportSession}이 가지고, 여기서는 열 지정과
- * 분석 결과, 가져올 건의 선택을 가진다. 분석 결과와 그에 따른 선택은 {@link #applyAnalysis}로 언제든 다시 계산한다.
+ * 진행 중인 예산 가져오기 한 번의 상태. 파일과 백업은 {@link ImportSession}이 가지고, 여기서는 열 지정과 분석 결과,
+ * 가져올 건의 선택을 가진다. 분석 결과와 그에 따른 선택은 {@link #applyAnalysis}로 언제든 다시 계산한다.
  */
 @Getter
 public class BudgetImportSession extends ImportSession {
@@ -114,8 +114,8 @@ public class BudgetImportSession extends ImportSession {
     }
 
     /**
-     * 머리글 이름으로 열을 추측해 열 지정을 채운다. 같은 파일과 머리글 행에 대해서는 한 번만 한다.
-     * 프로그램이 내보낸 파일과 빈 양식의 머리글("구분", "예산 1단계", "예산액")은 모두 알아본다.
+     * 머리글 이름으로 열을 추측해 열 지정을 채운다. 같은 파일과 머리글 행에 대해서는 한 번만 한다. 프로그램이 내보낸 파일과 빈 양식의
+     * 머리글("구분", "예산 1단계", "예산액")은 모두 알아본다.
      */
     public void guessMappingIfNeeded() {
         if (mappingGuessed) {
@@ -206,12 +206,11 @@ public class BudgetImportSession extends ImportSession {
     // ------------------------------------------------------------------ 분석과 선택
 
     /**
-     * 새 분석 결과를 받아들이고 선택을 다시 계산한다.
-     * 사용자가 직접 바꾼 선택은 유지하고, 손대지 않은 건은 고를 수 있으면 선택한다.
-     * 분석 결과가 달라졌을 수 있으므로 받아 둔 백업은 다시 확인받도록 서비스에 맡긴다(여기서는 지우지 않는다).
+     * 새 분석 결과를 받아들이고 선택을 다시 계산한다. 사용자가 직접 바꾼 선택은 유지하고, 손대지 않은 건은 고를 수 있으면 선택한다. 분석
+     * 결과가 달라졌을 수 있으므로 받아 둔 백업은 다시 확인받도록 서비스에 맡긴다(여기서는 지우지 않는다).
      *
-     * @return 이전 분석 결과와 비교해 상태, 할 일, 금액, 설명이 달라졌거나 새로 생기거나 없어진 건의 수.
-     *         이전 분석 결과가 없었으면 0
+     * @return 이전 분석 결과와 비교해 상태, 할 일, 금액, 설명이 달라졌거나 새로 생기거나 없어진 건의 수. 이전 분석 결과가 없었으면
+     *         0
      */
     public int applyAnalysis(BudgetImportAnalysisDto newAnalysis) {
         int changedCount = analysis == null ? 0 : countChanges(analysis, newAnalysis);
@@ -242,8 +241,7 @@ public class BudgetImportSession extends ImportSession {
     }
 
     /**
-     * 한 건의 선택을 바꾼다. 하위 예산을 고르면 새로 추가되는 상위 예산도 함께 고르고,
-     * 상위 예산을 빼면 그 하위 예산도 함께 뺀다.
+     * 한 건의 선택을 바꾼다. 하위 예산을 고르면 새로 추가되는 상위 예산도 함께 고르고, 상위 예산을 빼면 그 하위 예산도 함께 뺀다.
      */
     public void setSelected(String key, boolean selected) {
         Map<String, BudgetImportItemDto> items = itemsByKey();
@@ -310,8 +308,8 @@ public class BudgetImportSession extends ImportSession {
     }
 
     /**
-     * 분석 결과와 사용자가 직접 바꾼 선택으로 선택된 건을 다시 정한다.
-     * 고를 수 없는 건은 빼고, 새로 추가되는 상위 예산이 빠져 있으면 그 하위 예산도 뺀다.
+     * 분석 결과와 사용자가 직접 바꾼 선택으로 선택된 건을 다시 정한다. 고를 수 없는 건은 빼고, 새로 추가되는 상위 예산이 빠져 있으면 그
+     * 하위 예산도 뺀다.
      */
     private void recomputeSelection() {
         selectedKeys.clear();

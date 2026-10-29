@@ -5,8 +5,8 @@ import org.church.steward.domain.contact.dto.ContactAutocompleteDto;
 import lombok.Getter;
 
 /**
- * 계층형 자동 완성 목록의 한 항목. 관계자, "신규 추가", 맨 아래의 다 담지 못한 관계자가 있다는 안내 중 하나다.
- * 안내 항목은 키보드로 고를 수 없고, 마우스로 누르면 모두 보여준다.
+ * 계층형 자동 완성 목록의 한 항목. 관계자, "신규 추가", 맨 아래의 다 담지 못한 관계자가 있다는 안내 중 하나다. 안내 항목은
+ * 키보드로 고를 수 없고, 마우스로 누르면 모두 보여준다.
  */
 @Getter
 public class ContactAutocompleteItem {

@@ -227,8 +227,8 @@ public class ReportServiceImpl implements ReportService {
     }
 
     /**
-     * 직전 회계 연도, 곧 시작일이 주어진 회계 연도보다 앞선 회계 연도 중 가장 최근 것을 찾는다.
-     * 두 회계 연도 사이에 빈 기간이 있어도 직전 회계 연도로 본다.
+     * 직전 회계 연도, 곧 시작일이 주어진 회계 연도보다 앞선 회계 연도 중 가장 최근 것을 찾는다. 두 회계 연도 사이에 빈 기간이 있어도
+     * 직전 회계 연도로 본다.
      */
     private Optional<FiscalYear> findPreviousFiscalYear(FiscalYear fiscalYear) {
         return fiscalYearRepository.findFirstByStartDateLessThanOrderByStartDateDesc(fiscalYear.getStartDate());

@@ -21,8 +21,8 @@ public interface ContactService {
     ContactDto createContact(ContactDto dto);
 
     /**
-     * 활동 기록을 남기지 않고 관계자를 등록한다. 검증은 {@link #createContact}와 같다.
-     * 여러 관계자를 한꺼번에 처리하고 활동 기록을 한 건으로 남기는 가져오기에서만 쓴다.
+     * 활동 기록을 남기지 않고 관계자를 등록한다. 검증은 {@link #createContact}와 같다. 여러 관계자를 한꺼번에 처리하고 활동
+     * 기록을 한 건으로 남기는 가져오기에서만 쓴다.
      *
      * @return 등록된 관계자
      */
@@ -37,10 +37,9 @@ public interface ContactService {
     void unhideContact(Long id);
 
     /**
-     * 수입/지출 입력의 자동 완성 후보를 소속 그룹과 함께 조회한다.
-     * 숨긴 관계자와 이미 입력된 관계자({@code excludedIds})는 빼고, 이름이나 비고에 검색어가 들어 있는 관계자를
-     * 이름 일치 → 이름이 검색어로 시작 → 이름에 검색어 포함 → 비고에 검색어 포함 순(같은 순위는 이름순)으로
-     * {@code limit}명까지 담는다.
+     * 수입/지출 입력의 자동 완성 후보를 소속 그룹과 함께 조회한다. 숨긴 관계자와 이미 입력된 관계자({@code excludedIds})는
+     * 빼고, 이름이나 비고에 검색어가 들어 있는 관계자를 이름 일치 → 이름이 검색어로 시작 → 이름에 검색어 포함 → 비고에 검색어 포함
+     * 순(같은 순위는 이름순)으로 {@code limit}명까지 담는다.
      */
     ContactAutocompleteResultDto<ContactAutocompleteDto> autocompleteContacts(String keyword, List<Long> excludedIds,
             int limit);

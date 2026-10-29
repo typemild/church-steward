@@ -21,8 +21,8 @@ import org.church.steward.ui.view.report.layout.ReportDocument;
 import org.church.steward.ui.view.report.layout.ReportPaper;
 
 /**
- * 미리보기 왼쪽의 페이지 목록. 모든 페이지를 작게 줄여 위에서 아래로 늘어놓고, 페이지 번호를 그 아래에 적는다.
- * 페이지 그림은 그릴 때마다 문서에서 바로 그리므로 따로 보관하지 않는다(HiDPI 화면에서도 흐려지지 않는다).
+ * 미리보기 왼쪽의 페이지 목록. 모든 페이지를 작게 줄여 위에서 아래로 늘어놓고, 페이지 번호를 그 아래에 적는다. 페이지 그림은 그릴
+ * 때마다 문서에서 바로 그리므로 따로 보관하지 않는다(HiDPI 화면에서도 흐려지지 않는다).
  */
 class ReportThumbnailList extends JList<Integer> {
 

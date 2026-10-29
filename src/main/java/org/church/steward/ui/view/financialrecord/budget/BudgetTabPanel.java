@@ -56,6 +56,14 @@ public class BudgetTabPanel extends JPanel {
     }
 
     /**
+     * 수입과 지출 목록의 행 선택을 모두 해제한다.
+     */
+    public void clearSelection() {
+        incomePanel.clearSelection();
+        expensePanel.clearSelection();
+    }
+
+    /**
      * 내역을 선택하고 보이도록 스크롤한다. 수입과 지출 목록 중 내역이 있는 쪽에서만 일어난다.
      */
     public void revealRecord(Long recordId) {

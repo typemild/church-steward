@@ -23,8 +23,7 @@ public class ContactImportAnalysisDto {
     private int blankRowCount;
 
     /**
-     * 분석 결과 전체를 요약한 값. 반영할 때 이 값을 함께 넘기면, 그 사이에 데이터가 바뀌어 분석 결과가 달라졌는지를
-     * 서비스가 확인한다.
+     * 분석 결과 전체를 요약한 값. 반영할 때 이 값을 함께 넘기면, 그 사이에 데이터가 바뀌어 분석 결과가 달라졌는지를 서비스가 확인한다.
      */
     private String signature;
 

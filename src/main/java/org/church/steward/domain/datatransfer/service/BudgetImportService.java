@@ -7,10 +7,9 @@ import org.church.steward.domain.datatransfer.dto.BudgetImportRequestDto;
 import org.church.steward.domain.datatransfer.dto.ImportResultDto;
 
 /**
- * 파일에서 읽은 예산을 회계 연도에 가져온다.
- * 화면은 먼저 {@link #analyze}로 건마다 무엇을 하게 될지 확인하고, 가져올 건을 고른 뒤
- * {@link #importBudgets}로 반영한다.
- * 서비스는 상태를 보관하지 않으므로 화면은 같은 입력으로 몇 번이든 다시 분석할 수 있다.
+ * 파일에서 읽은 예산을 회계 연도에 가져온다. 화면은 먼저 {@link #analyze}로 건마다 무엇을 하게 될지 확인하고, 가져올 건을
+ * 고른 뒤 {@link #importBudgets}로 반영한다. 서비스는 상태를 보관하지 않으므로 화면은 같은 입력으로 몇 번이든 다시
+ * 분석할 수 있다.
  */
 public interface BudgetImportService {
 
@@ -24,8 +23,8 @@ public interface BudgetImportService {
     BudgetImportAnalysisDto analyze(Long fiscalYearId, BudgetImportRequestDto request);
 
     /**
-     * 고른 건들을 한 트랜잭션으로 반영하고 활동 기록에 "가져오기" 한 건으로 기록한다.
-     * 반영하기 전에 다시 분석하며, 다음 경우에는 아무것도 반영하지 않고 예외를 던진다.
+     * 고른 건들을 한 트랜잭션으로 반영하고 활동 기록에 "가져오기" 한 건으로 기록한다. 반영하기 전에 다시 분석하며, 다음 경우에는 아무것도
+     * 반영하지 않고 예외를 던진다.
      * <ul>
      * <li>백업한 뒤에 활동 기록이 새로 생겼을 때: {@code BackupOutdatedException}</li>
      * <li>분석 결과가 화면에 보여준 것과 달라졌을 때: {@code ImportStateChangedException}</li>

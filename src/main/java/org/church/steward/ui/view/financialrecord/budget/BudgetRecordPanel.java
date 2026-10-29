@@ -13,6 +13,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.table.TableCellRenderer;
@@ -34,8 +35,7 @@ import org.church.steward.util.NumberUtils;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 /**
- * "예산별 보기" 탭의 수입 또는 지출 예산 목록.
- * 조회된 내역이 속한 예산만 보여주며, 예산 행을 펼치면 그 예산의 내역들이 나타난다.
+ * "예산별 보기" 탭의 수입 또는 지출 예산 목록. 조회된 내역이 속한 예산만 보여주며, 예산 행을 펼치면 그 예산의 내역들이 나타난다.
  */
 public class BudgetRecordPanel extends JPanel {
 
@@ -45,9 +45,18 @@ public class BudgetRecordPanel extends JPanel {
     private final BudgetRecordTableModel tableModel;
     private final TreeTable table;
 
+    /** 예산 일괄 변경 버튼. 선택된 내역이 없으면 꺼진다. */
+    private final IconButton btnChangeBudget = new IconButton(FontAwesomeSolid.COINS, ComponentSize.SMALL);
+    /** 관계자 일괄 변경 버튼. 선택된 내역이 없으면 꺼진다. */
+    private final IconButton btnChangeContacts = new IconButton(FontAwesomeSolid.USER_EDIT, ComponentSize.SMALL);
+    /** 일괄 변경 버튼과 추가 버튼 사이의 간격 */
+    private final JSeparator bulkChangeSeparator1 = new JSeparator(SwingConstants.VERTICAL);
+    private final JSeparator bulkChangeSeparator2 = new JSeparator(SwingConstants.VERTICAL);
     private final IconButton btnAdd = new IconButton(FontAwesomeSolid.PLUS, ComponentSize.SMALL);
     private final IconButton btnEdit = new IconButton(FontAwesomeSolid.EDIT, ComponentSize.SMALL);
     private final IconButton btnDelete = new IconButton(FontAwesomeSolid.TRASH_ALT, ComponentSize.SMALL);
+    /** 상세 보기 버튼. 편집할 수 없을 때(마감된 회계 연도) 일괄 변경/추가/수정/삭제 버튼 대신 보인다. */
+    private final IconButton btnView = new IconButton(FontAwesomeSolid.EDIT, ComponentSize.SMALL);
     private boolean editable = true;
     private final FieldLabel selectionSumLabel = new FieldLabel("", SwingConstants.RIGHT, ComponentSize.MEDIUM);
 
@@ -70,19 +79,30 @@ public class BudgetRecordPanel extends JPanel {
 
         setupEvents();
         updateSelectionSum();
+        updateBulkChangeButtons();
     }
 
     private JPanel createHeaderPanel() {
         JPanel toolbarPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 1, 0));
         toolbarPanel.setOpaque(false);
 
+        btnChangeBudget.setToolTipText("예산 일괄 변경");
+        btnChangeContacts.setToolTipText((type == FinancialRecordType.INCOME ? "봉헌자" : "수취인") + " 일괄 변경");
         btnAdd.setToolTipText(type.getLabel() + " 추가");
         btnEdit.setToolTipText(type.getLabel() + " 수정");
         btnDelete.setToolTipText(type.getLabel() + " 삭제");
+        btnView.setToolTipText(type.getLabel() + " 상세 보기");
+        btnView.setVisible(false);
 
+        // 일괄 변경은 추가/수정/삭제와 구분되도록 예산 관리의 위치 변경 버튼처럼 왼쪽에 떨어뜨려 둔다.
+        toolbarPanel.add(btnChangeBudget);
+        toolbarPanel.add(btnChangeContacts);
+        toolbarPanel.add(bulkChangeSeparator1);
+        toolbarPanel.add(bulkChangeSeparator2);
         toolbarPanel.add(btnAdd);
         toolbarPanel.add(btnEdit);
         toolbarPanel.add(btnDelete);
+        toolbarPanel.add(btnView);
 
         // 제목 옆의 모두 펼치기/접기는 보기만 바꾸므로 마감된 회계 연도에서도 쓸 수 있다(setEditable의 대상이 아니다).
         JPanel titlePanel = new JPanel(new GridBagLayout());
@@ -130,24 +150,43 @@ public class BudgetRecordPanel extends JPanel {
                 .addListSelectionListener(e -> {
                     if (!e.getValueIsAdjusting()) {
                         updateSelectionSum();
+                        updateBulkChangeButtons();
                     }
                 });
 
         table.setRowDoubleClickHandler(this::onRowDoubleClicked);
 
+        btnChangeBudget.addActionListener(_ -> actionHandler.changeBudget(getSelectedRecords()));
+        btnChangeContacts.addActionListener(_ -> actionHandler.changeContacts(getSelectedRecords()));
         btnAdd.addActionListener(_ -> onAdd());
         btnEdit.addActionListener(_ -> onEdit());
         btnDelete.addActionListener(_ -> onDelete());
+        btnView.addActionListener(_ -> onView());
     }
 
     /**
-     * 내역을 추가, 수정, 삭제할 수 있는지 정한다. 마감된 회계 연도의 내역은 조회만 할 수 있으므로 false로 둔다.
+     * 내역을 추가, 수정, 삭제할 수 있는지 정한다. 마감된 회계 연도의 내역은 조회만 할 수 있으므로 false로 둔다. 편집할 수 없으면
+     * 일괄 변경/추가/수정/삭제 버튼과 그 사이의 간격을 숨기고 상세 보기 버튼을 보인다.
      */
     public void setEditable(boolean editable) {
         this.editable = editable;
-        btnAdd.setEnabled(editable);
-        btnEdit.setEnabled(editable);
-        btnDelete.setEnabled(editable);
+        btnChangeBudget.setVisible(editable);
+        btnChangeContacts.setVisible(editable);
+        bulkChangeSeparator1.setVisible(editable);
+        bulkChangeSeparator2.setVisible(editable);
+        btnAdd.setVisible(editable);
+        btnEdit.setVisible(editable);
+        btnDelete.setVisible(editable);
+        btnView.setVisible(!editable);
+    }
+
+    /**
+     * 일괄 변경 버튼은 내역이 한 건 이상 선택되었을 때만 켠다. 예산 행만 선택된 경우는 선택된 내역이 없는 것으로 본다.
+     */
+    private void updateBulkChangeButtons() {
+        boolean hasRecord = !getSelectedRecords().isEmpty();
+        btnChangeBudget.setEnabled(hasRecord);
+        btnChangeContacts.setEnabled(hasRecord);
     }
 
     /**
@@ -172,6 +211,15 @@ public class BudgetRecordPanel extends JPanel {
         actionHandler.editRecord(selected.getFirst());
     }
 
+    private void onView() {
+        List<FinancialRecordResponseDto> selected = getSelectedRecords();
+        if (selected.size() != 1) {
+            JOptionPane.showMessageDialog(this, "상세 보기할 " + type.getLabel() + " 내역을 한 건만 선택해주세요.");
+            return;
+        }
+        actionHandler.viewRecord(selected.getFirst());
+    }
+
     private void onDelete() {
         List<FinancialRecordResponseDto> selected = getSelectedRecords();
         if (selected.isEmpty()) {
@@ -192,12 +240,17 @@ public class BudgetRecordPanel extends JPanel {
     }
 
     /**
-     * 내역 행을 더블클릭하면 수정한다. 예산 행은 더블클릭해도 선택만 된다.
+     * 내역 행을 더블클릭하면 수정한다. 편집할 수 없으면(마감된 회계 연도) 상세 보기를 연다. 예산 행은 더블클릭해도 선택만 된다.
      */
     private void onRowDoubleClicked(int modelRow) {
-        if (editable && !tableModel.getRowValue(modelRow)
+        if (tableModel.getRowValue(modelRow)
                 .isBudgetRow()) {
+            return;
+        }
+        if (editable) {
             onEdit();
+        } else {
+            onView();
         }
     }
 
@@ -209,6 +262,14 @@ public class BudgetRecordPanel extends JPanel {
     public void setRecords(List<FinancialRecordResponseDto> records, Map<Long, Integer> budgetPositions) {
         tableModel.setRecords(records, budgetPositions);
         updateSelectionSum();
+        updateBulkChangeButtons();
+    }
+
+    /**
+     * 행 선택을 해제한다.
+     */
+    public void clearSelection() {
+        table.clearRowSelection();
     }
 
     /**

@@ -48,9 +48,9 @@ import org.church.steward.ui.util.UIFonts;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 가져오기의 1단계. 가져올 파일을 고르고, 시트(엑셀) 또는 인코딩(CSV)과 머리글 행을 정한다.
- * 파일은 여기서 읽어 {@link ImportSession}에 담아 두며, 이후 단계는 디스크의 파일을 다시 읽지 않는다.
- * 예산 가져오기와 수입/지출 가져오기가 함께 쓴다.
+ * 가져오기의 1단계. 가져올 파일을 고르고, 시트(엑셀) 또는 인코딩(CSV)과 머리글 행을 정한다. 파일은 여기서 읽어
+ * {@link ImportSession}에 담아 두며, 이후 단계는 디스크의 파일을 다시 읽지 않는다. 예산 가져오기와 수입/지출 가져오기가
+ * 함께 쓴다.
  */
 @Slf4j
 public class FileStepPanel extends JPanel {

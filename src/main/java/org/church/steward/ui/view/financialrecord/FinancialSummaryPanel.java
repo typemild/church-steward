@@ -23,8 +23,7 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
 /**
- * 검색된 수입/지출의 총합 표시 영역.
- * 둥근 카드 하나를 수입, 지출, 차액 세 칸으로 나누고, 칸마다 항목명 아래에 금액을 크게 보여준다.
+ * 검색된 수입/지출의 총합 표시 영역. 둥근 카드 하나를 수입, 지출, 차액 세 칸으로 나누고, 칸마다 항목명 아래에 금액을 크게 보여준다.
  */
 public class FinancialSummaryPanel extends JPanel {
 

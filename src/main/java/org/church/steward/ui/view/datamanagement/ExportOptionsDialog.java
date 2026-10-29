@@ -28,8 +28,8 @@ import org.church.steward.ui.util.DialogKeyHandler;
 import org.church.steward.ui.util.UIColors;
 
 /**
- * 내보낼 파일의 형식과 암호를 고르는 다이얼로그.
- * 암호는 엑셀 형식에만 걸 수 있고 비워 두면 걸지 않는다. 빈 양식처럼 암호가 필요 없는 경우에는 형식만 고르게 한다.
+ * 내보낼 파일의 형식과 암호를 고르는 다이얼로그. 암호는 엑셀 형식에만 걸 수 있고 비워 두면 걸지 않는다. 빈 양식처럼 암호가 필요 없는
+ * 경우에는 형식만 고르게 한다.
  */
 public class ExportOptionsDialog extends JDialog {
 

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -229,10 +230,9 @@ class ActivityLogServiceImplTest {
         }
 
         @Test
-        @DisplayName("logUpdate_값이 변경되지 않은 경우_식별자만 로그에 포함된다")
-        void logUpdate_unchangedIdentifier_includesIdentifier() {
+        @DisplayName("logUpdate_값이 변경된 항목이 없는 경우_활동 기록을 만들지 않는다")
+        void logUpdate_noChangedFields_doesNotCreateLog() {
             // Given
-            mockLoggedInUser("test-user");
             TestEntity newEntity = new TestEntity(1L, "이름");
             @SuppressWarnings("unchecked")
             EntitySnapshot<TestEntity> snapshot = mock(EntitySnapshot.class);
@@ -243,8 +243,43 @@ class ActivityLogServiceImplTest {
             activityLogService.logUpdate(snapshot, newEntity);
 
             // Then
+            verify(activityLogMapper, never()).toEntity(any(), any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("logUpdate_값이 변경된 항목이 없는 경우_활동 기록을 저장하지 않는다")
+        void logUpdate_noChangedFields_doesNotSaveLog() {
+            // Given
+            TestEntity newEntity = new TestEntity(1L, "이름");
+            @SuppressWarnings("unchecked")
+            EntitySnapshot<TestEntity> snapshot = mock(EntitySnapshot.class);
+            when(snapshot.getFieldValue("ID")).thenReturn("1");
+            when(snapshot.getFieldValue("이름")).thenReturn("이름");
+
+            // When
+            activityLogService.logUpdate(snapshot, newEntity);
+
+            // Then
+            verify(activityLogRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("logUpdate_식별자만 변경된 경우_식별자의 변경 전 값과 함께 기록된다")
+        void logUpdate_onlyIdentifierChanged_recordsChange() {
+            // Given
+            mockLoggedInUser("test-user");
+            TestEntity newEntity = new TestEntity(2L, "이름");
+            @SuppressWarnings("unchecked")
+            EntitySnapshot<TestEntity> snapshot = mock(EntitySnapshot.class);
+            when(snapshot.getFieldValue("ID")).thenReturn("1");
+            when(snapshot.getFieldValue("이름")).thenReturn("이름");
+
+            // When
+            activityLogService.logUpdate(snapshot, newEntity);
+
+            // Then
             verify(activityLogMapper).toEntity(any(), any(), any(), fieldsCaptor.capture());
-            assertCapturedFields(tuple("ID", null, "1", false));
+            assertCapturedFields(tuple("ID", "1", "2", true));
         }
 
         @Test

@@ -18,10 +18,8 @@ import org.church.steward.ui.view.report.layout.ReportTable.RowStyle;
 import org.church.steward.ui.view.report.layout.ReportText;
 
 /**
- * 주간 회계 결산 보고서를 배치한다.
- * 위에서부터 제목·기간과 결재란, 개요(전주 잔액, 주간 수입/지출/차액, 현재 잔액), 수입 현황과 지출 현황, 수입 내역과 지출 내역
- * 순이다.
- * 가능한 한 A4 한 장에 담기도록 기본 글자는 12pt 이하로, 간격은 좁게 쓴다.
+ * 주간 회계 결산 보고서를 배치한다. 위에서부터 제목·기간과 결재란, 개요(전주 잔액, 주간 수입/지출/차액, 현재 잔액), 수입 현황과
+ * 지출 현황, 수입 내역과 지출 내역 순이다. 가능한 한 A4 한 장에 담기도록 기본 글자는 12pt 이하로, 간격은 좁게 쓴다.
  */
 public final class WeeklySettlementReportComposer {
 
@@ -71,8 +69,8 @@ public final class WeeklySettlementReportComposer {
     }
 
     /**
-     * 왼쪽에 제목과 회계 연도·기간을, 오른쪽에 결재란을 놓는다.
-     * 높이는 결재란에 맞추되, 글자를 키워 제목과 두 줄의 회계 연도·기간이 들어가지 않으면 그만큼 늘린다.
+     * 왼쪽에 제목과 회계 연도·기간을, 오른쪽에 결재란을 놓는다. 높이는 결재란에 맞추되, 글자를 키워 제목과 두 줄의 회계 연도·기간이
+     * 들어가지 않으면 그만큼 늘린다.
      */
     private static void drawHeader(ReportCanvas canvas, WeeklySettlementReportDto report) {
         double top = canvas.getY();

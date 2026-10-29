@@ -23,8 +23,7 @@ import org.church.steward.ui.component.label.SubFieldLabel;
 import org.church.steward.ui.util.UIColors;
 
 /**
- * 관계자 자동 완성 목록 팝업.
- * 입력 필드가 포커스를 유지할 수 있도록 팝업 자신은 포커스를 받지 않는다.
+ * 관계자 자동 완성 목록 팝업. 입력 필드가 포커스를 유지할 수 있도록 팝업 자신은 포커스를 받지 않는다.
  */
 public class ContactSuggestionPopup extends JPopupMenu {
 
@@ -93,8 +92,8 @@ public class ContactSuggestionPopup extends JPopupMenu {
     }
 
     /**
-     * 자동 완성 목록을 대상 컴포넌트 바로 아래에 같은 너비로 보여준다. 목록이 비어 있으면 팝업을 닫는다.
-     * 목록에 담지 못한 관계자가 있으면 맨 아래에 그 수를 안내한다.
+     * 자동 완성 목록을 대상 컴포넌트 바로 아래에 같은 너비로 보여준다. 목록이 비어 있으면 팝업을 닫는다. 목록에 담지 못한 관계자가 있으면
+     * 맨 아래에 그 수를 안내한다.
      */
     public void showSuggestions(Component invoker, List<ContactSummaryDto> contacts, long remainingCount) {
         setVisible(false);

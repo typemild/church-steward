@@ -101,11 +101,15 @@ public class ActivityLogServiceImpl implements ActivityLogService {
     }
 
     /**
-     * 식별자와, 스냅샷을 찍은 뒤로 값이 바뀐 항목을 기록한다.
+     * 식별자와, 스냅샷을 찍은 뒤로 값이 바뀐 항목을 기록한다. 바뀐 항목이 없으면 확인할 내용이 없으므로 기록하지 않는다.
      */
     private <T> void logChange(ActivityType activityType, EntitySnapshot<T> oldEntitySnapshot, T newEntity) {
-        log(activityType, LoggableMetadataExtractor.getLoggableName(newEntity),
-                describeUpdate(oldEntitySnapshot, newEntity));
+        List<ActivityLogFieldDto> fields = describeUpdate(oldEntitySnapshot, newEntity);
+        if (fields.stream()
+                .noneMatch(ActivityLogFieldDto::isChanged)) {
+            return;
+        }
+        log(activityType, LoggableMetadataExtractor.getLoggableName(newEntity), fields);
     }
 
     @Override
@@ -184,8 +188,8 @@ public class ActivityLogServiceImpl implements ActivityLogService {
     }
 
     /**
-     * 내보내기와 가져오기 기록의 첫 항목인 회계 연도. 관계자처럼 회계 연도에 속하지 않는 대상(null)이면 항목을 두지 않는다.
-     * 뒤에 항목을 더 붙일 수 있도록 수정 가능한 목록을 돌려준다.
+     * 내보내기와 가져오기 기록의 첫 항목인 회계 연도. 관계자처럼 회계 연도에 속하지 않는 대상(null)이면 항목을 두지 않는다. 뒤에 항목을
+     * 더 붙일 수 있도록 수정 가능한 목록을 돌려준다.
      */
     private List<ActivityLogFieldDto> fiscalYearFields(String fiscalYearName) {
         List<ActivityLogFieldDto> fields = new ArrayList<>();

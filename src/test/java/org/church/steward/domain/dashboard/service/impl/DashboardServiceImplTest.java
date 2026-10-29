@@ -60,15 +60,15 @@ class DashboardServiceImplTest {
     private final int CURRENT_YEAR = 2023;
 
     /**
-     * 조회할 회계 연도(FISCAL_YEAR_ID)가 주어진 기간으로 등록되어 있게 한다.
+     * 조회할 회계 연도(FISCAL_YEAR_ID)를 주어진 기간으로 만든다.
      */
-    private void givenFiscalYearPeriod(LocalDate startDate, LocalDate endDate) {
-        when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(FiscalYear.builder()
+    private FiscalYear createFiscalYear(LocalDate startDate, LocalDate endDate) {
+        return FiscalYear.builder()
                 .id(FISCAL_YEAR_ID)
                 .name("2023년")
                 .startDate(startDate)
                 .endDate(endDate)
-                .build()));
+                .build();
     }
 
     private FinancialRecord createRecord(FinancialRecordType type, long amount, Budget budget, LocalDate date) {
@@ -153,7 +153,8 @@ class DashboardServiceImplTest {
         @SuppressWarnings("unchecked")
         void getMonthlyTrend_Success() {
             // Given
-            givenFiscalYearPeriod(LocalDate.of(CURRENT_YEAR, 1, 1), LocalDate.of(CURRENT_YEAR, 12, 31));
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(
+                    createFiscalYear(LocalDate.of(CURRENT_YEAR, 1, 1), LocalDate.of(CURRENT_YEAR, 12, 31))));
             FinancialRecord incomeJan = createRecord(FinancialRecordType.INCOME, 100L, null,
                     LocalDate.of(CURRENT_YEAR, 1, 15));
             FinancialRecord incomeFeb = createRecord(FinancialRecordType.INCOME, 200L, null,
@@ -183,7 +184,8 @@ class DashboardServiceImplTest {
         @SuppressWarnings("unchecked")
         void getMonthlyTrend_PeriodAcrossYears_ReturnsMonthsOfPeriodInOrder() {
             // Given
-            givenFiscalYearPeriod(LocalDate.of(CURRENT_YEAR - 1, 12, 1), LocalDate.of(CURRENT_YEAR, 11, 30));
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(
+                    createFiscalYear(LocalDate.of(CURRENT_YEAR - 1, 12, 1), LocalDate.of(CURRENT_YEAR, 11, 30))));
             FinancialRecord incomeDec = createRecord(FinancialRecordType.INCOME, 300L, null,
                     LocalDate.of(CURRENT_YEAR - 1, 12, 28));
             FinancialRecord expenseNov = createRecord(FinancialRecordType.EXPENSE, 70L, null,
@@ -209,7 +211,8 @@ class DashboardServiceImplTest {
         @SuppressWarnings("unchecked")
         void getMonthlyTrend_PeriodWithPartialMonths_IncludesStartAndEndMonths() {
             // Given
-            givenFiscalYearPeriod(LocalDate.of(CURRENT_YEAR, 3, 15), LocalDate.of(CURRENT_YEAR, 6, 10));
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(
+                    createFiscalYear(LocalDate.of(CURRENT_YEAR, 3, 15), LocalDate.of(CURRENT_YEAR, 6, 10))));
             when(financialRecordRepository.findAll(any(Specification.class))).thenReturn(List.of());
 
             // When
@@ -396,7 +399,8 @@ class DashboardServiceImplTest {
         @SuppressWarnings("unchecked")
         void getMonthlyTrend_SpecificationVerification() {
             // Given
-            givenFiscalYearPeriod(LocalDate.of(CURRENT_YEAR, 1, 1), LocalDate.of(CURRENT_YEAR, 12, 31));
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(
+                    createFiscalYear(LocalDate.of(CURRENT_YEAR, 1, 1), LocalDate.of(CURRENT_YEAR, 12, 31))));
             when(financialRecordRepository.findAll(any(Specification.class))).thenReturn(List.of());
 
             // When

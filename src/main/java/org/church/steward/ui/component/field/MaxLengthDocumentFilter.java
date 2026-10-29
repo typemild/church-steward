@@ -12,9 +12,8 @@ import javax.swing.text.StyleConstants;
  * 기준).
  * <p>
  * 넘치는 글자는 거부하지 않고 남은 칸만큼만 잘라 넣으며(붙여넣기, {@code setText} 포함), 잘렸으면
- * {@code onTruncated}를 부른다.
- * 입력기(IME)가 조합 중인 글자는 제한하지 않고 통과시킨다. 조합 중에 거부하면 입력기의 상태가 어긋날 수 있기 때문이다.
- * 조합이 끝나 글자가 확정될 때 다시 이 필터를 거치므로 그때 잘린다.
+ * {@code onTruncated}를 부른다. 입력기(IME)가 조합 중인 글자는 제한하지 않고 통과시킨다. 조합 중에 거부하면 입력기의
+ * 상태가 어긋날 수 있기 때문이다. 조합이 끝나 글자가 확정될 때 다시 이 필터를 거치므로 그때 잘린다.
  */
 public class MaxLengthDocumentFilter extends DocumentFilter {
 

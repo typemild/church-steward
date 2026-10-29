@@ -16,8 +16,8 @@ import org.church.steward.ui.view.report.layout.ReportTable.Column;
 import org.church.steward.ui.view.report.layout.ReportTable.RowStyle;
 
 /**
- * 회계 연도 수입/지출 결산 보고서를 배치한다.
- * 위에서부터 직전 회계 연도와 해당 회계 연도의 총괄, 월별 수입/지출(차트와 표), 수입 현황과 지출 현황 순이다.
+ * 회계 연도 수입/지출 결산 보고서를 배치한다. 위에서부터 직전 회계 연도와 해당 회계 연도의 총괄, 월별 수입/지출(차트와 표), 수입
+ * 현황과 지출 현황 순이다.
  */
 public final class AnnualSettlementReportComposer {
 

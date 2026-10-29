@@ -17,8 +17,7 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * 활동 기록 엔터티와 DTO를 서로 변환한다.
- * 엔터티에는 항목 목록을 JSON으로 저장하므로, JSON 형식도 이 클래스가 관리한다.
+ * 활동 기록 엔터티와 DTO를 서로 변환한다. 엔터티에는 항목 목록을 JSON으로 저장하므로, JSON 형식도 이 클래스가 관리한다.
  */
 @Component
 @RequiredArgsConstructor
@@ -72,8 +71,8 @@ public class ActivityLogMapper {
     }
 
     /**
-     * 항목 목록을 저장용 JSON으로 변환한다.
-     * "oldValue"는 값이 변경된 항목에만 기록한다. "items"는 건별 항목 목록이 있을 때만 기록한다.
+     * 항목 목록을 저장용 JSON으로 변환한다. "oldValue"는 값이 변경된 항목에만 기록한다. "items"는 건별 항목 목록이 있을
+     * 때만 기록한다.
      */
     private String toJson(List<ActivityLogFieldDto> fields, List<List<ActivityLogFieldDto>> items) {
         ObjectNode root = objectMapper.createObjectNode();

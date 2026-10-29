@@ -30,9 +30,8 @@ public class ProgramInfoServiceImpl implements ProgramInfoService {
      * <li>보고서에 쓰려고 프로그램에 포함한 글꼴(src/main/resources/fonts/nanumgothic,
      * nanummyeongjo). 라이브러리가 아니어서 리포트에 나오지 않는다.</li>
      * <li>화면의 아이콘인 Font Awesome Free. ikonli-fontawesome5-pack의 jar에 글꼴 파일이 들어 있지만,
-     * 리포트에는 Ikonli 자신의 라이선스(Apache-2.0)만 나온다.
-     * Ikonli를 올려 포함된 Font Awesome의 버전이 바뀌면 여기의 버전도 고친다(jar의
-     * META-INF/resources/fontawesome5/{버전}).</li>
+     * 리포트에는 Ikonli 자신의 라이선스(Apache-2.0)만 나온다. Ikonli를 올려 포함된 Font Awesome의 버전이 바뀌면
+     * 여기의 버전도 고친다(jar의 META-INF/resources/fontawesome5/{버전}).</li>
      * </ul>
      */
     private static final List<OpenSourceLicenseDto> BUNDLED_FONTS = List.of(

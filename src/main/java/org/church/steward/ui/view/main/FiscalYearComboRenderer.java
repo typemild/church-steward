@@ -19,9 +19,9 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
 /**
- * 사이드바의 회계 연도 선택란에서 회계 연도를 두 줄로 그린다. 윗줄은 이름, 아랫줄은 기간이다.
- * 사이드바가 좁아 기간은 "25.12.01 ~ 26.11.30"처럼 줄여 적고, 마감된 회계 연도는 이름 앞에 자물쇠 아이콘을 붙인다.
- * 데이터 관리 화면처럼 회계 연도 선택란을 따로 두는 화면도 같은 모양으로 보이도록 이 렌더러를 쓴다.
+ * 사이드바의 회계 연도 선택란에서 회계 연도를 두 줄로 그린다. 윗줄은 이름, 아랫줄은 기간이다. 사이드바가 좁아 기간은
+ * {@code 25.12.01 ~ 26.11.30}처럼 줄여 적고, 마감된 회계 연도는 이름 앞에 자물쇠 아이콘을 붙인다. 데이터 관리
+ * 화면처럼 회계 연도 선택란을 따로 두는 화면도 같은 모양으로 보이도록 이 렌더러를 쓴다.
  */
 public class FiscalYearComboRenderer extends JPanel implements ListCellRenderer<FiscalYearDto> {
 

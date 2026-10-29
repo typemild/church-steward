@@ -23,7 +23,7 @@ public interface ActivityLogService {
     <T> void logCreation(T entity);
 
     /**
-     * 데이터 수정 내역을 기록한다.
+     * 데이터 수정 내역을 기록한다. 값이 바뀐 항목이 없으면 기록하지 않는다.
      *
      * @param <T>               엔터티 타입
      * @param oldEntitySnapshot 변경 전 엔터티 (스냅샷)
@@ -74,8 +74,8 @@ public interface ActivityLogService {
     void logBackup(String fileName);
 
     /**
-     * 백업 파일로 전체 데이터를 복원한 내역을 복원한 데이터베이스에 기록한다.
-     * 복원은 로그인하기 전에 하므로 로그인 세션이 아니라 복원한 계정(관리자)으로 기록한다.
+     * 백업 파일로 전체 데이터를 복원한 내역을 복원한 데이터베이스에 기록한다. 복원은 로그인하기 전에 하므로 로그인 세션이 아니라 복원한
+     * 계정(관리자)으로 기록한다.
      *
      * @param userId          복원한 사용자의 ID (백업한 시점의 계정)
      * @param fileName        복원에 쓴 백업 파일의 이름
@@ -95,8 +95,7 @@ public interface ActivityLogService {
     void logExport(String targetName, String fiscalYearName, String fileName, int count);
 
     /**
-     * 파일에서 데이터를 가져온 내역을 한 건으로 기록한다.
-     * 가져오기로 생성/수정된 엔터티의 내역을 건별 항목 목록에 담는다.
+     * 파일에서 데이터를 가져온 내역을 한 건으로 기록한다. 가져오기로 생성/수정된 엔터티의 내역을 건별 항목 목록에 담는다.
      *
      * @param targetName     가져온 대상 (예시: 예산, 수입/지출, 관계자)
      * @param fiscalYearName 회계 연도의 이름. 관계자처럼 회계 연도에 속하지 않는 대상이면 null이며, 이때는 회계 연도
@@ -118,8 +117,7 @@ public interface ActivityLogService {
     <T> List<ActivityLogFieldDto> describeCreation(T entity);
 
     /**
-     * 엔터티를 수정한 내역에 기록할 항목 목록(식별자와 값이 바뀐 항목)을 만든다. {@link #logUpdate}가 기록하는 내용과
-     * 같다.
+     * 엔터티를 수정한 내역에 기록할 항목 목록(식별자와 값이 바뀐 항목)을 만든다. {@link #logUpdate}가 기록하는 내용과 같다.
      *
      * @param <T>               엔터티 타입
      * @param oldEntitySnapshot 수정 전 엔터티 (스냅샷)
@@ -128,8 +126,8 @@ public interface ActivityLogService {
     <T> List<ActivityLogFieldDto> describeUpdate(EntitySnapshot<T> oldEntitySnapshot, T newEntity);
 
     /**
-     * 가장 마지막에 남긴 활동 기록의 ID를 조회한다. 활동 기록이 하나도 없으면 0이다.
-     * 데이터를 바꾸는 모든 작업은 활동 기록을 남기므로, 이 값이 그대로이면 그 사이에 데이터가 바뀌지 않은 것이다.
+     * 가장 마지막에 남긴 활동 기록의 ID를 조회한다. 활동 기록이 하나도 없으면 0이다. 데이터를 바꾸는 모든 작업은 활동 기록을 남기므로,
+     * 이 값이 그대로이면 그 사이에 데이터가 바뀌지 않은 것이다.
      */
     long getLatestLogId();
 

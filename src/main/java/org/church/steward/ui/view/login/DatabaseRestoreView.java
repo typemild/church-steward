@@ -46,9 +46,8 @@ import org.church.steward.ui.util.UIColors;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 백업 파일로 전체 데이터를 복원하는 화면이다.
- * 복원은 데이터베이스 파일을 교체하므로 로그인하기 전(Spring 컨텍스트를 띄우기 전)에만 띄운다.
- * 최초 실행 화면에서 직접 열거나, 데이터 관리 화면에서 예약한 복원을 다음 실행 때 수행하는 데 쓴다.
+ * 백업 파일로 전체 데이터를 복원하는 화면이다. 복원은 데이터베이스 파일을 교체하므로 로그인하기 전(Spring 컨텍스트를 띄우기 전)에만
+ * 띄운다. 최초 실행 화면에서 직접 열거나, 데이터 관리 화면에서 예약한 복원을 다음 실행 때 수행하는 데 쓴다.
  */
 @Slf4j
 public class DatabaseRestoreView extends JDialog {
@@ -60,8 +59,8 @@ public class DatabaseRestoreView extends JDialog {
     private static final String ADMIN_ID = "관리자";
 
     /**
-     * 복원과 그 기록을 수행하는 동작. 데이터베이스를 교체한 뒤 활동 기록까지 남기려면 Spring 컨텍스트가 필요하므로,
-     * 컨텍스트를 띄울 수 있는 애플리케이션 클래스가 만들어 넘긴다.
+     * 복원과 그 기록을 수행하는 동작. 데이터베이스를 교체한 뒤 활동 기록까지 남기려면 Spring 컨텍스트가 필요하므로, 컨텍스트를 띄울 수
+     * 있는 애플리케이션 클래스가 만들어 넘긴다.
      */
     @FunctionalInterface
     public interface RestoreAction {

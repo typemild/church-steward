@@ -16,8 +16,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,8 +27,6 @@ import lombok.Setter;
 @Table(name = "USERS")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 @Loggable(name = "사용자")
 public class User {
 
@@ -40,9 +38,11 @@ public class User {
     @Column(nullable = false)
     private String password; // Argon2id로 해싱된 비밀번호
 
-    @Builder.Default
+    // 이번 수정에서 비밀번호를 바꿨는지 나타낸다. 저장하지 않으므로 DB에서 읽은 직후(스냅샷)에는 항상 false이고,
+    // 비밀번호를 바꾸면 true가 되어 바꿀 때마다 활동 기록에 남는다.
+    @Transient
     @LoggableField(name = "비밀번호 변경 여부", transformer = BooleanTypeTransformer.class)
-    private boolean isPasswordChaged = false;
+    private boolean passwordChanged = false;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -58,6 +58,14 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private UserSetting userSetting;
 
+    @Builder
+    public User(String id, String password, UserRole role, String remarks) {
+        this.id = id;
+        this.password = password;
+        this.role = role;
+        this.remarks = remarks;
+    }
+
     public boolean isAdmin() {
         return role == UserRole.ADMIN;
     }
@@ -68,7 +76,7 @@ public class User {
      * @param password Argon2id로 해싱된 비밀번호
      */
     public void setPassword(String password) {
-        isPasswordChaged = true;
+        passwordChanged = true;
         this.password = password;
     }
 

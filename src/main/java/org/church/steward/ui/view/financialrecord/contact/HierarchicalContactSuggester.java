@@ -20,11 +20,10 @@ import org.church.steward.ui.view.settings.contact.ContactDetailDialog;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 계층형 관계자 자동 완성. 수입/지출 입력 다이얼로그의 관계자 선택 박스에서 사용한다.
- * 관계자 목록(최대 {@link ContactSuggestions#LIMIT}명)과 "신규 추가" 항목을 보여주고, 목록에서 바로 관계자를
- * 수정/삭제하거나 그룹을 삭제할 수 있다. 목록에 다 담지 못한 관계자가 있으면 "신규 추가" 아래에 그 수를 안내하고,
- * 안내를 누르면 모두 보여준다.
- * 그룹 기능을 켜면 관계자가 속한 그룹을 골라 구성원 전체를 한 번에 입력할 수 있다.
+ * 계층형 관계자 자동 완성. 수입/지출 입력 다이얼로그의 관계자 선택 박스에서 사용한다. 관계자 목록(최대
+ * {@link ContactSuggestions#LIMIT}명)과 "신규 추가" 항목을 보여주고, 목록에서 바로 관계자를 수정/삭제하거나
+ * 그룹을 삭제할 수 있다. 목록에 다 담지 못한 관계자가 있으면 "신규 추가" 아래에 그 수를 안내하고, 안내를 누르면 모두 보여준다. 그룹
+ * 기능을 켜면 관계자가 속한 그룹을 골라 구성원 전체를 한 번에 입력할 수 있다.
  */
 @Slf4j
 public class HierarchicalContactSuggester implements ContactSuggester, ContactAutocompleteListener {

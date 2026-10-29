@@ -23,8 +23,8 @@ import org.church.steward.domain.datatransfer.dto.ContactImportRequestDto;
 import org.church.steward.domain.datatransfer.dto.ImportItemStatus;
 
 /**
- * 관계자 가져오기의 분석기. 파일의 행들을 관계자로 읽고 행마다 가져올 수 있는지를 정한다.
- * 데이터베이스를 직접 읽지 않고 등록된 관계자를 인자로 받는다.
+ * 관계자 가져오기의 분석기. 파일의 행들을 관계자로 읽고 행마다 가져올 수 있는지를 정한다. 데이터베이스를 직접 읽지 않고 등록된 관계자를
+ * 인자로 받는다.
  * <ul>
  * <li>이름이 빈 행은 건너뛴다(빈 줄 등).</li>
  * <li>이름이 100자를 넘거나, 구분이나 상태를 읽을 수 없는 행은 오류다. 비고는 100자를 넘으면 잘라서 저장하고 경고로

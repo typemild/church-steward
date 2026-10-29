@@ -36,10 +36,8 @@ import com.formdev.flatlaf.ui.FlatUIUtils;
 import com.formdev.flatlaf.util.UIScale;
 
 /**
- * 관계자 선택 박스.
- * 텍스트를 입력하면 {@link ContactSuggester}가 자동 완성 목록을 보여주고, 목록에서 선택한 관계자는 칩(chip)으로
- * 바뀐다.
- * 입력 커서는 항상 마지막 칩 뒤에 위치하며, 칩으로 확정되지 않은 텍스트는 포커스를 잃으면 사라진다.
+ * 관계자 선택 박스. 텍스트를 입력하면 {@link ContactSuggester}가 자동 완성 목록을 보여주고, 목록에서 선택한 관계자는
+ * 칩(chip)으로 바뀐다. 입력 커서는 항상 마지막 칩 뒤에 위치하며, 칩으로 확정되지 않은 텍스트는 포커스를 잃으면 사라진다.
  */
 public class ContactChipField extends JPanel implements CompositeInputField {
 
@@ -59,6 +57,8 @@ public class ContactChipField extends JPanel implements CompositeInputField {
     private int maxContacts = 0;
     /** 가장 최근에 자동 완성을 요청한 키워드 */
     private String lastSuggestedKeyword = "";
+    /** 칩을 보여주기만 하고 입력이나 삭제를 받지 않는지 여부 */
+    private boolean readOnly = false;
 
     public ContactChipField() {
         // 칩과 입력 필드는 doLayout에서 직접 배치한다.
@@ -148,7 +148,23 @@ public class ContactChipField extends JPanel implements CompositeInputField {
         });
     }
 
+    /**
+     * 칩을 보여주기만 하고 입력이나 삭제를 받지 않게 한다. 상세 보기 다이얼로그에서 쓴다. 입력 필드는 포커스를 받지만 글자를 넣을 수 없고,
+     * 칩은 앞에서부터 보이도록 입력 필드 자리를 남기지 않는다.
+     */
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+        inputField.setEditable(!readOnly);
+        setCursor(Cursor.getPredefinedCursor(readOnly ? Cursor.DEFAULT_CURSOR : Cursor.TEXT_CURSOR));
+        revalidate();
+        repaint();
+    }
+
     private void handleKeyPressed(KeyEvent e) {
+        // 입력 필드가 편집 불가여도 키 이벤트는 오므로, Backspace로 칩이 지워지지 않게 여기서 막는다.
+        if (readOnly) {
+            return;
+        }
         if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
             if (inputField.getText()
                     .isEmpty() && !chips.isEmpty()) {
@@ -214,17 +230,17 @@ public class ContactChipField extends JPanel implements CompositeInputField {
     }
 
     /**
-     * 입력 필드에 텍스트를 채운다. 직접 입력한 것과 같이 자동 완성 목록이 뜬다.
-     * 찾을 이름을 미리 알고 있을 때(가져오기의 관계자 매핑) 사용하며, 입력 필드가 포커스를 가진 뒤에 호출해야 한다.
+     * 입력 필드에 텍스트를 채운다. 직접 입력한 것과 같이 자동 완성 목록이 뜬다. 찾을 이름을 미리 알고 있을 때(가져오기의 관계자 매핑)
+     * 사용하며, 입력 필드가 포커스를 가진 뒤에 호출해야 한다.
      */
     public void setInputText(String text) {
         inputField.setText(text);
     }
 
     /**
-     * 조합 중인 글자(한글 등)를 확정한다.
-     * 자동 완성 목록은 포커스를 받지 않으므로 목록을 마우스로 눌러도 조합이 끝나지 않는다. 조합이 남은 채로 다른 창을 띄우면
-     * 창을 닫고 돌아왔을 때 IME 상태가 어긋나 다이얼로그가 마우스 클릭을 받지 못하므로, 창을 띄우기 전에 호출해야 한다.
+     * 조합 중인 글자(한글 등)를 확정한다. 자동 완성 목록은 포커스를 받지 않으므로 목록을 마우스로 눌러도 조합이 끝나지 않는다. 조합이 남은
+     * 채로 다른 창을 띄우면 창을 닫고 돌아왔을 때 IME 상태가 어긋나 다이얼로그가 마우스 클릭을 받지 못하므로, 창을 띄우기 전에 호출해야
+     * 한다.
      */
     public void commitComposition() {
         InputContext inputContext = inputField.getInputContext();
@@ -256,8 +272,8 @@ public class ContactChipField extends JPanel implements CompositeInputField {
     }
 
     /**
-     * 관계자를 현재 이름의 칩으로 추가하고 입력 중인 텍스트를 지운다. 자동 완성으로 새로 입력할 때 사용한다.
-     * 이미 추가된 관계자는 무시하며, 최대 관계자 수에 도달한 상태면 가장 오래된 칩을 빼고 추가한다.
+     * 관계자를 현재 이름의 칩으로 추가하고 입력 중인 텍스트를 지운다. 자동 완성으로 새로 입력할 때 사용한다. 이미 추가된 관계자는 무시하며,
+     * 최대 관계자 수에 도달한 상태면 가장 오래된 칩을 빼고 추가한다.
      */
     public void addContact(Long contactId, ContactType type, String name, String remarks) {
         ContactChip chip = addChip(contactId, name);
@@ -267,9 +283,8 @@ public class ContactChipField extends JPanel implements CompositeInputField {
     }
 
     /**
-     * 수입/지출 내역에 기록된 관계자를 기록 당시 이름의 칩으로 추가한다.
-     * 툴팁에 보여줄 현재 정보는 {@link #updateCurrentInfo(Long, ContactType, String, String)}로
-     * 따로 설정해야 한다.
+     * 수입/지출 내역에 기록된 관계자를 기록 당시 이름의 칩으로 추가한다. 툴팁에 보여줄 현재 정보는
+     * {@link #updateCurrentInfo(Long, ContactType, String, String)}로 따로 설정해야 한다.
      */
     public void addRecordedContact(Long contactId, String recordedName) {
         addChip(contactId, recordedName);
@@ -316,8 +331,7 @@ public class ContactChipField extends JPanel implements CompositeInputField {
     }
 
     /**
-     * 입력할 수 있는 최대 관계자 수를 설정한다. 0이면 제한이 없다.
-     * 이미 입력된 관계자가 더 많으면 앞쪽부터 지운다.
+     * 입력할 수 있는 최대 관계자 수를 설정한다. 0이면 제한이 없다. 이미 입력된 관계자가 더 많으면 앞쪽부터 지운다.
      */
     public void setMaxContacts(int maxContacts) {
         this.maxContacts = maxContacts;
@@ -368,8 +382,8 @@ public class ContactChipField extends JPanel implements CompositeInputField {
     }
 
     /**
-     * 칩들을 왼쪽부터 한 줄로 배치하고 입력 필드를 그 뒤에 둔다.
-     * 칩이 많아 한 줄에 다 들어가지 않으면 앞쪽 칩을 가려서 입력 필드가 항상 보이도록 한다.
+     * 칩들을 왼쪽부터 한 줄로 배치하고 입력 필드를 그 뒤에 둔다. 칩이 많아 한 줄에 다 들어가지 않으면 앞쪽 칩을 가려서 입력 필드가 항상
+     * 보이도록 한다. 읽기 전용이면 입력 필드 자리를 남기지 않고 앞쪽 칩부터 보인다.
      */
     @Override
     public void doLayout() {
@@ -381,9 +395,12 @@ public class ContactChipField extends JPanel implements CompositeInputField {
         for (ContactChip chip : chips) {
             chipsWidth += chip.getPreferredSize().width + CHIP_GAP;
         }
-        int inputWidth = Math.max(MIN_INPUT_WIDTH, availableWidth - chipsWidth);
+        int inputWidth = Math.max(readOnly ? 0 : MIN_INPUT_WIDTH, availableWidth - chipsWidth);
 
-        int x = insets.left + Math.min(0, availableWidth - (chipsWidth + inputWidth));
+        int x = insets.left;
+        if (!readOnly) {
+            x += Math.min(0, availableWidth - (chipsWidth + inputWidth));
+        }
         for (ContactChip chip : chips) {
             Dimension chipSize = chip.getPreferredSize();
             int chipHeight = Math.min(chipSize.height, availableHeight);

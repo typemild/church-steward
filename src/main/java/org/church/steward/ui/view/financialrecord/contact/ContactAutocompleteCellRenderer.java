@@ -24,11 +24,10 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
 /**
- * 계층형 자동 완성 목록의 항목 렌더러.
- * 좌측에 연필(수정)/휴지통(삭제) 아이콘을 두고, 우측에 "[구분] 성명"과 작은 글씨의 비고를 두 줄로 표시한다.
- * 그룹 기능을 쓸 때는 소속 그룹이 있는 관계자의 오른쪽 끝에 서브 목록이 있다는 세모(▶)를 그린다.
- * 비고가 없으면 비고 줄을 빼므로 항목마다 높이가 다르다.
- * 다 담지 못한 관계자가 있다는 안내 항목은 아이콘 없이 작은 글씨 한 줄로 오른쪽에 붙여 따로 그린다.
+ * 계층형 자동 완성 목록의 항목 렌더러. 좌측에 연필(수정)/휴지통(삭제) 아이콘을 두고, 우측에 "[구분] 성명"과 작은 글씨의 비고를 두
+ * 줄로 표시한다. 그룹 기능을 쓸 때는 소속 그룹이 있는 관계자의 오른쪽 끝에 서브 목록이 있다는 세모(▶)를 그린다. 비고가 없으면 비고
+ * 줄을 빼므로 항목마다 높이가 다르다. 다 담지 못한 관계자가 있다는 안내 항목은 아이콘 없이 작은 글씨 한 줄로 오른쪽에 붙여 따로
+ * 그린다.
  */
 public class ContactAutocompleteCellRenderer extends JPanel implements ListCellRenderer<ContactAutocompleteItem> {
 
@@ -94,8 +93,8 @@ public class ContactAutocompleteCellRenderer extends JPanel implements ListCellR
     }
 
     /**
-     * 안내 항목 위에 마우스가 있는지 설정한다. 렌더러는 마우스 위치를 알 수 없으므로 목록 쪽에서 알려 주며, 바꾼 뒤에는
-     * 목록을 다시 그려야 한다.
+     * 안내 항목 위에 마우스가 있는지 설정한다. 렌더러는 마우스 위치를 알 수 없으므로 목록 쪽에서 알려 주며, 바꾼 뒤에는 목록을 다시 그려야
+     * 한다.
      */
     public void setMoreResultsHovered(boolean moreResultsHovered) {
         this.moreResultsHovered = moreResultsHovered;

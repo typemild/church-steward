@@ -19,12 +19,11 @@ import org.church.steward.ui.view.report.layout.ReportDocument;
 import org.church.steward.ui.view.report.layout.ReportPaper;
 
 /**
- * 보고서 미리보기의 페이지 영역. 이어 보기에서는 페이지들을 세로로 늘어놓고, 페이지별 보기에서는 현재 페이지 하나만 보여준다.
- * 인쇄나 PDF와 같은 {@link ReportDocument}를 그대로 그리므로 줄바꿈과 페이지 나눔이 실제 출력과 같다.
+ * 보고서 미리보기의 페이지 영역. 이어 보기에서는 페이지들을 세로로 늘어놓고, 페이지별 보기에서는 현재 페이지 하나만 보여준다. 인쇄나
+ * PDF와 같은 {@link ReportDocument}를 그대로 그리므로 줄바꿈과 페이지 나눔이 실제 출력과 같다.
  * <p>
  * 배율은 폭 맞춤, 페이지 맞춤, 직접 지정 중 하나로 정한다. 100%는 실제 크기(화면의 1인치를 96픽셀로 보고 1pt를 1/72인치로
- * 그린 크기)다.
- * 페이지가 미리보기 영역보다 좁으면 가운데에 놓고, 넓으면 가로 스크롤이 생긴다.
+ * 그린 크기)다. 페이지가 미리보기 영역보다 좁으면 가운데에 놓고, 넓으면 가로 스크롤이 생긴다.
  */
 class ReportPreviewPanel extends JPanel implements Scrollable {
 

@@ -9,8 +9,8 @@ import java.util.Map;
 import org.church.steward.domain.budget.dto.BudgetDto;
 
 /**
- * 예산의 표시 순서를 계산한다.
- * 예산 설정 화면의 트리와 같이, 같은 상위 예산 아래에서는 정렬 순서(sortOrder)를 따르고 하위 예산은 상위 예산 바로 뒤에 온다.
+ * 예산의 표시 순서를 계산한다. 예산 설정 화면의 트리와 같이, 같은 상위 예산 아래에서는 정렬 순서(sortOrder)를 따르고 하위
+ * 예산은 상위 예산 바로 뒤에 온다.
  */
 public final class BudgetDisplayOrder {
 

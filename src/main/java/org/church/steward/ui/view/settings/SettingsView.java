@@ -91,8 +91,8 @@ public class SettingsView extends JPanel implements MenuActivatable {
     }
 
     /**
-     * 회계 연도 관리 탭을 보여준다. 설정 메뉴가 선택된 뒤({@link #onMenuSelected()})에 호출해야 한다.
-     * 다른 탭을 보고 있었다면 탭이 바뀌면서 회계 연도 관리 화면이 데이터를 불러온다.
+     * 회계 연도 관리 탭을 보여준다. 설정 메뉴가 선택된 뒤({@link #onMenuSelected()})에 호출해야 한다. 다른 탭을 보고
+     * 있었다면 탭이 바뀌면서 회계 연도 관리 화면이 데이터를 불러온다.
      */
     public void showFiscalYearManagementTab() {
         if (!tabsInitialized) {

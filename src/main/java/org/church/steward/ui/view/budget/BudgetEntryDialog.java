@@ -23,9 +23,11 @@ import org.church.steward.ui.component.field.StyledTextField;
 import org.church.steward.ui.component.label.FieldLabel;
 import org.church.steward.ui.util.DialogKeyHandler;
 import org.church.steward.ui.util.UIColors;
+import org.church.steward.ui.view.main.ClosedFiscalYearNoticeLabel;
 
 /**
- * 예산 정보를 입력하거나 수정하기 위한 커스텀 다이얼로그
+ * 예산 정보를 입력하거나 수정하기 위한 커스텀 다이얼로그. 마감된 회계 연도의 예산은 {@link #enableViewOnly()}로 바꿀
+ * 수 없는 상세 보기로 띄운다.
  */
 public class BudgetEntryDialog extends JDialog {
 
@@ -36,12 +38,15 @@ public class BudgetEntryDialog extends JDialog {
     private final AmountField amountField;
     private final PrimaryButton btnOK;
     private final SecondaryButton btnCancel;
+    private final JPanel mainPanel;
+    private final JPanel buttonPanel;
+    private final DialogKeyHandler keyHandler;
 
     private boolean confirmed = false;
 
     /**
-     * @param owner 이 다이얼로그를 띄운 창. 예산 관리 화면의 메인 창일 수도 있고, 수입/지출 가져오기의 예산 매핑
-     *              다이얼로그처럼 다른 다이얼로그일 수도 있다.
+     * @param owner 이 다이얼로그를 띄운 창. 예산 관리 화면의 메인 창일 수도 있고, 수입/지출 가져오기의 예산 매핑 다이얼로그처럼
+     *              다른 다이얼로그일 수도 있다.
      */
     public BudgetEntryDialog(Window owner, String title, String currentName, long currentAmount, String parentPath,
             boolean amountEditable) {
@@ -50,7 +55,7 @@ public class BudgetEntryDialog extends JDialog {
         setLayout(new BorderLayout());
 
         // 메인 컨텐트 패널 (GridBagLayout 사용)
-        JPanel mainPanel = new JPanel(new GridBagLayout());
+        mainPanel = new JPanel(new GridBagLayout());
         mainPanel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
         mainPanel.setBackground(UIColors.BACKGROUND);
 
@@ -109,7 +114,7 @@ public class BudgetEntryDialog extends JDialog {
         add(mainPanel, BorderLayout.CENTER);
 
         // 버튼 패널 (Background: #F8F9FA)
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 10));
+        buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 10));
         buttonPanel.setBackground(UIColors.BACKGROUND);
 
         btnCancel = new SecondaryButton("취소", ComponentSize.MEDIUM);
@@ -151,11 +156,35 @@ public class BudgetEntryDialog extends JDialog {
         });
 
         // 상위 예산은 수정할 수 없으므로 입력란으로 등록하지 않는다. 금액을 수정할 수 없으면 예산명이 마지막 입력란이 된다.
-        DialogKeyHandler.install(this)
+        keyHandler = DialogKeyHandler.install(this)
                 .setButtons(btnCancel, btnOK)
                 .addField(nameField)
                 .addField(amountField)
                 .trackChanges(() -> List.of(getName(), getAmount()));
+    }
+
+    /**
+     * 내용을 바꿀 수 없는 상세 보기로 바꾼다. 마감된 회계 연도의 예산을 볼 때 쓴다. 맨 위에 마감 안내를 보이고, 입력란은 포커스를 받아
+     * 글자를 고를 수 있지만 내용은 바꿀 수 없으며, 버튼은 "닫기"만 남는다. 입력값이 바뀌지 않으므로 닫을 때 확인을 받지 않는다.
+     */
+    public void enableViewOnly() {
+        add(ClosedFiscalYearNoticeLabel.createDialogNotice(), BorderLayout.NORTH);
+        // 안내가 차지한 높이만큼 폼의 위아래 여백을 줄여 수정 다이얼로그와 높이를 비슷하게 맞춘다.
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(5, 25, 10, 25));
+
+        nameField.setEditable(false);
+        // 상위 예산의 금액(하위 예산의 합계)은 수정할 때 꺼 두지만, 상세 보기에서는 어차피 바꿀 수 없으므로 말단 예산과 같은 모양으로 보인다.
+        amountField.setEnabled(true);
+        amountField.setEditable(false);
+
+        buttonPanel.removeAll();
+        PrimaryButton btnClose = new PrimaryButton("닫기", ComponentSize.MEDIUM);
+        buttonPanel.add(btnClose);
+        // 마지막 입력란에서 Enter를 눌러도 닫는다.
+        keyHandler.setButtons(btnClose, btnClose);
+
+        pack();
+        setLocationRelativeTo(getOwner());
     }
 
     public boolean isConfirmed() {

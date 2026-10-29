@@ -5,8 +5,8 @@ import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 관리자만 쓸 수 있는 기능의 컨트롤러가 호출 전에 권한을 확인할 때 쓴다.
- * 메뉴를 관리자에게만 보여주는 것과 별개로, 컨트롤러 경계에서 한 번 더 막기 위함이다.
+ * 관리자만 쓸 수 있는 기능의 컨트롤러가 호출 전에 권한을 확인할 때 쓴다. 메뉴를 관리자에게만 보여주는 것과 별개로, 컨트롤러 경계에서 한
+ * 번 더 막기 위함이다.
  */
 @Component
 @RequiredArgsConstructor

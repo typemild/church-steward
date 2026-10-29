@@ -11,14 +11,13 @@ import javax.swing.SwingUtilities;
 import org.church.steward.domain.budget.controller.BudgetController;
 import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.ui.component.ComponentSize;
-import org.church.steward.ui.component.button.IconButton;
+import org.church.steward.ui.component.button.FieldButton;
 import org.church.steward.ui.component.field.CompositeInputField;
 import org.church.steward.ui.component.field.StyledTextField;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 /**
- * 예산 선택 박스.
- * 직접 수정할 수 없는 텍스트 필드와 예산 선택 다이얼로그를 여는 버튼으로 구성된다.
+ * 예산 선택 박스. 직접 수정할 수 없는 텍스트 필드와 예산 선택 다이얼로그를 여는 버튼으로 구성된다.
  */
 public class BudgetSelectBox extends JPanel implements CompositeInputField {
 
@@ -29,7 +28,7 @@ public class BudgetSelectBox extends JPanel implements CompositeInputField {
     private final boolean leafOnly;
 
     private final StyledTextField pathField = new StyledTextField(ComponentSize.MEDIUM);
-    private final IconButton selectButton = new IconButton(FontAwesomeSolid.SEARCH, ComponentSize.MEDIUM);
+    private final FieldButton selectButton = new FieldButton(FontAwesomeSolid.SEARCH, ComponentSize.MEDIUM, pathField);
 
     private BudgetType allowedType;
     private Long budgetId;
@@ -48,7 +47,8 @@ public class BudgetSelectBox extends JPanel implements CompositeInputField {
         this.allowedType = allowedType;
         this.leafOnly = leafOnly;
 
-        setLayout(new BorderLayout(8, 0));
+        // 버튼을 입력란에 붙여 한 덩어리로 보이게 한다. 날짜 피커(LGoodDatePicker)의 입력란과 버튼 사이 간격과 같다.
+        setLayout(new BorderLayout(3, 0));
         setOpaque(false);
 
         pathField.setEditable(false);
@@ -102,6 +102,14 @@ public class BudgetSelectBox extends JPanel implements CompositeInputField {
 
     public void clear() {
         setBudget(null, null, null);
+    }
+
+    /**
+     * 예산 선택 버튼을 켤지 정한다. 상세 보기 다이얼로그처럼 예산을 바꾸지 못하게 할 때 false로 둔다. 날짜 피커의 달력 버튼과 모양을
+     * 맞추도록 숨기지 않고 끈다.
+     */
+    public void setSelectable(boolean selectable) {
+        selectButton.setEnabled(selectable);
     }
 
     /**

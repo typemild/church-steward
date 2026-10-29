@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
  * 수입/지출 가져오기를 단계별로 진행하는 패널. 수입/지출 탭 안에 놓인다.
  * <p>
  * 단계: 파일 선택 → 열 지정 → 예산·관계자 매핑 → 검토 및 선택 → 백업 및 반영.
+ * <p>
  * 진행 상태는 {@link RecordImportSession}이 가지며, 매핑을 바꾸거나 다른 메뉴에 다녀오면 현재 데이터로 다시
  * 분석한다.
  */
@@ -146,8 +147,8 @@ public class RecordImportPanel extends AbstractImportPanel {
     }
 
     /**
-     * 파일 선택과 열 지정 단계에서는 다음 단계로 넘어갈 때 어차피 새로 분석하므로, 분석 결과를 보고 있는 단계에서만
-     * 다시 분석한다. 사용자가 정한 것(파일, 열 지정, 직접 한 매핑과 선택)은 유지한다.
+     * 파일 선택과 열 지정 단계에서는 다음 단계로 넘어갈 때 어차피 새로 분석하므로, 분석 결과를 보고 있는 단계에서만 다시 분석한다. 사용자가
+     * 정한 것(파일, 열 지정, 직접 한 매핑과 선택)은 유지한다.
      */
     @Override
     protected void onReturnedToStep(int step) {
@@ -160,8 +161,8 @@ public class RecordImportPanel extends AbstractImportPanel {
     /**
      * 현재 데이터와 지금의 매핑으로 분석해 세션에 담는다.
      *
-     * @param afterReturn 다른 메뉴에 다녀온 뒤의 재분석인지 여부. 이때는 행의 상태가 달라진 것을 알리고,
-     *                    백업 단계에 있었으면 달라진 내용을 다시 확인하도록 검토 단계로 돌린다.
+     * @param afterReturn 다른 메뉴에 다녀온 뒤의 재분석인지 여부. 이때는 행의 상태가 달라진 것을 알리고, 백업 단계에 있었으면
+     *                    달라진 내용을 다시 확인하도록 검토 단계로 돌린다.
      * @param onAnalyzed  분석에 성공한 뒤 실행할 동작
      */
     private void analyze(boolean afterReturn, Runnable onAnalyzed) {
@@ -193,9 +194,8 @@ public class RecordImportPanel extends AbstractImportPanel {
     }
 
     /**
-     * 다시 분석한 결과로 알릴 문구를 만든다. 알릴 것이 없으면 null이다.
-     * 직접 한 매핑이 해제된 것은 사용자가 다시 매핑해야 하므로 언제나 알리고,
-     * 행의 상태가 달라진 것은 다른 메뉴에 다녀온 경우에만 알린다(매핑을 바꿔서 달라진 것은 사용자가 이미 안다).
+     * 다시 분석한 결과로 알릴 문구를 만든다. 알릴 것이 없으면 null이다. 직접 한 매핑이 해제된 것은 사용자가 다시 매핑해야 하므로 언제나
+     * 알리고, 행의 상태가 달라진 것은 다른 메뉴에 다녀온 경우에만 알린다(매핑을 바꿔서 달라진 것은 사용자가 이미 안다).
      */
     private String createNotice(boolean afterReturn, AnalysisChange change) {
         if (afterReturn && change.hasChanges()) {

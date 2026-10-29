@@ -34,9 +34,9 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 설정의 회계 연도 관리 화면. 회계 연도를 추가, 수정, 삭제하고 마감하거나 마감을 취소한다.
- * 마감된 회계 연도는 마감할 때 계산한 총 수입, 총 지출, 차액을 목록에 보여주며, 마감을 취소하기 전에는 수정하거나 삭제할 수 없다.
- * 이 목록의 선택은 사이드바의 회계 연도 선택과 독립이고, 회계 연도가 바뀌면 사이드바의 목록을 갱신한다.
+ * 설정의 회계 연도 관리 화면. 회계 연도를 추가, 수정, 삭제하고 마감하거나 마감을 취소한다. 마감된 회계 연도는 마감할 때 계산한 총
+ * 수입, 총 지출, 차액을 목록에 보여주며, 마감을 취소하기 전에는 수정하거나 삭제할 수 없다. 이 목록의 선택은 사이드바의 회계 연도
+ * 선택과 독립이고, 회계 연도가 바뀌면 사이드바의 목록을 갱신한다.
  */
 @UiView
 @Slf4j
@@ -45,8 +45,8 @@ public class FiscalYearManagementPanelView extends JPanel implements MenuActivat
     private static final long serialVersionUID = 1L;
 
     /**
-     * 회계 연도, 상태, 차액 칸은 폭을 고정하고, 남는 폭은 총 수입과 총 지출 칸이 똑같이 나눠 쓴다.
-     * 차액은 총 수입이나 총 지출보다 훨씬 작은 금액이어서 칸을 좁게 둔다.
+     * 회계 연도, 상태, 차액 칸은 폭을 고정하고, 남는 폭은 총 수입과 총 지출 칸이 똑같이 나눠 쓴다. 차액은 총 수입이나 총 지출보다 훨씬
+     * 작은 금액이어서 칸을 좁게 둔다.
      */
     private static final int FISCAL_YEAR_COLUMN_WIDTH = 195;
     private static final int STATUS_COLUMN_WIDTH = 60;

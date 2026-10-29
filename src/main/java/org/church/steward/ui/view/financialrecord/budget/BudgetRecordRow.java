@@ -8,8 +8,7 @@ import org.church.steward.ui.view.financialrecord.FinancialRecordFormats;
 import lombok.Getter;
 
 /**
- * "예산별 보기" 탭 테이블의 한 행.
- * 예산 행(하위 내역들의 합계를 가짐)이거나 그 예산에 속한 수입/지출 내역 행이다.
+ * "예산별 보기" 탭 테이블의 한 행. 예산 행(하위 내역들의 합계를 가짐)이거나 그 예산에 속한 수입/지출 내역 행이다.
  */
 @Getter
 public class BudgetRecordRow {
@@ -51,8 +50,7 @@ public class BudgetRecordRow {
     }
 
     /**
-     * 첫 번째 컬럼에 표시할 텍스트를 반환한다.
-     * 예산 행은 전체 예산명, 내역 행은 "[4/7] 홍길동"과 같이 날짜와 관계자명이다.
+     * 첫 번째 컬럼에 표시할 텍스트를 반환한다. 예산 행은 전체 예산명, 내역 행은 "[4/7] 홍길동"과 같이 날짜와 관계자명이다.
      */
     public String getDisplayName() {
         if (isBudgetRow()) {

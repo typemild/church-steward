@@ -79,7 +79,7 @@ class BudgetImportServiceImplTest {
     /**
      * 파일 내용: 수입 예산 "헌금" 아래에 "십일조"(1,000원). 열 구성은 "구분 | 1단계 | 2단계 | 금액"이다.
      */
-    private BudgetImportRequestDto.BudgetImportRequestDtoBuilder titheRequest() {
+    private BudgetImportRequestDto.BudgetImportRequestDtoBuilder createTitheRequest() {
         return BudgetImportRequestDto.builder()
                 .rows(List.of(
                         Arrays.asList("수입", "헌금", null, null),
@@ -90,19 +90,7 @@ class BudgetImportServiceImplTest {
                 .amountColumn(3);
     }
 
-    private void givenFiscalYear() {
-        when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
-    }
-
-    private void givenExistingBudgets(Budget... budgets) {
-        when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of(budgets));
-    }
-
-    private void givenBackupIsCurrent() {
-        when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
-    }
-
-    private Budget budget(Long id, String name, Long amount) {
+    private Budget createBudget(Long id, String name, Long amount) {
         return Budget.builder()
                 .id(id)
                 .fiscalYear(fiscalYear)
@@ -132,11 +120,13 @@ class BudgetImportServiceImplTest {
         @DisplayName("회계 연도에 이미 있는 예산과 견주어 분석한 결과를 반환한다")
         void analyze_ExistingBudget_ReturnsAnalysisAgainstCurrentData() {
             // Given
-            givenFiscalYear();
-            givenExistingBudgets(budget(1L, "헌금", null));
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID))
+                    .thenReturn(List.of(createBudget(1L, "헌금", null)));
 
             // When
-            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID, titheRequest().build());
+            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID,
+                    createTitheRequest().build());
 
             // Then
             assertThat(analysis.getItems())
@@ -149,10 +139,10 @@ class BudgetImportServiceImplTest {
         void analyze_ClosedFiscalYear_Failure() {
             // Given
             fiscalYear.close(0L, 0L);
-            givenFiscalYear();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetImportService.analyze(FISCAL_YEAR_ID, titheRequest().build()))
+            assertThatThrownBy(() -> budgetImportService.analyze(FISCAL_YEAR_ID, createTitheRequest().build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("마감된 회계 연도에는 예산을 가져올 수 없습니다.");
         }
@@ -164,7 +154,7 @@ class BudgetImportServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.empty());
 
             // When & Then
-            assertThatThrownBy(() -> budgetImportService.analyze(FISCAL_YEAR_ID, titheRequest().build()))
+            assertThatThrownBy(() -> budgetImportService.analyze(FISCAL_YEAR_ID, createTitheRequest().build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("존재하지 않는 회계 연도입니다.");
         }
@@ -174,32 +164,22 @@ class BudgetImportServiceImplTest {
     @DisplayName("importBudgets 테스트")
     class ImportBudgetsTest {
 
-        /**
-         * 기존 예산이 없는 회계 연도를 분석해 둔다. 반영할 때 쓸 요약 값과 고를 건을 얻기 위한 것이다.
-         */
-        private BudgetImportAnalysisDto analyzeEmptyFiscalYear() {
-            givenFiscalYear();
-            givenExistingBudgets();
-            return budgetImportService.analyze(FISCAL_YEAR_ID, titheRequest().build());
-        }
-
-        private void givenBudgetsAreCreated() {
-            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "헌금", 0L, BudgetType.INCOME))
-                    .thenReturn(budget(100L, "헌금", null));
-            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, 100L, "십일조", 1000L, BudgetType.INCOME))
-                    .thenReturn(budget(101L, "십일조", 1000L));
-        }
-
         @Test
         @DisplayName("상위 예산을 먼저 추가하고, 하위 예산은 방금 추가한 상위 예산 아래에 추가한다")
         void importBudgets_NewHierarchy_CreatesChildUnderCreatedParent() {
             // Given
-            BudgetImportAnalysisDto analysis = analyzeEmptyFiscalYear();
-            givenBackupIsCurrent();
-            givenBudgetsAreCreated();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of());
+            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID,
+                    createTitheRequest().build());
+            when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
+            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "헌금", 0L, BudgetType.INCOME))
+                    .thenReturn(createBudget(100L, "헌금", null));
+            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, 100L, "십일조", 1000L, BudgetType.INCOME))
+                    .thenReturn(createBudget(101L, "십일조", 1000L));
 
             // When
-            budgetImportService.importBudgets(FISCAL_YEAR_ID, titheRequest().build(), selectableKeys(analysis),
+            budgetImportService.importBudgets(FISCAL_YEAR_ID, createTitheRequest().build(), selectableKeys(analysis),
                     analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME);
 
             // Then
@@ -210,12 +190,18 @@ class BudgetImportServiceImplTest {
         @DisplayName("추가한 건수와 갱신한 건수를 반환한다")
         void importBudgets_NewHierarchy_ReturnsCounts() {
             // Given
-            BudgetImportAnalysisDto analysis = analyzeEmptyFiscalYear();
-            givenBackupIsCurrent();
-            givenBudgetsAreCreated();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of());
+            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID,
+                    createTitheRequest().build());
+            when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
+            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "헌금", 0L, BudgetType.INCOME))
+                    .thenReturn(createBudget(100L, "헌금", null));
+            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, 100L, "십일조", 1000L, BudgetType.INCOME))
+                    .thenReturn(createBudget(101L, "십일조", 1000L));
 
             // When
-            ImportResultDto result = budgetImportService.importBudgets(FISCAL_YEAR_ID, titheRequest().build(),
+            ImportResultDto result = budgetImportService.importBudgets(FISCAL_YEAR_ID, createTitheRequest().build(),
                     selectableKeys(analysis), analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME);
 
             // Then
@@ -228,9 +214,15 @@ class BudgetImportServiceImplTest {
         @DisplayName("활동 기록에 가져오기 한 건으로 남기고, 추가한 예산마다 건별 내용을 담는다")
         void importBudgets_NewHierarchy_LogsOneImportWithItems() {
             // Given
-            BudgetImportAnalysisDto analysis = analyzeEmptyFiscalYear();
-            givenBackupIsCurrent();
-            givenBudgetsAreCreated();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of());
+            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID,
+                    createTitheRequest().build());
+            when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
+            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "헌금", 0L, BudgetType.INCOME))
+                    .thenReturn(createBudget(100L, "헌금", null));
+            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, 100L, "십일조", 1000L, BudgetType.INCOME))
+                    .thenReturn(createBudget(101L, "십일조", 1000L));
             List<ActivityLogFieldDto> description = List.of(ActivityLogFieldDto.builder()
                     .name("예산명")
                     .value("예산")
@@ -238,7 +230,7 @@ class BudgetImportServiceImplTest {
             when(activityLogService.describeCreation(any(Budget.class))).thenReturn(description);
 
             // When
-            budgetImportService.importBudgets(FISCAL_YEAR_ID, titheRequest().build(), selectableKeys(analysis),
+            budgetImportService.importBudgets(FISCAL_YEAR_ID, createTitheRequest().build(), selectableKeys(analysis),
                     analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME);
 
             // Then
@@ -251,7 +243,7 @@ class BudgetImportServiceImplTest {
         @DisplayName("금액 갱신 대상은 기존 예산의 이름을 그대로 두고 금액만 파일의 값으로 바꾼다")
         void importBudgets_UpdateAmount_UpdatesExistingBudgetAmount() {
             // Given
-            Budget offering = budget(1L, "헌금", null);
+            Budget offering = createBudget(1L, "헌금", null);
             Budget tithe = Budget.builder()
                     .id(2L)
                     .fiscalYear(fiscalYear)
@@ -261,16 +253,16 @@ class BudgetImportServiceImplTest {
                     .parent(offering)
                     .build();
             offering.getChildren().add(tithe);
-            BudgetImportRequestDto request = titheRequest()
+            BudgetImportRequestDto request = createTitheRequest()
                     .updateExistingAmounts(true)
                     .build();
             @SuppressWarnings("unchecked")
             EntitySnapshot<Budget> snapshot = mock(EntitySnapshot.class);
 
-            givenFiscalYear();
-            givenExistingBudgets(offering, tithe);
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of(offering, tithe));
             BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID, request);
-            givenBackupIsCurrent();
+            when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
             when(budgetRepository.findById(2L)).thenReturn(Optional.of(tithe));
             when(snapshotCapturer.capture(tithe)).thenReturn(snapshot);
             when(budgetService.updateBudgetWithoutLog(2L, "십일조", 1000L)).thenReturn(tithe);
@@ -289,11 +281,14 @@ class BudgetImportServiceImplTest {
         @DisplayName("백업한 뒤에 활동 기록이 새로 생겼으면 반영하지 않고 백업을 다시 받게 한다")
         void importBudgets_BackupOutdated_Failure() {
             // Given
-            BudgetImportAnalysisDto analysis = analyzeEmptyFiscalYear();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of());
+            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID,
+                    createTitheRequest().build());
             when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID + 1);
 
             // When & Then
-            assertThatThrownBy(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, titheRequest().build(),
+            assertThatThrownBy(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, createTitheRequest().build(),
                     selectableKeys(analysis), analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME))
                     .isInstanceOf(BackupOutdatedException.class);
         }
@@ -302,13 +297,17 @@ class BudgetImportServiceImplTest {
         @DisplayName("분석한 뒤에 데이터가 바뀌어 분석 결과가 달라졌으면 반영하지 않는다")
         void importBudgets_AnalysisChanged_Failure() {
             // Given
-            BudgetImportAnalysisDto analysis = analyzeEmptyFiscalYear();
-            givenBackupIsCurrent();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of());
+            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID,
+                    createTitheRequest().build());
+            when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
             // 분석한 뒤에 다른 메뉴에서 "헌금" 예산을 등록한 상황
-            givenExistingBudgets(budget(1L, "헌금", 0L));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID))
+                    .thenReturn(List.of(createBudget(1L, "헌금", 0L)));
 
             // When & Then
-            assertThatThrownBy(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, titheRequest().build(),
+            assertThatThrownBy(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, createTitheRequest().build(),
                     selectableKeys(analysis), analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME))
                     .isInstanceOf(ImportStateChangedException.class);
         }
@@ -317,12 +316,17 @@ class BudgetImportServiceImplTest {
         @DisplayName("분석 결과가 달라졌으면 예산을 하나도 추가하지 않는다")
         void importBudgets_AnalysisChanged_CreatesNothing() {
             // Given
-            BudgetImportAnalysisDto analysis = analyzeEmptyFiscalYear();
-            givenBackupIsCurrent();
-            givenExistingBudgets(budget(1L, "헌금", 0L));
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of());
+            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID,
+                    createTitheRequest().build());
+            when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
+            // 분석한 뒤에 다른 메뉴에서 "헌금" 예산을 등록한 상황
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID))
+                    .thenReturn(List.of(createBudget(1L, "헌금", 0L)));
 
             // When
-            catchThrowable(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, titheRequest().build(),
+            catchThrowable(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, createTitheRequest().build(),
                     selectableKeys(analysis), analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME));
 
             // Then
@@ -333,12 +337,15 @@ class BudgetImportServiceImplTest {
         @DisplayName("새로 추가되는 상위 예산을 빼고 하위 예산만 고르면 반영하지 않는다")
         void importBudgets_ChildSelectedWithoutNewParent_Failure() {
             // Given
-            BudgetImportAnalysisDto analysis = analyzeEmptyFiscalYear();
-            givenBackupIsCurrent();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of());
+            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID,
+                    createTitheRequest().build());
+            when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
             Set<String> onlyChild = Set.of(analysis.getItems().getLast().getKey());
 
             // When & Then
-            assertThatThrownBy(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, titheRequest().build(),
+            assertThatThrownBy(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, createTitheRequest().build(),
                     onlyChild, analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("상위 예산을 함께 선택해야 합니다: 헌금 > 십일조");
@@ -348,15 +355,16 @@ class BudgetImportServiceImplTest {
         @DisplayName("가져올 수 없는 건(이미 있는 예산)을 고르면 반영하지 않는다")
         void importBudgets_UnselectableItemSelected_Failure() {
             // Given
-            Budget offering = budget(1L, "헌금", null);
-            givenFiscalYear();
-            givenExistingBudgets(offering);
-            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID, titheRequest().build());
-            givenBackupIsCurrent();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID))
+                    .thenReturn(List.of(createBudget(1L, "헌금", null)));
+            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID,
+                    createTitheRequest().build());
+            when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
             Set<String> existingParent = Set.of(analysis.getItems().getFirst().getKey());
 
             // When & Then
-            assertThatThrownBy(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, titheRequest().build(),
+            assertThatThrownBy(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, createTitheRequest().build(),
                     existingParent, analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("가져올 수 없는 예산이 선택되었습니다: 헌금");
@@ -366,10 +374,10 @@ class BudgetImportServiceImplTest {
         @DisplayName("가져올 건을 하나도 고르지 않으면 반영하지 않는다")
         void importBudgets_NothingSelected_Failure() {
             // Given
-            givenFiscalYear();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, titheRequest().build(),
+            assertThatThrownBy(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, createTitheRequest().build(),
                     Set.of(), "signature", BACKUP_LOG_ID, FILE_NAME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("가져올 예산을 선택해주세요.");
@@ -380,10 +388,10 @@ class BudgetImportServiceImplTest {
         void importBudgets_ClosedFiscalYear_Failure() {
             // Given
             fiscalYear.close(0L, 0L);
-            givenFiscalYear();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, titheRequest().build(),
+            assertThatThrownBy(() -> budgetImportService.importBudgets(FISCAL_YEAR_ID, createTitheRequest().build(),
                     Set.of("key"), "signature", BACKUP_LOG_ID, FILE_NAME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("마감된 회계 연도에는 예산을 가져올 수 없습니다.");

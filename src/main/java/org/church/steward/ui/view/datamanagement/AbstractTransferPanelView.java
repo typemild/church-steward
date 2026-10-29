@@ -47,12 +47,12 @@ import org.church.steward.ui.view.main.FiscalYearSelector;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 데이터 관리의 "관계자", "예산", "수입/지출" 탭이 함께 쓰는 틀.
- * 회계 연도 선택란과 내보내기(파일로 내보내기, 빈 양식 내려받기)를 제공하고, 무엇을 내보낼지는 하위 클래스가 정한다.
+ * 데이터 관리의 "관계자", "예산", "수입/지출" 탭이 함께 쓰는 틀. 회계 연도 선택란과 내보내기(파일로 내보내기, 빈 양식
+ * 내려받기)를 제공하고, 무엇을 내보낼지는 하위 클래스가 정한다.
  * <p>
- * 회계 연도는 사이드바의 선택과 독립이다. 처음 들어올 때의 초기값만 사이드바의 선택을 따르고, 그 뒤로는 이 탭에서
- * 고른 회계 연도를 유지한다. 관계자처럼 회계 연도에 속하지 않는 대상의 탭은 회계 연도 선택란을 두지 않으며, 이때
- * 회계 연도를 받는 메서드에는 null이 넘어간다.
+ * 회계 연도는 사이드바의 선택과 독립이다. 처음 들어올 때의 초기값만 사이드바의 선택을 따르고, 그 뒤로는 이 탭에서 고른 회계 연도를
+ * 유지한다. 관계자처럼 회계 연도에 속하지 않는 대상의 탭은 회계 연도 선택란을 두지 않으며, 이때 회계 연도를 받는 메서드에는 null이
+ * 넘어간다.
  */
 @Slf4j
 public abstract class AbstractTransferPanelView extends JPanel implements MenuActivatable {
@@ -72,8 +72,8 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
     private final FiscalYearSelector fiscalYearSelector;
 
     /**
-     * 회계 연도 선택란. 폭만 고정하고 높이는 렌더러가 그리는 두 줄(이름, 기간)에 맞춘다.
-     * 높이까지 고정하면 목록을 불러오기 전(항목이 없을 때)의 한 줄 높이로 굳어 글자가 잘린다.
+     * 회계 연도 선택란. 폭만 고정하고 높이는 렌더러가 그리는 두 줄(이름, 기간)에 맞춘다. 높이까지 고정하면 목록을 불러오기 전(항목이 없을
+     * 때)의 한 줄 높이로 굳어 글자가 잘린다.
      */
     private final StyledComboBox<FiscalYearDto> fiscalYearCombo = new StyledComboBox<>(ComponentSize.MEDIUM) {
         private static final long serialVersionUID = 1L;
@@ -239,9 +239,8 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
     protected abstract void startImport(FiscalYearDto fiscalYear);
 
     /**
-     * 이 탭에 들어올 때마다 호출된다. 회계 연도를 쓰는 탭은 회계 연도 목록을 다시 읽은 뒤에 호출되고, 쓰지 않는 탭은
-     * 빈 목록으로 바로 호출된다. 가져오기를 진행하다가 다른 메뉴에 다녀온 경우, 하위 클래스가 여기서 현재 데이터로 다시
-     * 분석하게 한다.
+     * 이 탭에 들어올 때마다 호출된다. 회계 연도를 쓰는 탭은 회계 연도 목록을 다시 읽은 뒤에 호출되고, 쓰지 않는 탭은 빈 목록으로 바로
+     * 호출된다. 가져오기를 진행하다가 다른 메뉴에 다녀온 경우, 하위 클래스가 여기서 현재 데이터로 다시 분석하게 한다.
      */
     protected abstract void onTabActivated(List<FiscalYearDto> fiscalYears);
 
@@ -290,8 +289,8 @@ public abstract class AbstractTransferPanelView extends JPanel implements MenuAc
     }
 
     /**
-     * 이 탭에서 고른 회계 연도를 유지하되, 아직 고른 적이 없거나 그 회계 연도가 삭제되었으면 사이드바에서 선택된
-     * 회계 연도를, 그것도 없으면 가장 최근 회계 연도(목록의 첫 번째)를 선택한다.
+     * 이 탭에서 고른 회계 연도를 유지하되, 아직 고른 적이 없거나 그 회계 연도가 삭제되었으면 사이드바에서 선택된 회계 연도를, 그것도 없으면
+     * 가장 최근 회계 연도(목록의 첫 번째)를 선택한다.
      */
     private void applyFiscalYears(List<FiscalYearDto> fiscalYears) {
         FiscalYearDto toSelect = find(fiscalYears, selectedFiscalYearId);

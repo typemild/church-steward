@@ -10,9 +10,9 @@ import org.church.steward.ui.util.AsyncTask;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * "[구분] 이름"과 비고만 보여주는 단순한 관계자 자동 완성. 검색 조건의 관계자 선택 박스에서 사용한다.
- * 관계자를 최대 {@link ContactSuggestions#LIMIT}명 보여주고, 다 담지 못한 관계자가 있으면 목록 맨 아래에 그
- * 수를 안내한다. 안내를 누르면 모두 보여준다.
+ * "[구분] 이름"과 비고만 보여주는 단순한 관계자 자동 완성. 검색 조건의 관계자 선택 박스에서 사용한다. 관계자를 최대
+ * {@link ContactSuggestions#LIMIT}명 보여주고, 다 담지 못한 관계자가 있으면 목록 맨 아래에 그 수를 안내한다.
+ * 안내를 누르면 모두 보여준다.
  */
 @Slf4j
 public class SimpleContactSuggester implements ContactSuggester {

@@ -11,15 +11,15 @@ import org.springframework.data.repository.query.Param;
 
 public interface BudgetRepository extends JpaRepository<Budget, Long> {
     /**
-     * 회계 연도에 속한 예산을 모두 조회한다. 하위 예산 목록(children)도 함께 조회한다.
-     * 하위 예산은 같은 회계 연도에 속해 결과에 함께 들어 있으므로, 쿼리 한 번으로 모든 예산의 하위 예산 목록이 채워진다.
+     * 회계 연도에 속한 예산을 모두 조회한다. 하위 예산 목록(children)도 함께 조회한다. 하위 예산은 같은 회계 연도에 속해 결과에
+     * 함께 들어 있으므로, 쿼리 한 번으로 모든 예산의 하위 예산 목록이 채워진다.
      */
     @EntityGraph(attributePaths = "children")
     List<Budget> findAllByFiscalYearId(Long fiscalYearId);
 
     /**
-     * 회계 연도에 속한 수입 또는 지출 예산을 모두 조회한다. 하위 예산 목록(children)도 함께 조회한다.
-     * 하위 예산은 상위 예산과 회계 연도와 유형이 같아 결과에 함께 들어 있으므로, 쿼리 한 번으로 모든 예산의 하위 예산 목록이 채워진다.
+     * 회계 연도에 속한 수입 또는 지출 예산을 모두 조회한다. 하위 예산 목록(children)도 함께 조회한다. 하위 예산은 상위 예산과 회계
+     * 연도와 유형이 같아 결과에 함께 들어 있으므로, 쿼리 한 번으로 모든 예산의 하위 예산 목록이 채워진다.
      */
     @EntityGraph(attributePaths = "children")
     List<Budget> findAllByFiscalYearIdAndType(Long fiscalYearId, BudgetType type);

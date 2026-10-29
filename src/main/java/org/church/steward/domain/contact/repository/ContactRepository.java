@@ -13,11 +13,10 @@ import org.springframework.data.repository.query.Param;
 public interface ContactRepository extends JpaRepository<Contact, Long> {
 
     /**
-     * 자동 완성 후보를 이름 일치 → 이름이 검색어로 시작 → 이름에 검색어 포함 → 비고에 검색어 포함 순으로 조회한다.
-     * 같은 순위 안에서는 이름순이다.
-     * 후보는 숨기지 않았고 제외 목록에 없으며, 이름이나 비고에 검색어가 들어 있는 관계자다. 검색어를 LIKE 패턴이 아닌
-     * 글자 그대로 찾도록 LOCATE를 쓴다. 비고가 null이면 LOCATE도 null이 되어 조건에서 빠진다.
-     * 조건은 {@link #countAutocompleteCandidates}와 같아야 한다.
+     * 자동 완성 후보를 이름 일치 → 이름이 검색어로 시작 → 이름에 검색어 포함 → 비고에 검색어 포함 순으로 조회한다. 같은 순위 안에서는
+     * 이름순이다. 후보는 숨기지 않았고 제외 목록에 없으며, 이름이나 비고에 검색어가 들어 있는 관계자다. 검색어를 LIKE 패턴이 아닌 글자
+     * 그대로 찾도록 LOCATE를 쓴다. 비고가 null이면 LOCATE도 null이 되어 조건에서 빠진다. 조건은
+     * {@link #countAutocompleteCandidates}와 같아야 한다.
      */
     @Query("""
             SELECT c
@@ -51,8 +50,8 @@ public interface ContactRepository extends JpaRepository<Contact, Long> {
             @Param("excludedIds") Collection<Long> excludedIds);
 
     /**
-     * 관계자 관리 목록을 조건으로 조회한다. 조건이 null이면 적용하지 않는다.
-     * 이름과 비고는 검색어를 LIKE 패턴이 아닌 글자 그대로 찾도록 LOCATE를 쓴다.
+     * 관계자 관리 목록을 조건으로 조회한다. 조건이 null이면 적용하지 않는다. 이름과 비고는 검색어를 LIKE 패턴이 아닌 글자 그대로
+     * 찾도록 LOCATE를 쓴다.
      */
     @Query("""
             SELECT c
