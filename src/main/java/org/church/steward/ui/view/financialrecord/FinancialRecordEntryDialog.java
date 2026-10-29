@@ -7,7 +7,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Window;
-import java.awt.event.MouseListener;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -282,11 +281,8 @@ public class FinancialRecordEntryDialog extends JDialog {
         typeCombo.setEnabled(false);
         datePicker.getComponentDateTextField()
                 .setEditable(false);
-        JButton datePickerButton = datePicker.getComponentToggleCalendarButton();
-        datePickerButton.setEnabled(false);
-        for (MouseListener mouseListener : datePickerButton.getMouseListeners()) {
-            datePickerButton.removeMouseListener(mouseListener);
-        }
+        datePicker.getComponentToggleCalendarButton()
+                .setEnabled(false);
         budgetSelectBox.setSelectable(false);
         contactField.setReadOnly(true);
         descriptionField.setEditable(false);

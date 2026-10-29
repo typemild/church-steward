@@ -22,13 +22,18 @@
 
 | 종류 | 컴포넌트 |
 |---|---|
-| 버튼 | `PrimaryButton`(주 동작), `SecondaryButton`(그 밖의 버튼), `IconButton`(글자 없이 아이콘만) |
+| 버튼 | `PrimaryButton`(주 동작), `SecondaryButton`(그 밖의 버튼), `IconButton`(글자 없이 아이콘만), `FieldButton`(입력란 옆에 붙는 아이콘 버튼) |
 | 입력란 | `StyledTextField`, `StyledTextArea`, `AmountField`(금액), `StyledComboBox`, `StyledCheckBox`, `StyledDatePicker`, `ValidatedPasswordField` |
 | 레이블 | `TitleLabel`(제목), `SubTitleLabel`(부제목), `SectionHeaderLabel`(영역 머리말), `DescriptionLabel`(내용), `FieldLabel`(입력란), `SubFieldLabel`(덜 중요한 입력란), `BadgeLabel`(배지) |
 | 패널 | `WarningNoticePanel`(경고 아이콘이 붙은 주의 사항) |
 | 표 | `ListTable`(목록 표), `TreeTable`(접고 펼치는 표), `ExpandCollapseAllButton` |
 
 `IconButton`은 꺼져 있으면 아이콘을 흐린 회색(`UIColors.ICON_DISABLED`)으로 그리고, 마우스를 올려도 손 모양 커서와 배경색을 보이지 않는다. 툴팁은 꺼진 동안에도 뜨므로 꺼진 이유를 툴팁에 적을 수 있다. FontIcon은 FlatLaf가 꺼진 아이콘을 회색으로 바꿔 주지 않으므로 `IconButton#setIcon(FontAwesomeSolid)`가 꺼진 아이콘을 함께 지정한다. 아이콘을 바꿀 때는 이 메서드를 쓴다.
+
+입력란 바로 옆에 붙어 그 입력란의 값을 고르는 버튼(날짜 피커의 달력 버튼, 예산 선택 버튼)은 `FieldButton`을 쓴다. 툴바의 `IconButton`과 구분되고 입력란과 한 덩어리로 보이도록 테두리와 흰 배경을 두며, 입력란 높이에 맞춘 정사각형이고 입력란과 3px 떨어진다(LGoodDatePicker의 입력란과 버튼 사이 간격). 꺼진 동안의 모양(회색 아이콘, 손 모양 커서와 배경색 없음, 툴팁은 뜸)은 `IconButton`과 같으며, 툴팁에 할 일을 적는다("달력에서 날짜 선택", "예산 선택").
+
+- 날짜 피커(`StyledDatePicker`)의 달력 버튼은 라이브러리가 만든 버튼이라 `FieldButton.decorate`로 꾸민다. 라이브러리는 버튼이 아니라 피커 전체가 켜져 있는지만 보고 달력을 열므로, `StyledDatePicker#openPopup`이 버튼이 꺼져 있으면 달력을 열지 않게 해 두었다. 그래서 버튼만 꺼도 달력이 열리지 않는다. 버튼의 마우스 리스너를 모두 지우지 않는다(버튼 UI와 툴팁의 리스너까지 사라진다).
+- 값을 바꿀 수 없는 상세 보기에서는 이 버튼을 숨기지 않고 끈다. 날짜 피커의 버튼을 숨기면 그 자리가 빈 칸으로 남으므로, 예산 선택 버튼(`BudgetSelectBox#setSelectable`)도 같이 끈다.
 
 `AmountField`는 생성자 옵션으로 빈 값을 허용할 수 있으며, 이때 `getAmount()`는 `null`을 반환한다(검색 조건처럼 비워 둘 수 있는 금액에 쓴다).
 
@@ -141,7 +146,7 @@
 
 - 날짜 하나만 고르게 하면 "그 날짜까지의 보고서"로 오해하기 쉬워서, 날짜 입력란 없이 "2026-10-04 (일) ~ 2026-10-10 (토)"처럼 주간의 양 끝을 글자로 보여 주고 그 오른쪽에 달력 버튼을 둔다. 달력에서는 선택된 주간 전체가 칠해져 보이며, 어느 날짜를 눌러도 그 날짜가 속한 주간이 선택된다. 좌/우 화살표로 한 주씩 이동한다.
 - 다음 주간 화살표 오른쪽의 "이번 주" 버튼은 오늘이 속한 주간으로 옮긴다. 이번 주간이 회계 연도의 기간과 겹치지 않거나 이미 그 주간을 보고 있으면 꺼진다.
-- 달력이 버튼을 기준으로 뜨기 때문에 공용 `IconButton`이 아니라 입력란을 숨긴 `StyledDatePicker`의 버튼을 같은 모양으로 꾸며 쓴다.
+- 달력이 버튼을 기준으로 뜨기 때문에 공용 `IconButton`이 아니라 입력란을 숨긴 `StyledDatePicker`의 버튼을 같은 모양으로 꾸며 쓴다. 입력란 없이 버튼만 보이므로 다른 날짜 피커와 달리 `FieldButton`의 테두리를 걷어 낸다.
 - 주간은 회계 연도의 기간을 벗어날 수 없고, 경계에 걸친 주간은 벗어난 부분을 잘라낸다.
 
 ### 보고서의 서식 줄

@@ -1,6 +1,5 @@
 package org.church.steward.ui.view.report;
 
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.MouseAdapter;
@@ -24,7 +23,6 @@ import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.util.UIFonts;
 import org.church.steward.ui.view.financialrecord.period.PeriodUnit;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import org.kordamp.ikonli.swing.FontIcon;
 
 import com.github.lgooddatepicker.components.DatePickerSettings;
 import com.github.lgooddatepicker.components.DatePickerSettings.DateArea;
@@ -125,25 +123,22 @@ class WeekSelectorPanel extends JPanel {
         settings.setColor(DateArea.CalendarBackgroundSelectedDate, UIColors.CHIP_BACKGROUND);
         settings.setColor(DateArea.CalendarBorderSelectedDate, UIColors.CHIP_BACKGROUND);
 
-        // 달력 버튼을 공용 IconButton(MEDIUM)과 같은 모양으로 꾸민다.
+        // 달력 아이콘, 손 모양 커서, 마우스를 올렸을 때의 배경색은 StyledDatePicker(FieldButton)가 정한다.
+        // 입력란 없이 버튼만 보이므로 입력란에 붙는 버튼의 테두리를 걷어 내고 공용 IconButton(MEDIUM)과 같은 크기로,
+        // 마우스를 올렸을 때만 배경을 칠한다.
         int iconSize = UIFonts.FONT_SIZE_BASE;
         Dimension buttonSize = new Dimension(iconSize * 2, iconSize * 2);
         JButton calendarButton = calendarPicker.getComponentToggleCalendarButton();
-        calendarButton.setText(null);
-        calendarButton.setIcon(FontIcon.of(FontAwesomeSolid.CALENDAR_ALT, iconSize, UIColors.TEXT_MAIN));
         calendarButton.setToolTipText("달력에서 주간 선택");
         calendarButton.setOpaque(false);
         calendarButton.setBorderPainted(false);
         calendarButton.setContentAreaFilled(false);
-        calendarButton.setFocusPainted(false);
-        calendarButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         calendarButton.setPreferredSize(buttonSize);
         calendarButton.setMinimumSize(buttonSize);
         calendarButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
                 calendarButton.setContentAreaFilled(true);
-                calendarButton.setBackground(UIColors.SECONDARY_BACKGROUND_HOVER);
             }
 
             @Override
