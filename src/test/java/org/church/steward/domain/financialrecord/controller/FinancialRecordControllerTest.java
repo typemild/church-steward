@@ -155,20 +155,57 @@ class FinancialRecordControllerTest {
     }
 
     @Nested
-    @DisplayName("deleteFinancialRecord 테스트")
-    class DeleteFinancialRecordTest {
+    @DisplayName("updateFinancialRecordsBudget 테스트")
+    class UpdateFinancialRecordsBudgetTest {
 
         @Test
-        @DisplayName("내역 삭제 시 서비스의 deleteFinancialRecord를 호출한다")
-        void deleteFinancialRecord_withId_callsService() {
+        @DisplayName("예산 일괄 변경 시 서비스의 updateFinancialRecordsBudget를 호출한다")
+        void updateFinancialRecordsBudget_withIdsAndBudgetId_callsService() {
             // Given
-            Long id = 1L;
+            List<Long> ids = List.of(1L, 2L);
 
             // When
-            financialRecordController.deleteFinancialRecord(id);
+            financialRecordController.updateFinancialRecordsBudget(ids, 3L);
 
             // Then
-            verify(financialRecordService).deleteFinancialRecord(id);
+            verify(financialRecordService).updateFinancialRecordsBudget(ids, 3L);
+        }
+    }
+
+    @Nested
+    @DisplayName("updateFinancialRecordsContacts 테스트")
+    class UpdateFinancialRecordsContactsTest {
+
+        @Test
+        @DisplayName("관계자 일괄 변경 시 서비스의 updateFinancialRecordsContacts를 호출한다")
+        void updateFinancialRecordsContacts_withIdsAndContactIds_callsService() {
+            // Given
+            List<Long> ids = List.of(1L, 2L);
+            List<Long> contactIds = List.of(10L, 11L);
+
+            // When
+            financialRecordController.updateFinancialRecordsContacts(ids, contactIds);
+
+            // Then
+            verify(financialRecordService).updateFinancialRecordsContacts(ids, contactIds);
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteFinancialRecords 테스트")
+    class DeleteFinancialRecordsTest {
+
+        @Test
+        @DisplayName("내역 일괄 삭제 시 서비스의 deleteFinancialRecords를 호출한다")
+        void deleteFinancialRecords_withIds_callsService() {
+            // Given
+            List<Long> ids = List.of(1L, 2L);
+
+            // When
+            financialRecordController.deleteFinancialRecords(ids);
+
+            // Then
+            verify(financialRecordService).deleteFinancialRecords(ids);
         }
     }
 }

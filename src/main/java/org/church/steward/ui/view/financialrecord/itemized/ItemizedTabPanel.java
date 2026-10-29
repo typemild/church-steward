@@ -9,6 +9,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
 import javax.swing.ListSelectionModel;
 import javax.swing.RowSorter;
 import javax.swing.SortOrder;
@@ -37,15 +38,24 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 public class ItemizedTabPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
+    private static final String MIXED_TYPE_TOOLTIP = "수입과 지출이 함께 선택되어 일괄 변경할 수 없습니다.";
 
     private final ItemizedTableModel tableModel = new ItemizedTableModel();
     private final ListTable table;
 
     private final SubFieldLabel totalCountLabel = new SubFieldLabel("", ComponentSize.SMALL);
+    // 툴바 버튼. 화면의 왼쪽부터 놓이는 순서대로 적는다.
+    /** 예산 일괄 변경 버튼. 선택된 내역이 없거나 수입과 지출이 함께 선택되면 꺼진다. */
+    private final IconButton btnChangeBudget = new IconButton(FontAwesomeSolid.COINS, ComponentSize.SMALL);
+    /** 관계자 일괄 변경 버튼. 선택된 내역이 없거나 수입과 지출이 함께 선택되면 꺼진다. */
+    private final IconButton btnChangeContacts = new IconButton(FontAwesomeSolid.USER_EDIT, ComponentSize.SMALL);
+    /** 일괄 변경 버튼과 추가 버튼 사이의 간격 */
+    private final JSeparator bulkChangeSeparator1 = new JSeparator(SwingConstants.VERTICAL);
+    private final JSeparator bulkChangeSeparator2 = new JSeparator(SwingConstants.VERTICAL);
     private final IconButton btnAdd = new IconButton(FontAwesomeSolid.PLUS, ComponentSize.SMALL);
     private final IconButton btnEdit = new IconButton(FontAwesomeSolid.EDIT, ComponentSize.SMALL);
     private final IconButton btnDelete = new IconButton(FontAwesomeSolid.TRASH_ALT, ComponentSize.SMALL);
-    /** 상세 보기 버튼. 편집할 수 없을 때(마감된 회계 연도) 추가/수정/삭제 버튼 대신 보인다. */
+    /** 상세 보기 버튼. 편집할 수 없을 때(마감된 회계 연도) 일괄 변경/추가/수정/삭제 버튼 대신 보인다. */
     private final IconButton btnView = new IconButton(FontAwesomeSolid.EDIT, ComponentSize.SMALL);
     private boolean editable = true;
     private final FieldLabel selectionSumLabel = new FieldLabel("", SwingConstants.RIGHT, ComponentSize.MEDIUM);
@@ -68,6 +78,7 @@ public class ItemizedTabPanel extends JPanel {
         setupEvents();
         updateTotalCount();
         updateSelectionSum();
+        updateBulkChangeButtons();
     }
 
     private JPanel createHeaderPanel() {
@@ -80,6 +91,11 @@ public class ItemizedTabPanel extends JPanel {
         btnView.setToolTipText("수입/지출 상세 보기");
         btnView.setVisible(false);
 
+        // 일괄 변경은 추가/수정/삭제와 구분되도록 예산 관리의 위치 변경 버튼처럼 왼쪽에 떨어뜨려 둔다.
+        toolbarPanel.add(btnChangeBudget);
+        toolbarPanel.add(btnChangeContacts);
+        toolbarPanel.add(bulkChangeSeparator1);
+        toolbarPanel.add(bulkChangeSeparator2);
         toolbarPanel.add(btnAdd);
         toolbarPanel.add(btnEdit);
         toolbarPanel.add(btnDelete);
@@ -131,6 +147,7 @@ public class ItemizedTabPanel extends JPanel {
                 .addListSelectionListener(e -> {
                     if (!e.getValueIsAdjusting()) {
                         updateSelectionSum();
+                        updateBulkChangeButtons();
                     }
                 });
 
@@ -144,6 +161,8 @@ public class ItemizedTabPanel extends JPanel {
         });
 
         // 구분은 추가 다이얼로그에서 고른다.
+        btnChangeBudget.addActionListener(_ -> actionHandler.changeBudget(getSelectedRecords()));
+        btnChangeContacts.addActionListener(_ -> actionHandler.changeContacts(getSelectedRecords()));
         btnAdd.addActionListener(_ -> actionHandler.addRecord(null, null, null));
         btnEdit.addActionListener(_ -> onEdit());
         btnDelete.addActionListener(_ -> onDelete());
@@ -152,14 +171,35 @@ public class ItemizedTabPanel extends JPanel {
 
     /**
      * 내역을 추가, 수정, 삭제할 수 있는지 정한다. 마감된 회계 연도의 내역은 조회만 할 수 있으므로 false로 둔다.
-     * 편집할 수 없으면 추가/수정/삭제 버튼을 숨기고 상세 보기 버튼을 보인다.
+     * 편집할 수 없으면 일괄 변경/추가/수정/삭제 버튼과 그 사이의 간격을 숨기고 상세 보기 버튼을 보인다.
      */
     public void setEditable(boolean editable) {
         this.editable = editable;
+        btnChangeBudget.setVisible(editable);
+        btnChangeContacts.setVisible(editable);
+        bulkChangeSeparator1.setVisible(editable);
+        bulkChangeSeparator2.setVisible(editable);
         btnAdd.setVisible(editable);
         btnEdit.setVisible(editable);
         btnDelete.setVisible(editable);
         btnView.setVisible(!editable);
+    }
+
+    /**
+     * 일괄 변경 버튼은 같은 구분의 내역이 한 건 이상 선택되었을 때만 켠다.
+     * 예산과 관계자의 규칙이 구분마다 다르므로 수입과 지출이 함께 선택되면 끄고, 그 이유를 툴팁으로 알린다.
+     */
+    private void updateBulkChangeButtons() {
+        List<FinancialRecordResponseDto> selected = getSelectedRecords();
+        boolean mixed = selected.stream()
+                .map(FinancialRecordResponseDto::getType)
+                .distinct()
+                .count() > 1;
+        boolean enabled = !selected.isEmpty() && !mixed;
+        btnChangeBudget.setEnabled(enabled);
+        btnChangeContacts.setEnabled(enabled);
+        btnChangeBudget.setToolTipText(mixed ? MIXED_TYPE_TOOLTIP : "예산 일괄 변경");
+        btnChangeContacts.setToolTipText(mixed ? MIXED_TYPE_TOOLTIP : "관계자 일괄 변경");
     }
 
     private void onEdit() {
@@ -196,6 +236,14 @@ public class ItemizedTabPanel extends JPanel {
         tableModel.setData(records);
         updateTotalCount();
         updateSelectionSum();
+        updateBulkChangeButtons();
+    }
+
+    /**
+     * 행 선택을 해제한다.
+     */
+    public void clearSelection() {
+        table.clearRowSelection();
     }
 
     /**

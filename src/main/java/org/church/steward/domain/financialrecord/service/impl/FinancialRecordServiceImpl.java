@@ -11,6 +11,7 @@ import org.church.steward.domain.activitylog.service.ActivityLogService;
 import org.church.steward.domain.activitylog.util.EntitySnapshot;
 import org.church.steward.domain.activitylog.util.EntitySnapshotCapturer;
 import org.church.steward.domain.budget.entity.Budget;
+import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.budget.repository.BudgetRepository;
 import org.church.steward.domain.contact.entity.Contact;
 import org.church.steward.domain.contact.repository.ContactRepository;
@@ -90,6 +91,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
         if (budget.hasChildren()) {
             throw new IllegalArgumentException("하위 예산이 있는 예산에는 " + type.getLabel() + "을 등록할 수 없습니다.");
         }
+        validateBudgetType(budget, type);
         validateBudgetFiscalYear(budget, fiscalYear);
 
         FinancialRecord financialRecord = FinancialRecord.builder()
@@ -130,6 +132,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
         if (budget.hasChildren()) {
             throw new IllegalArgumentException("하위 예산이 있는 예산으로는 " + type.getLabel() + "을 변경할 수 없습니다.");
         }
+        validateBudgetType(budget, type);
         validateBudgetFiscalYear(budget, fiscalYear);
         Set<Long> contactIdSet = new HashSet<>(dto.getContactIds());
         List<Contact> contacts = findContacts(contactIdSet);
@@ -138,8 +141,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
 
         financialRecord.update(fiscalYear, dto.getDate(), budget, dto.getDescription(), dto.getAmount(),
                 dto.getRemarks());
-        financialRecord.getContacts().clear(); // orphanRemoval = true 이므로 clear 후 다시 추가
-        contacts.forEach(financialRecord::addContact);
+        financialRecord.replaceContacts(contacts);
 
         financialRecordRepository.save(financialRecord);
         activityLogService.logUpdate(oldSnapshot, financialRecord);
@@ -148,12 +150,96 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
     }
 
     @Override
-    public void deleteFinancialRecord(Long id) {
-        FinancialRecord financialRecord = financialRecordRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Financial Record not found"));
-        validateNotClosed(financialRecord.getFiscalYear());
-        financialRecordRepository.delete(financialRecord);
-        activityLogService.logDeletion(financialRecord);
+    public void updateFinancialRecordsBudget(List<Long> ids, Long budgetId) {
+        List<FinancialRecord> financialRecords = findFinancialRecords(ids);
+        if (budgetId == null) {
+            throw new IllegalArgumentException("예산을 선택해주세요.");
+        }
+        Budget budget = budgetRepository.findById(budgetId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid Budget ID"));
+
+        // 모두 검증한 뒤에 바꾼다.
+        for (FinancialRecord financialRecord : financialRecords) {
+            FinancialRecordType type = financialRecord.getType();
+            validateNotClosed(financialRecord.getFiscalYear());
+            if (budget.hasChildren()) {
+                throw new IllegalArgumentException("하위 예산이 있는 예산으로는 " + type.getLabel() + "을 변경할 수 없습니다.");
+            }
+            validateBudgetType(budget, type);
+            validateBudgetFiscalYear(budget, financialRecord.getFiscalYear());
+        }
+
+        for (FinancialRecord financialRecord : financialRecords) {
+            EntitySnapshot<FinancialRecord> oldSnapshot = entitySnapshotCapturer.capture(financialRecord);
+            financialRecord.changeBudget(budget);
+            financialRecordRepository.save(financialRecord);
+            activityLogService.logUpdate(oldSnapshot, financialRecord);
+        }
+    }
+
+    @Override
+    public void updateFinancialRecordsContacts(List<Long> ids, List<Long> contactIds) {
+        List<FinancialRecord> financialRecords = findFinancialRecords(ids);
+
+        // 모두 검증한 뒤에 바꾼다.
+        for (FinancialRecord financialRecord : financialRecords) {
+            validateNotClosed(financialRecord.getFiscalYear());
+            validateContacts(financialRecord.getType(), contactIds);
+        }
+        Set<Long> contactIdSet = new HashSet<>(contactIds);
+        List<Contact> contacts = findContacts(contactIdSet);
+
+        boolean hasIncome = false;
+        for (FinancialRecord financialRecord : financialRecords) {
+            EntitySnapshot<FinancialRecord> oldSnapshot = entitySnapshotCapturer.capture(financialRecord);
+            financialRecord.replaceContacts(contacts);
+            financialRecordRepository.save(financialRecord);
+            activityLogService.logUpdate(oldSnapshot, financialRecord);
+            hasIncome |= financialRecord.getType() == FinancialRecordType.INCOME;
+        }
+        // 바꾼 관계자가 모두 같으므로 그룹은 한 번만 확인한다.
+        if (hasIncome) {
+            registerContactGroup(FinancialRecordType.INCOME, contactIdSet);
+        }
+    }
+
+    @Override
+    public void deleteFinancialRecords(List<Long> ids) {
+        List<FinancialRecord> financialRecords = findFinancialRecords(ids);
+        for (FinancialRecord financialRecord : financialRecords) {
+            validateNotClosed(financialRecord.getFiscalYear());
+        }
+
+        for (FinancialRecord financialRecord : financialRecords) {
+            financialRecordRepository.delete(financialRecord);
+            activityLogService.logDeletion(financialRecord);
+        }
+    }
+
+    /**
+     * 여러 건을 한 번에 처리할 내역들을 찾는다. 하나라도 찾지 못하면(다른 곳에서 이미 삭제한 경우 등) 모두 처리하지 않는다.
+     */
+    private List<FinancialRecord> findFinancialRecords(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new IllegalArgumentException("선택된 내역이 없습니다.");
+        }
+        Set<Long> idSet = new HashSet<>(ids);
+        List<FinancialRecord> financialRecords = financialRecordRepository.findAllById(idSet);
+        if (financialRecords.size() != idSet.size()) {
+            throw new IllegalArgumentException("이미 삭제되었거나 찾을 수 없는 내역이 있습니다. 다시 조회해주세요.");
+        }
+        return financialRecords;
+    }
+
+    /**
+     * 예산의 구분은 내역의 구분과 같아야 한다. 수입에는 수입 예산만, 지출에는 지출 예산만 쓸 수 있다.
+     * 등록(가져오기 포함), 수정, 예산 일괄 변경이 모두 검증한다.
+     */
+    private void validateBudgetType(Budget budget, FinancialRecordType type) {
+        BudgetType expectedType = type == FinancialRecordType.INCOME ? BudgetType.INCOME : BudgetType.EXPENSE;
+        if (budget.getType() != expectedType) {
+            throw new IllegalArgumentException(type.getLabel() + "에는 " + type.getLabel() + " 예산만 선택할 수 있습니다.");
+        }
     }
 
     private List<Contact> findContacts(Set<Long> contactIds) {

@@ -28,7 +28,15 @@ public class FinancialRecordController {
         return financialRecordService.updateFinancialRecord(id, dto);
     }
 
-    public void deleteFinancialRecord(Long id) {
-        financialRecordService.deleteFinancialRecord(id);
+    public void updateFinancialRecordsBudget(List<Long> ids, Long budgetId) {
+        financialRecordService.updateFinancialRecordsBudget(ids, budgetId);
+    }
+
+    public void updateFinancialRecordsContacts(List<Long> ids, List<Long> contactIds) {
+        financialRecordService.updateFinancialRecordsContacts(ids, contactIds);
+    }
+
+    public void deleteFinancialRecords(List<Long> ids) {
+        financialRecordService.deleteFinancialRecords(ids);
     }
 }

@@ -23,6 +23,7 @@ import org.church.steward.domain.budget.dto.BudgetDto;
 import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.contact.controller.ContactController;
 import org.church.steward.domain.contact.controller.ContactGroupController;
+import org.church.steward.domain.contact.dto.ContactDto;
 import org.church.steward.domain.financialrecord.controller.FinancialRecordController;
 import org.church.steward.domain.financialrecord.dto.FinancialRecordRequestDto;
 import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
@@ -311,6 +312,116 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
         dialog.setVisible(true);
     }
 
+    /**
+     * 선택한 내역들의 예산이 모두 같으면 그 예산을 미리 선택해 둔다.
+     */
+    @Override
+    public void changeBudget(List<FinancialRecordResponseDto> records) {
+        if (records.isEmpty()) {
+            return;
+        }
+        FinancialRecordResponseDto first = records.getFirst();
+        FiscalYearDto fiscalYear = fiscalYearSelector.getFiscalYear(first.getFiscalYearId());
+        if (fiscalYear == null) {
+            JOptionPane.showMessageDialog(this, "내역이 속한 회계 연도를 찾을 수 없습니다.");
+            return;
+        }
+
+        BulkBudgetChangeDialog dialog = new BulkBudgetChangeDialog(SwingUtilities.getWindowAncestor(this),
+                budgetController, fiscalYear, first.getType(), records.size());
+        boolean sameBudget = records.stream()
+                .allMatch(record -> Objects.equals(record.getBudgetId(), first.getBudgetId()));
+        if (sameBudget) {
+            dialog.setBudget(first.getBudgetId(), first.getBudgetName());
+        }
+        dialog.setVisible(true);
+
+        if (!dialog.isConfirmed()) {
+            return;
+        }
+
+        final List<Long> ids = toIds(records);
+        final Long budgetId = dialog.getBudgetId();
+        AsyncTask.run(tabbedPane,
+                () -> {
+                    financialRecordController.updateFinancialRecordsBudget(ids, budgetId);
+                    return null;
+                },
+                _ -> searchWithoutSelection(),
+                err -> {
+                    log.error("Failed to change budget of financial records", err);
+                    JOptionPane.showMessageDialog(this, "변경 실패: " + err.getMessage());
+                });
+    }
+
+    /**
+     * 선택한 내역들의 관계자가 순서까지 모두 같으면 그 관계자들을 현재 정보로 조회해 칩으로 넣어 둔다.
+     */
+    @Override
+    public void changeContacts(List<FinancialRecordResponseDto> records) {
+        if (records.isEmpty()) {
+            return;
+        }
+        List<Long> firstContactIds = records.getFirst()
+                .getContactIds();
+        boolean sameContacts = firstContactIds != null && !firstContactIds.isEmpty() && records.stream()
+                .allMatch(record -> firstContactIds.equals(record.getContactIds()));
+        if (!sameContacts) {
+            openContactChangeDialog(records, List.of());
+            return;
+        }
+
+        final List<Long> contactIds = List.copyOf(firstContactIds);
+        AsyncTask.run(tabbedPane,
+                () -> contactController.getContactsByIds(contactIds),
+                contacts -> openContactChangeDialog(records, orderByIds(contacts, contactIds)),
+                err -> {
+                    log.error("Failed to load current contact info", err);
+                    JOptionPane.showMessageDialog(this, "관계자 정보를 불러오는데 실패했습니다: " + err.getMessage());
+                });
+    }
+
+    private void openContactChangeDialog(List<FinancialRecordResponseDto> records, List<ContactDto> initialContacts) {
+        FinancialRecordType type = records.getFirst()
+                .getType();
+        BulkContactChangeDialog dialog = new BulkContactChangeDialog(SwingUtilities.getWindowAncestor(this),
+                contactController, contactGroupController, type, records.size(), initialContacts);
+        dialog.setVisible(true);
+
+        if (!dialog.isConfirmed()) {
+            return;
+        }
+
+        final List<Long> ids = toIds(records);
+        final List<Long> contactIds = dialog.getContactIds();
+        AsyncTask.run(tabbedPane,
+                () -> {
+                    financialRecordController.updateFinancialRecordsContacts(ids, contactIds);
+                    return null;
+                },
+                _ -> searchWithoutSelection(),
+                err -> {
+                    log.error("Failed to change contacts of financial records", err);
+                    JOptionPane.showMessageDialog(this, "변경 실패: " + err.getMessage());
+                });
+    }
+
+    /**
+     * 조회한 관계자들을 내역에 기록된 순서대로 늘어놓는다. 칩의 순서가 내역에 저장되는 관계자의 순서이기 때문이다.
+     * 그 사이에 삭제되어 조회되지 않은 관계자는 뺀다.
+     */
+    private static List<ContactDto> orderByIds(List<ContactDto> contacts, List<Long> contactIds) {
+        Map<Long, ContactDto> contactsById = contacts.stream()
+                .collect(Collectors.toMap(ContactDto::getId, contact -> contact));
+        return contactIds.stream()
+                .map(contactsById::get)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * 한 번에 삭제하므로, 실패하면 아무것도 삭제되지 않는다.
+     */
     @Override
     public void deleteRecords(List<FinancialRecordResponseDto> records) {
         int confirm = JOptionPane.showConfirmDialog(this, "선택한 " + records.size() + "건의 내역을 삭제하시겠습니까?", "삭제 확인",
@@ -319,21 +430,32 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
             return;
         }
 
-        final List<FinancialRecordResponseDto> targets = List.copyOf(records);
+        final List<Long> ids = toIds(records);
         AsyncTask.run(tabbedPane,
                 () -> {
-                    for (FinancialRecordResponseDto target : targets) {
-                        financialRecordController.deleteFinancialRecord(target.getId());
-                    }
+                    financialRecordController.deleteFinancialRecords(ids);
                     return null;
                 },
-                _ -> search(),
+                _ -> searchWithoutSelection(),
                 err -> {
                     log.error("Failed to delete financial records", err);
                     JOptionPane.showMessageDialog(this, "삭제 실패: " + err.getMessage());
-                    // 여러 건 중 일부만 삭제되었을 수 있으므로 목록을 다시 불러온다.
-                    search();
                 });
+    }
+
+    private static List<Long> toIds(List<FinancialRecordResponseDto> records) {
+        return records.stream()
+                .map(FinancialRecordResponseDto::getId)
+                .toList();
+    }
+
+    /**
+     * 여러 건을 바꾸거나 삭제한 뒤에 쓴다. 두 탭의 선택을 해제하고 다시 조회한다.
+     */
+    private void searchWithoutSelection() {
+        budgetTabPanel.clearSelection();
+        itemizedTabPanel.clearSelection();
+        search();
     }
 
     /**
