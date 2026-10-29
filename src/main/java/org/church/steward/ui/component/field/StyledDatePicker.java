@@ -25,6 +25,10 @@ public class StyledDatePicker extends DatePicker implements CompositeInputField 
 
     private static final long serialVersionUID = 1L;
 
+    /** 날짜 형식 "yyyy-MM-dd"의 숫자와 구분 문자 수. */
+    private static final int DATE_DIGIT_COUNT = 8;
+    private static final int DATE_SEPARATOR_COUNT = 2;
+
     private final Insets padding;
 
     public StyledDatePicker(ComponentSize componentSize) {
@@ -135,11 +139,11 @@ public class StyledDatePicker extends DatePicker implements CompositeInputField 
             textField.setMargin(padding);
         }
 
-        // border insets을 반영해서 preferred size를 다시 계산
+        // 테두리와 여백(insets)을 반영해서 preferred size를 다시 계산한다.
         Insets insets = textField.getInsets();
         FontMetrics fm = textField.getFontMetrics(textField.getFont());
         int neededHeight = fm.getHeight() + insets.top + insets.bottom;
-        int neededWidth = textField.getPreferredSize().width; // 폭은 기존 계산값 유지
+        int neededWidth = dateTextWidth(fm) + insets.left + insets.right;
 
         Dimension newSize = new Dimension(neededWidth, neededHeight);
         textField.setPreferredSize(newSize);
@@ -148,5 +152,18 @@ public class StyledDatePicker extends DatePicker implements CompositeInputField 
         // DatePicker(JPanel) 레이아웃 자체를 다시 잡아줘야 실제로 반영됨
         revalidate();
         repaint();
+    }
+
+    /**
+     * 날짜("yyyy-MM-dd")가 들어갈 글자 폭을 반환한다. LGoodDatePicker가 정하는 폭은 테두리와 여백을 빼고 잰 글자
+     * 폭이라, 여백을 넣으면 여유가 없어져 글자를 다르게 그리는 Windows(화면 배율, 안티앨리어싱)에서 잘린다. 그래서 숫자는 가장 넓은
+     * 숫자로 재고, 캐럿과 측정값·실제로 그린 폭의 차이를 위해 숫자 한 자의 폭을 더한다.
+     */
+    private static int dateTextWidth(FontMetrics fm) {
+        int digitWidth = 0;
+        for (char digit = '0'; digit <= '9'; digit++) {
+            digitWidth = Math.max(digitWidth, fm.charWidth(digit));
+        }
+        return digitWidth * (DATE_DIGIT_COUNT + 1) + fm.charWidth('-') * DATE_SEPARATOR_COUNT;
     }
 }

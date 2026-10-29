@@ -60,7 +60,7 @@
 공용 입력 컴포넌트는 FlatLaf의 테두리(둥근 모서리, 포커스를 받으면 색이 바뀜)를 그대로 쓴다.
 
 - `setBorder`로 테두리를 바꾸지 않는다. 포커스 표시가 사라져서, 콤보박스나 읽기 전용 입력란(예산 선택 박스)처럼 커서가 보이지 않는 입력란은 포커스를 알아볼 수 없게 된다. 안쪽 여백은 텍스트 입력란이면 `setMargin`, 콤보박스면 `FlatClientProperties.STYLE`의 `padding`으로 준다.
-- 날짜 피커는 LGoodDatePicker가 입력란에 단 사각 테두리를 FlatLaf 테두리로 되돌린다(`StyledDatePicker#zDrawTextFieldIndicators`).
+- 날짜 피커는 LGoodDatePicker가 입력란에 단 사각 테두리를 FlatLaf 테두리로 되돌린다(`StyledDatePicker#zDrawTextFieldIndicators`). 입력란의 폭도 이 메서드가 정한다. LGoodDatePicker가 정하는 폭에는 테두리와 여백이 빠져 있어 Windows에서 날짜가 잘리므로, 날짜 글자 폭에 테두리와 여백, 숫자 한 자의 여유를 더한다.
 - 여러 컴포넌트로 된 입력란(`ContactChipField`)은 바깥 패널에 `FlatTextBorder`를 달고 `FlatClientProperties.COMPONENT_FOCUS_OWNER`로 안쪽 입력란의 포커스를 따르게 하며, 배경도 둥글게 직접 그린다.
 - 여러 줄 입력란은 `JScrollPane`에 넣는다. 스크롤 패인의 FlatLaf 테두리가 포커스를 표시한다.
 
