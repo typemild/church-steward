@@ -8,15 +8,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.StringJoiner;
 
 import org.church.steward.infrastructure.config.AppSettingManager;
 import org.church.steward.infrastructure.config.DatabaseManager;
 import org.church.steward.infrastructure.security.InvalidPasswordException;
 import org.church.steward.infrastructure.security.UserNotFoundException;
+import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,6 +39,19 @@ class BackupManagerTest {
     private static final String UPGRADE_MIGRATION_LOCATION = "classpath:db/test-migration/upgrade";
     /** 중간에 실패하는 가짜 마이그레이션 (src/test/resources) */
     private static final String BROKEN_MIGRATION_LOCATION = "classpath:db/test-migration/broken";
+    /** 1.0.0과 1.1.0이 쓰던 스키마의 버전 */
+    private static final String FIRST_RELEASED_SCHEMA_VERSION = "1";
+    /** 스키마 비교에 쓰는 질의. 칼럼의 자료형, 제약 조건, 인덱스, 적용된 마이그레이션의 버전을 읽는다. */
+    private static final List<String> SCHEMA_QUERIES = List.of(
+            "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, DATETIME_PRECISION, IS_NULLABLE,"
+                    + " IS_IDENTITY FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'PUBLIC'"
+                    + " ORDER BY TABLE_NAME, ORDINAL_POSITION",
+            "SELECT CONSTRAINT_NAME, CONSTRAINT_TYPE, TABLE_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS"
+                    + " WHERE TABLE_SCHEMA = 'PUBLIC' ORDER BY CONSTRAINT_NAME",
+            "SELECT INDEX_NAME, TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION, ORDERING_SPECIFICATION"
+                    + " FROM INFORMATION_SCHEMA.INDEX_COLUMNS WHERE TABLE_SCHEMA = 'PUBLIC' AND INDEX_NAME LIKE 'IX\\_%'"
+                    + " ORDER BY INDEX_NAME, ORDINAL_POSITION",
+            "SELECT \"version\" FROM \"flyway_schema_history\" ORDER BY \"installed_rank\"");
 
     @TempDir
     Path tempDir;
@@ -81,6 +98,47 @@ class BackupManagerTest {
         return installation;
     }
 
+    /**
+     * 1.0.0~1.1.0의 프로그램으로 쓰던 실행 환경을 만든다. 마이그레이션 없이 초기화한 뒤 실제 마이그레이션을 그 버전의 스키마까지만
+     * 실행하고, 그 스키마에 맞춰 관리자, 회계 연도, 예산, 관계자, 수입 내역을 넣는다.
+     * <p>
+     * 넣는 SQL은 그 버전의 스키마에 맞춘 것이므로 이후 스키마가 바뀌어도 고치지 않는다.
+     */
+    private Installation createFirstReleasedInstallation(String directoryName) throws Exception {
+        Path noMigrations = Files.createDirectories(tempDir.resolve("no-migrations"));
+        Installation installation = createInstallation(directoryName, "1.1.0",
+                List.of("filesystem:" + noMigrations.toAbsolutePath()));
+        installation.databaseManager().initialize(ADMIN_ID, ADMIN_PASSWORD);
+        installation.databaseManager().loadDatabasePassword(ADMIN_ID, ADMIN_PASSWORD);
+        try (HikariDataSource dataSource = openDataSource(installation)) {
+            Flyway.configure()
+                    .dataSource(dataSource)
+                    .locations(DatabaseManager.MIGRATION_LOCATION)
+                    .target(FIRST_RELEASED_SCHEMA_VERSION)
+                    .load()
+                    .migrate();
+            try (Connection connection = dataSource.getConnection();
+                    Statement statement = connection.createStatement()) {
+                statement.execute("INSERT INTO USERS (ID, PASSWORD, IS_PASSWORD_CHAGED, ROLE, REMARKS)"
+                        + " VALUES ('" + ADMIN_ID + "', 'password-hash', TRUE, 'ADMIN', NULL)");
+                statement.execute("INSERT INTO FISCAL_YEAR (NAME, START_DATE, END_DATE, CLOSED)"
+                        + " VALUES ('2025년', DATE '2025-01-01', DATE '2025-12-31', FALSE)");
+                statement.execute("INSERT INTO USER_SETTINGS (USER_ID, SELECTED_FISCAL_YEAR_ID)"
+                        + " VALUES ('" + ADMIN_ID + "', 1)");
+                statement.execute("INSERT INTO BUDGET (FISCAL_YEAR_ID, TYPE, PARENT_ID, NAME, AMOUNT, SORT_ORDER)"
+                        + " VALUES (1, 'INCOME', NULL, '헌금', NULL, 0), (1, 'INCOME', 1, '주일헌금', 1000000, 0)");
+                statement.execute("INSERT INTO CONTACT (TYPE, NAME, REMARKS, IS_HIDDEN)"
+                        + " VALUES ('INDIVIDUAL', '홍길동', NULL, FALSE)");
+                statement.execute("INSERT INTO FINANCIAL_RECORD"
+                        + " (TYPE, FISCAL_YEAR_ID, DATE, BUDGET_ID, DESCRIPTION, AMOUNT, REMARKS)"
+                        + " VALUES ('INCOME', 1, DATE '2025-03-02', 2, '주일 헌금', 50000, NULL)");
+                statement.execute("INSERT INTO FINANCIAL_RECORD_CONTACT (FINANCIAL_RECORD_ID, CONTACT_ID, CONTACT_NAME)"
+                        + " VALUES (1, 1, '홍길동')");
+            }
+        }
+        return installation;
+    }
+
     private HikariDataSource openDataSource(Installation installation) {
         return (HikariDataSource) installation.databaseManager().createDataSource();
     }
@@ -101,6 +159,35 @@ class BackupManagerTest {
             resultSet.next();
             return resultSet.getString(1);
         }
+    }
+
+    /**
+     * 질의 결과를 행마다 "값|값…" 형식의 줄로 읽는다.
+     */
+    private List<String> readRows(Installation installation, String query) throws SQLException {
+        List<String> rows = new ArrayList<>();
+        try (HikariDataSource dataSource = openDataSource(installation);
+                Connection connection = dataSource.getConnection();
+                Statement statement = connection.createStatement();
+                ResultSet resultSet = statement.executeQuery(query)) {
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            while (resultSet.next()) {
+                StringJoiner row = new StringJoiner("|");
+                for (int column = 1; column <= metaData.getColumnCount(); column++) {
+                    row.add(resultSet.getString(column));
+                }
+                rows.add(row.toString());
+            }
+        }
+        return rows;
+    }
+
+    private List<String> readSchema(Installation installation) throws SQLException {
+        List<String> lines = new ArrayList<>();
+        for (String query : SCHEMA_QUERIES) {
+            lines.addAll(readRows(installation, query));
+        }
+        return lines;
     }
 
     private int countContactColumns(Installation installation, String columnName) throws SQLException {
@@ -340,6 +427,43 @@ class BackupManagerTest {
             // Then
             upgraded.databaseManager().loadDatabasePassword(ADMIN_ID, ADMIN_PASSWORD);
             assertThat(readSampleName(upgraded)).isEqualTo(SAMPLE_NAME);
+        }
+
+        @Test
+        @DisplayName("1.0.0~1.1.0의 스키마로 만든 백업을 복원하면 스키마가 이 버전을 새로 설치한 것과 같아진다")
+        void restore_BackupFromFirstReleasedSchema_MigratesToCurrentSchema() throws Exception {
+            // Given
+            Path backupFile = createBackup(createFirstReleasedInstallation("source"));
+            Installation fresh = createInstallation("fresh", PROGRAM_VERSION);
+            fresh.databaseManager().initialize(ADMIN_ID, ADMIN_PASSWORD);
+            fresh.databaseManager().loadDatabasePassword(ADMIN_ID, ADMIN_PASSWORD);
+            Installation target = createInstallation("target", PROGRAM_VERSION);
+
+            // When
+            target.backupManager().restore(backupFile, ADMIN_ID, ADMIN_PASSWORD);
+
+            // Then
+            target.databaseManager().loadDatabasePassword(ADMIN_ID, ADMIN_PASSWORD);
+            assertThat(readSchema(target)).containsExactlyElementsOf(readSchema(fresh));
+        }
+
+        @Test
+        @DisplayName("1.0.0~1.1.0의 스키마로 만든 백업을 복원하면서 스키마를 올려도 사용자와 수입/지출 내역이 그대로 남는다")
+        void restore_BackupFromFirstReleasedSchema_KeepsData() throws Exception {
+            // Given
+            Path backupFile = createBackup(createFirstReleasedInstallation("source"));
+            Installation target = createInstallation("target", PROGRAM_VERSION);
+
+            // When
+            target.backupManager().restore(backupFile, ADMIN_ID, ADMIN_PASSWORD);
+
+            // Then
+            target.databaseManager().loadDatabasePassword(ADMIN_ID, ADMIN_PASSWORD);
+            assertThat(readRows(target, "SELECT ID, ROLE FROM USERS")).containsExactly(ADMIN_ID + "|ADMIN");
+            assertThat(readRows(target, "SELECT R.DATE, B.NAME, C.CONTACT_NAME, R.AMOUNT FROM FINANCIAL_RECORD R"
+                    + " JOIN BUDGET B ON B.ID = R.BUDGET_ID"
+                    + " JOIN FINANCIAL_RECORD_CONTACT C ON C.FINANCIAL_RECORD_ID = R.ID"))
+                    .containsExactly("2025-03-02|주일헌금|홍길동|50000");
         }
 
         @Test
