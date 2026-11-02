@@ -24,15 +24,17 @@ public enum PeriodUnit {
     private final String label;
 
     /**
-     * 기준일이 포함되는 기간의 시작일을 반환한다. 주간 단위는 일요일부터 시작한다.
+     * 기준일이 포함되는 기간의 시작일을 반환한다. 주간 단위는 결산 요일의 다음 날부터 시작해 결산 요일에 끝난다(예: 결산 요일이 일요일이면
+     * 월요일 ~ 일요일).
      *
-     * @param base 기준일
+     * @param base             기준일
+     * @param weeklyClosingDay 주간 결산 요일. 주간 단위에서만 쓴다.
      * @return 기간의 시작일
      */
-    public LocalDate startOf(LocalDate base) {
+    public LocalDate startOf(LocalDate base, DayOfWeek weeklyClosingDay) {
         return switch (this) {
         case DAY -> base;
-        case WEEK -> base.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
+        case WEEK -> base.with(TemporalAdjusters.previousOrSame(weeklyClosingDay.plus(1)));
         case MONTH -> base.withDayOfMonth(1);
         case QUARTER -> {
             int firstMonth = ((base.getMonthValue() - 1) / MONTHS_PER_QUARTER) * MONTHS_PER_QUARTER + 1;
@@ -43,7 +45,7 @@ public enum PeriodUnit {
     }
 
     /**
-     * 시작일에 대응하는 기간의 종료일을 반환한다.
+     * 시작일에 대응하는 기간의 종료일을 반환한다. 주간 단위는 시작일로부터 6일 뒤(결산 요일)다.
      *
      * @param start 기간의 시작일
      * @return 기간의 종료일

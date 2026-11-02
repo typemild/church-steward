@@ -5,6 +5,9 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Insets;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Locale;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -26,10 +29,18 @@ public class StyledDatePicker extends DatePicker implements CompositeInputField 
     private static final long serialVersionUID = 1L;
 
     /** 날짜 형식 "yyyy-MM-dd"의 숫자와 구분 문자 수. */
+    private static final String DATE_PATTERN = "yyyy-MM-dd";
     private static final int DATE_DIGIT_COUNT = 8;
     private static final int DATE_SEPARATOR_COUNT = 2;
+    /** 요일을 함께 적는 형식. 예: "2026-11-02 (월)". PC의 언어 설정과 무관하게 한국어 요일로 적는다. */
+    private static final DateTimeFormatter DATE_WITH_DAY_OF_WEEK_FORMAT = DateTimeFormatter
+            .ofPattern(DATE_PATTERN + " (E)", Locale.KOREAN);
+    /** 요일을 적을 때 날짜 뒤에 붙는 글자. 한글 요일은 모두 폭이 같으므로 아무 요일로 잰다. */
+    private static final String DAY_OF_WEEK_SAMPLE = " (월)";
 
     private final Insets padding;
+    /** 날짜 뒤에 요일을 함께 적는지 여부({@link #showDayOfWeek()}) */
+    private boolean dayOfWeekVisible = false;
 
     public StyledDatePicker(ComponentSize componentSize) {
         super();
@@ -60,8 +71,8 @@ public class StyledDatePicker extends DatePicker implements CompositeInputField 
         };
 
         DatePickerSettings dateSettings = new DatePickerSettings();
-        dateSettings.setFormatForDatesCommonEra("yyyy-MM-dd");
-        dateSettings.setFormatForDatesBeforeCommonEra("yyyy-MM-dd");
+        dateSettings.setFormatForDatesCommonEra(DATE_PATTERN);
+        dateSettings.setFormatForDatesBeforeCommonEra(DATE_PATTERN);
         dateSettings.setFontValidDate(font);
         dateSettings.setFontInvalidDate(font);
         setSettings(dateSettings);
@@ -104,6 +115,26 @@ public class StyledDatePicker extends DatePicker implements CompositeInputField 
      */
     public void setDateRange(LocalDate firstAllowedDate, LocalDate lastAllowedDate) {
         getSettings().setDateRangeLimits(firstAllowedDate, lastAllowedDate);
+    }
+
+    /**
+     * 날짜 뒤에 요일을 함께 적는다(예: "2026-11-02 (월)"). 입력란은 요일이 들어가도록 넓어진다. 직접 입력할 때는 요일 없이
+     * "yyyy-MM-dd"만 적어도 받아들이며, 확정되면 요일이 붙는다.
+     */
+    public void showDayOfWeek() {
+        dayOfWeekVisible = true;
+
+        DatePickerSettings settings = getSettings();
+        ArrayList<DateTimeFormatter> parsingFormats = new ArrayList<>(settings.getFormatsForParsing());
+        parsingFormats.add(settings.getFormatForDatesCommonEra());
+        settings.setFormatsForParsing(parsingFormats);
+        // 라이브러리는 기원후·기원전 표시 형식으로 먼저 읽고 나서 읽기 형식 목록을 시도한다. 요일 없는 글자가 기원전 표시
+        // 형식("yyyy-MM-dd")으로 읽히지 않고 위에서 넣은 기원후 형식으로 읽히도록 둘 다 바꾼다.
+        settings.setFormatForDatesBeforeCommonEra(DATE_WITH_DAY_OF_WEEK_FORMAT);
+        settings.setFormatForDatesCommonEra(DATE_WITH_DAY_OF_WEEK_FORMAT);
+
+        // 형식을 바꾸면 라이브러리가 입력란의 폭을 자기 값으로 되돌리므로 다시 맞춘다.
+        zDrawTextFieldIndicators();
     }
 
     /**
@@ -155,15 +186,19 @@ public class StyledDatePicker extends DatePicker implements CompositeInputField 
     }
 
     /**
-     * 날짜("yyyy-MM-dd")가 들어갈 글자 폭을 반환한다. LGoodDatePicker가 정하는 폭은 테두리와 여백을 빼고 잰 글자
-     * 폭이라, 여백을 넣으면 여유가 없어져 글자를 다르게 그리는 Windows(화면 배율, 안티앨리어싱)에서 잘린다. 그래서 숫자는 가장 넓은
-     * 숫자로 재고, 캐럿과 측정값·실제로 그린 폭의 차이를 위해 숫자 한 자의 폭을 더한다.
+     * 날짜("yyyy-MM-dd", 요일을 적으면 " (월)"까지)가 들어갈 글자 폭을 반환한다. LGoodDatePicker가 정하는 폭은
+     * 테두리와 여백을 빼고 잰 글자 폭이라, 여백을 넣으면 여유가 없어져 글자를 다르게 그리는 Windows(화면 배율, 안티앨리어싱)에서
+     * 잘린다. 그래서 숫자는 가장 넓은 숫자로 재고, 캐럿과 측정값·실제로 그린 폭의 차이를 위해 숫자 한 자의 폭을 더한다.
      */
-    private static int dateTextWidth(FontMetrics fm) {
+    private int dateTextWidth(FontMetrics fm) {
         int digitWidth = 0;
         for (char digit = '0'; digit <= '9'; digit++) {
             digitWidth = Math.max(digitWidth, fm.charWidth(digit));
         }
-        return digitWidth * (DATE_DIGIT_COUNT + 1) + fm.charWidth('-') * DATE_SEPARATOR_COUNT;
+        int width = digitWidth * (DATE_DIGIT_COUNT + 1) + fm.charWidth('-') * DATE_SEPARATOR_COUNT;
+        if (dayOfWeekVisible) {
+            width += fm.stringWidth(DAY_OF_WEEK_SAMPLE);
+        }
+        return width;
     }
 }

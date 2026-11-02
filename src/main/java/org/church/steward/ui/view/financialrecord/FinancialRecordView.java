@@ -30,6 +30,7 @@ import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
 import org.church.steward.domain.financialrecord.dto.FinancialRecordSearchRequestDto;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
 import org.church.steward.domain.fiscalyear.dto.FiscalYearDto;
+import org.church.steward.domain.programsetting.controller.ProgramSettingController;
 import org.church.steward.infrastructure.annotation.UiView;
 import org.church.steward.ui.MenuActivatable;
 import org.church.steward.ui.component.ComponentSize;
@@ -61,6 +62,7 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     private final BudgetController budgetController;
     private final ContactController contactController;
     private final ContactGroupController contactGroupController;
+    private final ProgramSettingController programSettingController;
     private final FiscalYearSelector fiscalYearSelector;
 
     private final FinancialRecordSearchPanel searchPanel;
@@ -92,11 +94,13 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
 
     public FinancialRecordView(FinancialRecordController financialRecordController,
             BudgetController budgetController, ContactController contactController,
-            ContactGroupController contactGroupController, FiscalYearSelector fiscalYearSelector) {
+            ContactGroupController contactGroupController, ProgramSettingController programSettingController,
+            FiscalYearSelector fiscalYearSelector) {
         this.financialRecordController = financialRecordController;
         this.budgetController = budgetController;
         this.contactController = contactController;
         this.contactGroupController = contactGroupController;
+        this.programSettingController = programSettingController;
         this.fiscalYearSelector = fiscalYearSelector;
         this.searchPanel = new FinancialRecordSearchPanel(budgetController, contactController,
                 fiscalYearSelector::getSelectedFiscalYearId, this::search);
@@ -168,7 +172,18 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
         closedNoticeLabel.setVisible(fiscalYear != null && fiscalYear.isClosed());
         budgetTabPanel.setEditable(editable);
         itemizedTabPanel.setEditable(editable);
-        search();
+        // 주간 결산 요일은 설정 메뉴에서 바뀔 수 있으므로 매번 읽어 조회 기간을 맞춘 뒤 조회한다.
+        AsyncTask.run(tabbedPane,
+                programSettingController::getWeeklyClosingDay,
+                weeklyClosingDay -> {
+                    searchPanel.setWeeklyClosingDay(weeklyClosingDay);
+                    search();
+                },
+                err -> {
+                    log.error("Failed to load weekly closing day", err);
+                    JOptionPane.showMessageDialog(this, "주간 결산 요일을 불러오는데 실패했습니다: " + err.getMessage());
+                    search();
+                });
     }
 
     private void search() {

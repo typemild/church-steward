@@ -50,6 +50,9 @@ public final class UIColors {
     // Card
     public static final Color CARD_BACKGROUND = Color.WHITE; // #FFFFFF
 
+    // Status
+    public static final Color SUCCESS = new Color(39, 174, 96); // #27AE60
+
     // Income/Expense
     public static final Color INCOME = new Color(52, 152, 219); // #3498DB
     public static final Color EXPENSE = new Color(231, 76, 60); // #E74C3C

@@ -14,6 +14,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
+import org.church.steward.domain.programsetting.entity.ProgramSettingConstraints;
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.button.IconButton;
 import org.church.steward.ui.component.button.SecondaryButton;
@@ -29,11 +30,12 @@ import com.github.lgooddatepicker.components.DatePickerSettings.DateArea;
 import com.github.lgooddatepicker.zinternaltools.HighlightInformation;
 
 /**
- * 주간 보고서의 대상 주간(일요일~토요일)을 고르는 영역. 날짜 하나만 보여주면 "그 날짜까지의 보고서"로 오해하기 쉬우므로, 날짜 입력란
- * 없이 주간의 시작일과 종료일을 글자로 보여준다. 달력 버튼으로 연 달력에서는 선택된 주간 전체가 칠해져 보이고, 어느 날짜를 눌러도 그
- * 날짜가 속한 주간이 선택된다. 좌/우 화살표로 한 주씩 이동할 수 있고, "이번 주" 버튼으로 오늘이 속한 주간으로 돌아온다. 이번 주간이
- * 회계 연도의 기간과 겹치지 않으면(지난 회계 연도를 보고 있을 때 등) "이번 주" 버튼은 꺼진다. 주간은 회계 연도의
- * 기간({@link #setLimits})을 벗어날 수 없고, 기간의 경계에 걸친 주간은 벗어난 부분을 잘라낸다.
+ * 주간 보고서의 대상 주간을 고르는 영역. 주간은 결산 요일({@link #setWeeklyClosingDay})의 다음 날부터 결산
+ * 요일까지다. 날짜 하나만 보여주면 "그 날짜까지의 보고서"로 오해하기 쉬우므로, 날짜 입력란 없이 주간의 시작일과 종료일을 글자로
+ * 보여준다. 달력 버튼으로 연 달력에서는 선택된 주간 전체가 칠해져 보이고, 어느 날짜를 눌러도 그 날짜가 속한 주간이 선택된다. 좌/우
+ * 화살표로 한 주씩 이동할 수 있고, "오늘" 버튼으로 오늘이 속한 주간으로 돌아온다. 이번 주간이 회계 연도의 기간과 겹치지 않으면(지난
+ * 회계 연도를 보고 있을 때 등) "오늘" 버튼은 꺼진다. 주간은 회계 연도의 기간({@link #setLimits})을 벗어날 수 없고,
+ * 기간의 경계에 걸친 주간은 벗어난 부분을 잘라낸다.
  */
 class WeekSelectorPanel extends JPanel {
 
@@ -50,7 +52,7 @@ class WeekSelectorPanel extends JPanel {
 
     private final IconButton previousButton = new IconButton(FontAwesomeSolid.ANGLE_LEFT, ComponentSize.MEDIUM);
     private final IconButton nextButton = new IconButton(FontAwesomeSolid.ANGLE_RIGHT, ComponentSize.MEDIUM);
-    private final SecondaryButton thisWeekButton = new SecondaryButton("이번 주", ComponentSize.MEDIUM);
+    private final SecondaryButton todayButton = new SecondaryButton("오늘", ComponentSize.MEDIUM);
     private final FieldLabel weekLabel = new FieldLabel("", SwingConstants.CENTER, ComponentSize.MEDIUM);
     /**
      * 달력을 띄우는 데만 쓰는 날짜 피커. 입력란은 숨기고 달력 버튼만 보여준다. 달력은 이 피커의 버튼을 기준으로 뜨므로, 공용
@@ -63,6 +65,8 @@ class WeekSelectorPanel extends JPanel {
     /** 주간으로 고를 수 있는 날짜의 범위(양 끝 포함). 아직 지정하지 않았으면 null이며 제한하지 않는다. */
     private LocalDate firstAllowedDate;
     private LocalDate lastAllowedDate;
+    /** 주간 결산 요일. 주간은 이 요일의 다음 날부터 이 요일까지다. */
+    private DayOfWeek weeklyClosingDay = ProgramSettingConstraints.DEFAULT_WEEKLY_CLOSING_DAY;
     /** 코드에서 날짜 피커의 값을 바꾸는 중인지 여부. 이때 발생한 변경 이벤트는 무시한다. */
     private boolean updatingPicker = false;
 
@@ -77,7 +81,7 @@ class WeekSelectorPanel extends JPanel {
 
         previousButton.setToolTipText("이전 주간");
         nextButton.setToolTipText("다음 주간");
-        thisWeekButton.setToolTipText("오늘이 속한 주간으로 이동합니다.");
+        todayButton.setToolTipText("오늘이 속한 주간으로 이동합니다.");
         initCalendarPicker();
 
         add(new FieldLabel("주간", FontAwesomeSolid.CALENDAR_WEEK, SwingConstants.LEFT, ComponentSize.MEDIUM));
@@ -90,13 +94,13 @@ class WeekSelectorPanel extends JPanel {
         add(Box.createHorizontalStrut(NARROW_GAP));
         add(nextButton);
         add(Box.createHorizontalStrut(GAP));
-        add(thisWeekButton);
+        add(todayButton);
 
         setWeekContaining(LocalDate.now());
 
         previousButton.addActionListener(_ -> shift(-1));
         nextButton.addActionListener(_ -> shift(1));
-        thisWeekButton.addActionListener(_ -> {
+        todayButton.addActionListener(_ -> {
             setWeekContaining(todayWithinLimits());
             onWeekChanged.run();
         });
@@ -113,7 +117,7 @@ class WeekSelectorPanel extends JPanel {
         settings.setVisibleDateTextField(false);
         // 날짜를 지우면 주간을 알 수 없게 되므로 빈 값을 허용하지 않는다.
         settings.setAllowEmptyDates(false);
-        // 달력의 한 줄이 보고서의 주간(일요일~토요일)과 같아지게 한다.
+        // 달력의 요일은 결산 요일과 무관하게 항상 일요일~토요일 순으로 보여준다. 주간이 두 줄에 걸쳐도 칠해진 날짜로 알 수 있다.
         settings.setFirstDayOfWeek(DayOfWeek.SUNDAY);
         // 선택된 주간의 날짜를 모두 같은 색으로 칠한다. 피커가 보관하는 날짜(주간의 시작일)만 따로 도드라지지 않게 색을 맞춘다.
         settings.setHighlightPolicy(date -> isInWeek(date)
@@ -152,17 +156,34 @@ class WeekSelectorPanel extends JPanel {
     }
 
     /**
-     * 주간의 시작일. 보통 일요일이지만, 회계 연도가 주중에 시작하면 회계 연도의 시작일이다.
+     * 주간의 시작일. 보통 결산 요일의 다음 날이지만, 회계 연도가 주중에 시작하면 회계 연도의 시작일이다.
      */
     LocalDate getStartDate() {
         return startDate;
     }
 
     /**
-     * 주간의 종료일. 보통 토요일이지만, 회계 연도가 주중에 끝나면 회계 연도의 종료일이다.
+     * 주간의 종료일. 보통 결산 요일이지만, 회계 연도가 주중에 끝나면 회계 연도의 종료일이다.
      */
     LocalDate getEndDate() {
         return endDate;
+    }
+
+    /**
+     * 주간 결산 요일을 바꾼다. 요일이 바뀌면 보고 있던 주간을 새 기준으로 다시 잡는다. 오늘이 보고 있던 주간에 들어 있으면 오늘이, 아니면
+     * 보고 있던 주간의 종료일이 속한 주간이 된다. 주간이 바뀌어도 변경 동작은 실행하지 않는다.
+     *
+     * @param weeklyClosingDay 주간 결산 요일
+     */
+    void setWeeklyClosingDay(DayOfWeek weeklyClosingDay) {
+        if (weeklyClosingDay == this.weeklyClosingDay) {
+            return;
+        }
+        this.weeklyClosingDay = weeklyClosingDay;
+
+        LocalDate today = LocalDate.now();
+        boolean containsToday = !today.isBefore(startDate) && !today.isAfter(endDate);
+        setWeekContaining(containsToday ? today : endDate);
     }
 
     /**
@@ -237,12 +258,12 @@ class WeekSelectorPanel extends JPanel {
     }
 
     /**
-     * 화살표로 이동했을 때의 주간 시작일(일요일)을 구한다.
+     * 화살표로 이동했을 때의 주간 시작일(결산 요일의 다음 날)을 구한다.
      *
      * @return 이동할 주간이 허용 범위와 하루도 겹치지 않으면 null
      */
     private LocalDate shiftedStart(int direction) {
-        LocalDate shiftedStart = UNIT.shift(UNIT.startOf(startDate), direction);
+        LocalDate shiftedStart = UNIT.shift(UNIT.startOf(startDate, weeklyClosingDay), direction);
         if (firstAllowedDate != null && (UNIT.endOf(shiftedStart)
                 .isBefore(firstAllowedDate) || shiftedStart.isAfter(lastAllowedDate))) {
             return null;
@@ -254,7 +275,7 @@ class WeekSelectorPanel extends JPanel {
      * 기준일이 속한 주간으로 옮긴다. 허용 범위가 있으면 범위를 벗어난 부분은 잘라낸다. 그 주간은 허용 범위와 하루 이상 겹쳐야 한다.
      */
     private void setWeekContaining(LocalDate base) {
-        LocalDate start = UNIT.startOf(base);
+        LocalDate start = UNIT.startOf(base, weeklyClosingDay);
         LocalDate end = UNIT.endOf(start);
         if (firstAllowedDate != null) {
             if (start.isBefore(firstAllowedDate)) {
@@ -280,7 +301,7 @@ class WeekSelectorPanel extends JPanel {
         nextButton.setEnabled(shiftedStart(1) != null);
         // 이번 주간이 회계 연도의 기간과 하루도 겹치지 않거나, 이미 이번 주간을 보고 있으면 끈다.
         LocalDate today = todayWithinLimits();
-        thisWeekButton.setEnabled(isThisWeekWithinLimits() && (today.isBefore(start) || today.isAfter(end)));
+        todayButton.setEnabled(isThisWeekWithinLimits() && (today.isBefore(start) || today.isAfter(end)));
     }
 
     /**
@@ -290,7 +311,7 @@ class WeekSelectorPanel extends JPanel {
         if (firstAllowedDate == null) {
             return true;
         }
-        LocalDate thisWeekStart = UNIT.startOf(LocalDate.now());
+        LocalDate thisWeekStart = UNIT.startOf(LocalDate.now(), weeklyClosingDay);
         LocalDate thisWeekEnd = UNIT.endOf(thisWeekStart);
         return !thisWeekEnd.isBefore(firstAllowedDate) && !thisWeekStart.isAfter(lastAllowedDate);
     }

@@ -30,6 +30,7 @@ public class SettingsView extends JPanel implements MenuActivatable {
     private final JTabbedPane tabbedPane;
     private final FiscalYearManagementPanelView fiscalYearManagementPanelView;
     private final ContactManagementPanelView contactManagementPanelView;
+    private final ProgramSettingPanelView programSettingPanelView;
     private final PasswordChangePanelView passwordChangePanelView;
     private final UserManagementPanelView userManagementPanelView;
     private final UserSessionHolder userSessionHolder;
@@ -37,12 +38,14 @@ public class SettingsView extends JPanel implements MenuActivatable {
 
     public SettingsView(FiscalYearManagementPanelView fiscalYearManagementPanelView,
             ContactManagementPanelView contactManagementPanelView,
+            ProgramSettingPanelView programSettingPanelView,
             PasswordChangePanelView passwordChangePanelView,
             UserManagementPanelView userManagementPanelView,
             UserSessionHolder userSessionHolder) {
         this.tabbedPane = new JTabbedPane();
         this.fiscalYearManagementPanelView = fiscalYearManagementPanelView;
         this.contactManagementPanelView = contactManagementPanelView;
+        this.programSettingPanelView = programSettingPanelView;
         this.passwordChangePanelView = passwordChangePanelView;
         this.userManagementPanelView = userManagementPanelView;
         this.userSessionHolder = userSessionHolder;
@@ -72,6 +75,7 @@ public class SettingsView extends JPanel implements MenuActivatable {
         // 회계 연도 관리 탭은 FISCAL_YEAR_TAB_INDEX에 맞춰 항상 가장 먼저 추가한다.
         tabbedPane.addTab("회계 연도 관리", fiscalYearManagementPanelView);
         tabbedPane.addTab("관계자(봉헌자/수취인) 관리", contactManagementPanelView);
+        tabbedPane.addTab("프로그램 설정", programSettingPanelView);
         tabbedPane.addTab("비밀번호 변경", passwordChangePanelView);
         if (userSessionHolder.getLoggedInUser().isAdmin()) {
             tabbedPane.addTab("사용자 관리", userManagementPanelView);

@@ -27,6 +27,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.fiscalyear.dto.FiscalYearDto;
+import org.church.steward.domain.programsetting.controller.ProgramSettingController;
 import org.church.steward.domain.report.controller.ReportController;
 import org.church.steward.domain.report.dto.AnnualSettlementReportDto;
 import org.church.steward.domain.report.dto.BudgetPlanReportDto;
@@ -81,6 +82,7 @@ public class ReportingView extends JPanel implements MenuActivatable {
     private static final int SAVE_DELAY = 500;
 
     private final ReportController reportController;
+    private final ProgramSettingController programSettingController;
     private final FiscalYearSelector fiscalYearSelector;
 
     private final StyledComboBox<ReportType> typeCombo = new StyledComboBox<>(ReportType.values(),
@@ -139,8 +141,10 @@ public class ReportingView extends JPanel implements MenuActivatable {
     private record LoadResult(ReportSettingDto setting, LoadedReport report) {
     }
 
-    public ReportingView(ReportController reportController, FiscalYearSelector fiscalYearSelector) {
+    public ReportingView(ReportController reportController, ProgramSettingController programSettingController,
+            FiscalYearSelector fiscalYearSelector) {
         this.reportController = reportController;
+        this.programSettingController = programSettingController;
         this.fiscalYearSelector = fiscalYearSelector;
 
         // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일) : 720 x 600
@@ -230,7 +234,18 @@ public class ReportingView extends JPanel implements MenuActivatable {
         if (fiscalYear != null) {
             weekSelector.setLimits(fiscalYear.getStartDate(), fiscalYear.getEndDate());
         }
-        load();
+        // 주간 결산 요일은 설정 메뉴에서 바뀔 수 있으므로 매번 읽어 주간을 맞춘 뒤 조회한다.
+        AsyncTask.run(viewer,
+                programSettingController::getWeeklyClosingDay,
+                weeklyClosingDay -> {
+                    weekSelector.setWeeklyClosingDay(weeklyClosingDay);
+                    load();
+                },
+                err -> {
+                    log.error("Failed to load weekly closing day", err);
+                    JOptionPane.showMessageDialog(this, "주간 결산 요일을 불러오는데 실패했습니다: " + err.getMessage());
+                    load();
+                });
     }
 
     private void load() {
@@ -242,7 +257,8 @@ public class ReportingView extends JPanel implements MenuActivatable {
             return;
         }
 
-        // 주간 보고서만 기간을 쓴다. 주간은 수입/지출 관리의 "주간"과 같이 일요일부터 토요일까지이며, 회계 연도의 기간을 벗어난 부분은 빠진다.
+        // 주간 보고서만 기간을 쓴다. 주간은 수입/지출 관리의 "주간"과 같이 결산 요일의 다음 날부터 결산 요일까지이며,
+        // 회계 연도의 기간을 벗어난 부분은 빠진다.
         final LocalDate startDate = type.isWeekly() ? weekSelector.getStartDate() : null;
         final LocalDate endDate = type.isWeekly() ? weekSelector.getEndDate() : null;
         final ReportSettingDto cachedSetting = settings.get(type);

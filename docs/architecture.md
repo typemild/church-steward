@@ -19,7 +19,7 @@ org.church.steward
 └── util/
 ```
 
-기능 패키지: `activitylog`, `backup`, `budget`, `contact`, `dashboard`, `datatransfer`, `financialrecord`, `fiscalyear`, `programinfo`, `report`, `user`.
+기능 패키지: `activitylog`, `backup`, `budget`, `contact`, `dashboard`, `datatransfer`, `financialrecord`, `fiscalyear`, `programinfo`, `programsetting`, `report`, `user`.
 
 enum은 그 값을 필드로 갖는 클래스와 같은 패키지에 둔다. 엔터티의 필드이면 `entity`(예: `ContactType`, 보고서 설정의 `ReportType`), DTO의 필드이면 `dto`(예: `ImportItemStatus`. `datatransfer`는 엔터티가 없다)다. 제약 클래스(`*Constraints`)는 제약하는 엔터티와 같은 패키지(`entity`)에 둔다.
 
@@ -163,6 +163,13 @@ DB 비밀번호는 로그인한 뒤에야 알 수 있으므로, `ChurchStewardAp
 - **연관 조회와 N+1**: 연관은 모두 LAZY다. 목록 조회에서 함께 쓰는 연관은 리포지토리 메서드에 `@EntityGraph`(Specification은 `root.fetch`)로 함께 가져오고, 나머지 지연 로딩은 `hibernate.default_batch_fetch_size`가 `IN` 조건으로 묶는다. 건수 제한이 있는 쿼리(`findTop100…`)에는 컬렉션을 fetch join하지 않는다(Hibernate가 제한을 메모리에서 적용해 전체를 읽기 때문이다).
 - **동적 검색**은 JPA `Specification`(`FinancialRecordSpecification`)으로 한다. 관계자 조건은 `EXISTS` 상관 서브쿼리가 아니라 `ID IN (관계자의 내역 ID)`로 건다. 관계자로 검색할 때(기부금영수증 발급 등)는 기간이 회계 연도 전체라 날짜로 거의 걸러지지 않으므로, 관계자 쪽 인덱스로 내역 ID를 먼저 찾게 하기 위함이다.
 - `dashboard`와 `report`의 내용은 자체 엔터티 없이 `financialrecord`와 `budget`을 집계한다(`report`의 엔터티는 보고서별 사용자 설정뿐이다). 집계 대상은 회계 연도에 속한 내역 전체다. 월별 집계는 회계 연도 기간의 시작월부터 종료월까지를 내역이 없어도 항상 포함한다.
+
+### 프로그램 설정
+
+- 사용자별 설정(`UserSetting`, `ReportSetting`)과 달리 프로그램 전체에 하나뿐인 설정은 `PROGRAM_SETTING` 표(`domain/programsetting`의 `ProgramSetting`)에 둔다. 행은 ID가 `ProgramSettingConstraints.SETTING_ID`인 하나뿐이다. DB에 있으므로 백업에 함께 들어간다.
+- 마이그레이션은 표만 만들고 행을 넣지 않는다. 행이 없으면(설정한 적이 없는 기존 데이터, 과거 버전의 백업) 서비스가 기본값을 돌려주며 저장하지 않고, 처음 바꿀 때 행을 만든다. 보고서 설정과 같은 방식이다.
+- 지금은 주간 결산 요일(`weeklyClosingDay`, `java.time.DayOfWeek`, 기본은 일요일)만 있다. 주간은 결산 요일 다음 날부터 결산 요일까지이며, 수입/지출 관리의 "주간"과 주간 보고서가 함께 쓴다(`PeriodUnit#startOf`가 결산 요일을 받는다). 서버 쪽 집계는 화면이 넘긴 시작일과 종료일만 쓰므로 결산 요일을 알 필요가 없다.
+- 모든 사용자가 바꿀 수 있으므로 `ProgramSettingController`는 권한을 확인하지 않는다. 화면의 기준을 정하는 설정이라 활동 기록을 남기지 않는다.
 
 ## 활동 기록
 

@@ -21,7 +21,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
-import javax.swing.Timer;
 
 import org.church.steward.domain.programinfo.dto.ProgramInfoDto;
 import org.church.steward.ui.component.ComponentSize;
@@ -42,8 +41,6 @@ public class ProgramInfoTab extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    private static final int COPY_FEEDBACK_MILLIS = 1500;
-
     private ProgramInfoDto currentInfo;
 
     private TitleLabel titleLabel;
@@ -52,7 +49,6 @@ public class ProgramInfoTab extends JPanel {
     private JLabel downloadLabel;
     private JLabel authorLabel;
     private IconButton copyAuthorBtn;
-    private Timer copyFeedbackTimer;
 
     private WarningNoticePanel noticePanel;
 
@@ -192,10 +188,6 @@ public class ProgramInfoTab extends JPanel {
         copyAuthorBtn.addActionListener(_ -> copyAuthor());
         authorRowPanel.add(copyAuthorBtn);
 
-        // 복사한 뒤 잠시 체크 아이콘을 보여주고 원래 아이콘으로 되돌린다
-        copyFeedbackTimer = new Timer(COPY_FEEDBACK_MILLIS, _ -> copyAuthorBtn.setIcon(FontAwesomeSolid.COPY));
-        copyFeedbackTimer.setRepeats(false);
-
         detailGbc.gridx = 1;
         detailGbc.insets = new Insets(5, 5, 5, 0);
         detailGbc.weightx = 1.0;
@@ -254,8 +246,8 @@ public class ProgramInfoTab extends JPanel {
             log.error("Failed to copy author to clipboard", ex);
             return;
         }
-        copyAuthorBtn.setIcon(FontAwesomeSolid.CHECK);
-        copyFeedbackTimer.restart();
+        // 복사한 뒤 잠시 완료 표시(초록 체크)를 보여주고 원래 아이콘으로 되돌린다
+        copyAuthorBtn.showSuccess();
     }
 
     /**
