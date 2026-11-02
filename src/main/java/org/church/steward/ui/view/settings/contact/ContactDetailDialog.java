@@ -117,7 +117,7 @@ public class ContactDetailDialog extends JDialog {
         gbc.gridx = 1;
         remarksArea = new StyledTextArea(3, 20, ComponentSize.MEDIUM);
         remarksArea.setMaxLength(ContactConstraints.REMARKS_MAX_LENGTH);
-        JScrollPane remarksScrollPane = new JScrollPane(remarksArea);
+        JScrollPane remarksScrollPane = remarksArea.createScrollPane();
         // 내용이 길어져 세로 스크롤바가 생기면 스크롤 패인의 선호 폭이 스크롤바만큼 늘어나고, 다이얼로그 폭에 들어가지 않게 되어
         // GridBagLayout이 최소 크기로 배치하므로 입력란이 찌그러진다. 내용과 상관없이 빈 상태의 크기로 고정한다.
         Dimension remarksSize = remarksScrollPane.getPreferredSize();

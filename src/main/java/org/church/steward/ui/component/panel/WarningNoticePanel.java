@@ -11,6 +11,7 @@ import javax.swing.JPanel;
 
 import org.church.steward.ui.component.label.DescriptionLabel;
 import org.church.steward.ui.util.UIColors;
+import org.church.steward.ui.util.UIShapes;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -26,7 +27,7 @@ public class WarningNoticePanel extends JPanel {
 
     private static final int ICON_SIZE = 18;
     /** 모서리의 둥근 정도. 설정 탭의 카드, 수입/지출 총합 카드와 같다. */
-    private static final int ARC = 12;
+    private static final int ARC = UIShapes.CARD_ARC;
     /** 안쪽 여백. 테두리 선의 두께(1px)를 포함한다. */
     private static final int PADDING_VERTICAL = 11;
     private static final int PADDING_HORIZONTAL = 16;

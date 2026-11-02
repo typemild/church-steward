@@ -3,12 +3,16 @@ package org.church.steward.ui.component.field;
 import java.awt.Font;
 import java.awt.Insets;
 
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.UIManager;
 
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.util.FocusIndicator;
 import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.util.UIFonts;
+
+import com.formdev.flatlaf.FlatClientProperties;
 
 public class StyledTextArea extends JTextArea {
 
@@ -33,6 +37,18 @@ public class StyledTextArea extends JTextArea {
      */
     public void setMaxLength(int maxLength) {
         MaxLengthDocumentFilter.install(this, maxLength, new InputHintPopup(this, componentSize));
+    }
+
+    /**
+     * 이 입력란을 감싸는 스크롤 패인을 만든다. 바깥 테두리는 스크롤 패인이 그리므로, 한 줄 입력란(TextComponent.arc)과 같은
+     * 둥근 모서리를 지정한다. FlatLaf의 스크롤 패인은 기본이 네모난 모서리(ScrollPane.arc = 0)이고, 이것을 전체에 바꾸면
+     * 목록 표나 보고서 뷰어의 스크롤 영역까지 둥글어지므로 여러 줄 입력란을 감쌀 때만 지정한다.
+     */
+    public JScrollPane createScrollPane() {
+        JScrollPane scrollPane = new JScrollPane(this);
+        scrollPane.putClientProperty(FlatClientProperties.STYLE,
+                "arc: " + UIManager.getInt("TextComponent.arc"));
+        return scrollPane;
     }
 
     private void applyStyle(ComponentSize componentSize) {

@@ -8,6 +8,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 
 import org.church.steward.ui.util.UIColors;
+import org.church.steward.ui.util.UIShapes;
 
 /**
  * 대시보드의 각 영역을 담는 둥근 카드
@@ -16,7 +17,7 @@ class DashboardCard extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    private static final int ARC = 12;
+    private static final int ARC = UIShapes.CARD_ARC;
     private static final int PADDING_VERTICAL = 12;
     private static final int PADDING_HORIZONTAL = 14;
 

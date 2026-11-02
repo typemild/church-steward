@@ -15,6 +15,7 @@
 - 색은 `ui.util.UIColors`, 글꼴은 `ui.util.UIFonts`에 정의된 것만 쓴다. `new Color(...)`를 직접 쓰지 않는다.
 - 예외로, 보고서 지면의 글꼴과 기본 글자 크기(pt)는 `ui.view.report.layout.ReportFonts`가 관리하고(사용자가 고른 글꼴과 조정한 크기는 `ReportStyle`이 적용한다), 보고서의 색은 `UIColors.REPORT_*`를 쓴다.
 - 포커스 색은 Primary 색이다(`ChurchStewardApplication.main`에서 FlatLaf를 설정하기 전에 지정한다).
+- 직접 그리는 둥근 상자(카드, 주의사항 상자 등)의 모서리는 `ui.util.UIShapes.CARD_ARC`를 쓴다. 입력란과 버튼보다 조금 더 둥글게 해서, 다른 요소를 감싸는 상자가 안쪽 요소보다 둥글다.
 
 ## 공용 컴포넌트
 
@@ -66,7 +67,8 @@
 - `setBorder`로 테두리를 바꾸지 않는다. 포커스 표시가 사라져서, 콤보박스나 읽기 전용 입력란(예산 선택 박스)처럼 커서가 보이지 않는 입력란은 포커스를 알아볼 수 없게 된다. 안쪽 여백은 텍스트 입력란이면 `setMargin`, 콤보박스면 `FlatClientProperties.STYLE`의 `padding`으로 준다.
 - 날짜 피커는 LGoodDatePicker가 입력란에 단 사각 테두리를 FlatLaf 테두리로 되돌린다(`StyledDatePicker#zDrawTextFieldIndicators`). 입력란의 폭도 이 메서드가 정한다. LGoodDatePicker가 정하는 폭에는 테두리와 여백이 빠져 있어 Windows에서 날짜가 잘리므로, 날짜 글자 폭에 테두리와 여백, 숫자 한 자의 여유를 더한다.
 - 여러 컴포넌트로 된 입력란(`ContactChipField`)은 바깥 패널에 `FlatTextBorder`를 달고 `FlatClientProperties.COMPONENT_FOCUS_OWNER`로 안쪽 입력란의 포커스를 따르게 하며, 배경도 둥글게 직접 그린다.
-- 여러 줄 입력란은 `JScrollPane`에 넣는다. 스크롤 패인의 FlatLaf 테두리가 포커스를 표시한다.
+- 여러 줄 입력란은 `StyledTextArea#createScrollPane`으로 스크롤 패인에 넣는다. 스크롤 패인의 FlatLaf 테두리가 포커스를 표시한다.
+- 입력란의 모서리는 콤보박스와 같은 둥글기다. FlatLaf는 텍스트 입력란만 기본이 네모난 모서리(`TextComponent.arc = 0`)라서 `ChurchStewardApplication.main`에서 `TextComponent.arc`를 `Component.arc`와 같게 지정한다. 여러 줄 입력란을 감싼 스크롤 패인도 기본이 네모나므로(`ScrollPane.arc = 0`) `createScrollPane`이 그 스크롤 패인에만 같은 둥글기를 준다. 전체에 바꾸면 목록 표와 보고서 뷰어의 스크롤 영역까지 둥글어지기 때문이다.
 
 **포커스 테두리는 입력/수정 다이얼로그에서만 보인다.** 목록 화면의 검색란, 사이드바의 회계 연도 선택란, 목록 표에 포커스 테두리가 생기면 어색하기 때문이다.
 

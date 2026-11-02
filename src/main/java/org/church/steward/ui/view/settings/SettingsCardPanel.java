@@ -22,6 +22,7 @@ import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.label.FieldLabel;
 import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.util.UIFonts;
+import org.church.steward.ui.util.UIShapes;
 
 /**
  * 설정 탭의 항목을 담는 둥근 흰색 카드. 수입/지출 관리의 총합 카드와 같은 모양이다.
@@ -35,7 +36,7 @@ class SettingsCardPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    private static final int ARC = 12;
+    private static final int ARC = UIShapes.CARD_ARC;
     private static final int PADDING_VERTICAL = 6;
     /** 세로 구분선 양옆의 간격. 카드의 좌우 안쪽 여백도 이 값이다. */
     private static final int NAME_GAP = 16;

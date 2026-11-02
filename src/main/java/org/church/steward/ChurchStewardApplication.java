@@ -87,10 +87,12 @@ public class ChurchStewardApplication {
             System.setProperty("flatlaf.useRoundedPopupBorder", "false");
         }
         // 포커스 색을 프로그램의 Primary 색으로 맞춘다. setup() 전에 지정해야 이 값을 참조하는 다른 색에도 반영된다.
+        // 텍스트 입력란은 FlatLaf 기본값(TextComponent.arc = 0)이 네모난 모서리라, 콤보박스와 같은 둥글기로 맞춘다.
         String focusColor = String.format("#%06X", UIColors.PRIMARY_BACKGROUND.getRGB() & 0xFFFFFF);
         FlatLaf.setGlobalExtraDefaults(Map.of(
                 "Component.focusedBorderColor", focusColor,
-                "Component.focusColor", focusColor));
+                "Component.focusColor", focusColor,
+                "TextComponent.arc", "$Component.arc"));
         FlatLightLaf.setup();
         AppIcons.install();
 
