@@ -38,9 +38,8 @@ public class LicenseTab extends JPanel {
     private static final int EDGE_PADDING = 30;
     /** 목록과 정보 카드 사이의 간격 */
     private static final int SECTION_GAP = 15;
-    /** 정보 카드의 안쪽 여백 */
-    private static final int DETAIL_PADDING_VERTICAL = 10;
-    private static final int DETAIL_PADDING_HORIZONTAL = 16;
+    /** 정보 카드의 안쪽 여백. 프로그램 소개 탭의 소개 카드와 같다. */
+    private static final int DETAIL_PADDING = 20;
 
     /** 정보 카드에서 번갈아 보여줄 화면의 이름 */
     private static final String PLACEHOLDER_CARD = "placeholder";
@@ -100,8 +99,8 @@ public class LicenseTab extends JPanel {
                 SwingConstants.CENTER, ComponentSize.MEDIUM);
 
         licenseDetailCard = new CardPanel(detailLayout);
-        licenseDetailCard.setBorder(BorderFactory.createEmptyBorder(DETAIL_PADDING_VERTICAL,
-                DETAIL_PADDING_HORIZONTAL, DETAIL_PADDING_VERTICAL, DETAIL_PADDING_HORIZONTAL));
+        licenseDetailCard.setBorder(
+                BorderFactory.createEmptyBorder(DETAIL_PADDING, DETAIL_PADDING, DETAIL_PADDING, DETAIL_PADDING));
         licenseDetailCard.add(placeholder, PLACEHOLDER_CARD);
         licenseDetailCard.add(licenseDetailPane, DETAIL_CARD);
         fixDetailHeight();
@@ -145,13 +144,14 @@ public class LicenseTab extends JPanel {
     }
 
     /**
-     * 라이브러리 정보를 HTML로 만든다. 주소가 없는 링크는 빼고 만든다.
+     * 라이브러리 정보를 HTML로 만든다. 주소가 없는 링크는 빼고 만든다. 제목의 위 여백을 없애 글자 둘레의 여백을 카드의 안쪽 여백만
+     * 정하게 한다(Swing HTML의 기본 스타일은 제목 위에만 여백을 두고 마지막 문단 아래에는 두지 않아 위아래가 달라진다).
      */
     private static String toHtml(String libraryName, String version, String licenseType, String licenseUrl,
             String projectUrl) {
         StringBuilder html = new StringBuilder();
         html.append("<html><body style='font-family:SansSerif;'>");
-        html.append("<h3>")
+        html.append("<h3 style='margin-top:0;'>")
                 .append(libraryName)
                 .append(" (")
                 .append(version)
