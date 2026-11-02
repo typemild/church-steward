@@ -8,7 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * 조회 기간 단위
+ * 조회 기간 단위. "기타"는 사용자가 직접 고른 기간이며 정해진 길이가 없으므로 이 클래스의 계산을 쓰지 않고
+ * {@link CustomPeriod}로 계산한다.
  */
 @Getter
 @AllArgsConstructor
@@ -17,7 +18,8 @@ public enum PeriodUnit {
     WEEK("주간"),
     MONTH("월간"),
     QUARTER("분기"),
-    YEAR("연간");
+    YEAR("연간"),
+    CUSTOM("기타");
 
     private static final int MONTHS_PER_QUARTER = 3;
 
@@ -41,6 +43,7 @@ public enum PeriodUnit {
             yield LocalDate.of(base.getYear(), firstMonth, 1);
         }
         case YEAR -> base.withDayOfYear(1);
+        case CUSTOM -> throw unsupportedCustom();
         };
     }
 
@@ -58,6 +61,7 @@ public enum PeriodUnit {
         case QUARTER -> start.plusMonths(MONTHS_PER_QUARTER)
                 .minusDays(1);
         case YEAR -> start.with(TemporalAdjusters.lastDayOfYear());
+        case CUSTOM -> throw unsupportedCustom();
         };
     }
 
@@ -75,6 +79,11 @@ public enum PeriodUnit {
         case MONTH -> start.plusMonths(direction);
         case QUARTER -> start.plusMonths((long) direction * MONTHS_PER_QUARTER);
         case YEAR -> start.plusYears(direction);
+        case CUSTOM -> throw unsupportedCustom();
         };
+    }
+
+    private static UnsupportedOperationException unsupportedCustom() {
+        return new UnsupportedOperationException("기타 단위의 기간은 CustomPeriod로 계산해야 합니다.");
     }
 }
