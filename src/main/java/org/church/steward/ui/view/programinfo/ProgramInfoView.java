@@ -48,7 +48,7 @@ public class ProgramInfoView extends JPanel implements MenuActivatable {
         programInfoTab = new ProgramInfoTab();
         licenseTab = new LicenseTab();
 
-        tabbedPane.addTab("프로그램 정보", programInfoTab);
+        tabbedPane.addTab("프로그램 소개", programInfoTab);
         tabbedPane.addTab("오픈소스 라이선스", licenseTab);
 
         add(tabbedPane, BorderLayout.CENTER);

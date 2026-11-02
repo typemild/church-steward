@@ -24,6 +24,7 @@ import org.church.steward.ui.component.button.PrimaryButton;
 import org.church.steward.ui.component.field.StyledCheckBox;
 import org.church.steward.ui.component.field.ValidatedPasswordField;
 import org.church.steward.ui.component.label.FieldLabel;
+import org.church.steward.ui.component.panel.CardPanel;
 import org.church.steward.ui.component.panel.WarningNoticePanel;
 import org.church.steward.ui.util.AsyncTask;
 import org.church.steward.ui.util.UIColors;
@@ -70,7 +71,7 @@ public class PasswordChangePanelView extends JPanel implements MenuActivatable {
         changeButton.setEnabled(false);
 
         // 탭 이름이 있으므로 제목은 두지 않는다. 입력란은 프로그램 설정과 같은 카드에 한 줄씩 놓는다.
-        SettingsCardPanel card = new SettingsCardPanel();
+        CardPanel card = new CardPanel();
         card.addRow("사용자 ID", userIdLabel);
         card.addRow("현재 비밀번호", oldPwField);
         card.addRow("새 비밀번호", newPwField,

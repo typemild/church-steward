@@ -25,13 +25,13 @@
 |---|---|
 | 버튼 | `PrimaryButton`(주 동작), `SecondaryButton`(그 밖의 버튼), `IconButton`(글자 없이 아이콘만), `FieldButton`(입력란 옆에 붙는 아이콘 버튼) |
 | 입력란 | `StyledTextField`, `StyledTextArea`, `AmountField`(금액), `StyledComboBox`, `StyledCheckBox`, `StyledDatePicker`, `ValidatedPasswordField` |
-| 레이블 | `TitleLabel`(제목), `SubTitleLabel`(부제목), `SectionHeaderLabel`(영역 머리말), `DescriptionLabel`(내용), `FieldLabel`(입력란), `SubFieldLabel`(덜 중요한 입력란), `BadgeLabel`(배지) |
-| 패널 | `WarningNoticePanel`(경고 아이콘이 붙은 주의 사항. 카드와 같은 둥근 모서리) |
+| 레이블 | `TitleLabel`(제목), `SubTitleLabel`(부제목), `SectionHeaderLabel`(영역 머리말), `DescriptionLabel`(내용), `WrappingDescriptionLabel`(칸의 폭에 맞춰 줄바꿈하는 설명), `FieldLabel`(입력란), `SubFieldLabel`(덜 중요한 입력란), `BadgeLabel`(배지) |
+| 패널 | `CardPanel`(둥근 흰색 카드. 항목을 [이름 \| 구분선 \| 값]으로 나열할 수 있다), `WarningNoticePanel`(경고 아이콘이 붙은 주의 사항. 카드와 같은 둥근 모서리) |
 | 표 | `ListTable`(목록 표), `TreeTable`(접고 펼치는 표), `ExpandCollapseAllButton` |
 
 `IconButton`은 꺼져 있으면 아이콘을 흐린 회색(`UIColors.ICON_DISABLED`)으로 그리고, 마우스를 올려도 손 모양 커서와 배경색을 보이지 않는다. 툴팁은 꺼진 동안에도 뜨므로 꺼진 이유를 툴팁에 적을 수 있다. FontIcon은 FlatLaf가 꺼진 아이콘을 회색으로 바꿔 주지 않으므로 `IconButton#setIcon(FontAwesomeSolid)`가 꺼진 아이콘을 함께 지정한다. 아이콘을 바꿀 때는 이 메서드를 쓴다.
 
-설정의 프로그램 설정과 비밀번호 변경 탭은 제목을 두지 않고(탭 이름이 있다) 왼쪽 위의 둥근 흰색 카드(`SettingsCardPanel`)에 항목을 한 줄씩 놓는다. 한 줄은 왼쪽에 항목 이름(굵게, 오른쪽 정렬), 세로 구분선, 오른쪽에 입력란과 그 아래 회색 설명이며, 줄 사이에는 가로 구분선 없이 여백만 둔다. 설명은 칸의 폭에 맞춰 줄바꿈한다. 이름 칸의 폭은 가장 긴 이름에 맞추고, 카드의 좌우 안쪽 여백을 세로 구분선 양옆 간격과 같게 둔다. 바꿀 수 없는 값(비밀번호 변경의 사용자 ID)은 꺼진 입력란 대신 글자로 보이고, 주 버튼은 다른 다이얼로그와 같이 가운데에 둔다.
+설정의 프로그램 설정·비밀번호 변경 탭과 프로그램 정보의 두 탭은 제목을 두지 않고(탭 이름이 있다) 왼쪽 위부터 둥근 흰색 카드(`CardPanel`)를 쌓는다. 항목을 나열하는 카드는 `addRow`로 한 줄씩 놓는다. 한 줄은 왼쪽에 항목 이름(굵게, 오른쪽 정렬), 세로 구분선, 오른쪽에 입력란과 그 아래 회색 설명이며, 줄 사이에는 가로 구분선 없이 여백만 둔다. 설명은 칸의 폭에 맞춰 줄바꿈한다. 이름 칸의 폭은 가장 긴 이름에 맞추고, 내용 둘레의 여백(첫 항목 위, 마지막 항목 아래, 좌우)은 모두 같고, 항목 사이 간격은 그보다 좁다. 세로 구분선은 조금 두껍고 양 끝이 둥근 선이다. 줄의 높이는 값이 글자뿐이어도 한 줄 입력란 높이 이상으로 맞춰 줄마다 높이가 같아 보이게 한다. 바꿀 수 없는 값(비밀번호 변경의 사용자 ID)은 꺼진 입력란 대신 글자로 보이고, 주 버튼은 다른 다이얼로그와 같이 가운데에 둔다.
 
 복사나 즉시 저장처럼 다른 안내 없이 끝나는 작업은 초록 체크(`FontAwesomeSolid.CHECK`, `UIColors.SUCCESS`)를 2초 동안 보여 완료를 알린다. 모양, 색, 시간은 `SuccessFeedback`에 모아 두어 화면마다 달라지지 않게 한다. 아이콘 버튼이면 `IconButton#showSuccess`로 버튼의 아이콘을 잠시 바꾸고(프로그램 정보의 이메일 복사), 누른 버튼이 없으면 입력란 옆에 `SuccessIndicatorLabel`로 같은 아이콘을 띄운다(프로그램 설정). 이 아이콘은 바로 나타났다가 끝에 0.2초 동안 서서히 사라진다.
 
@@ -75,7 +75,7 @@
 - 공용 입력 컴포넌트는 만들 때 `FocusIndicator#hide`로 포커스 표시를 끄고, `DialogKeyHandler`가 `addField`로 등록한 입력란만 `FocusIndicator#show`로 켠다.
 - `DialogKeyHandler`를 쓰지 않는 기동 화면(로그인, 최초 실행, 복원)은 입력란마다 직접 켠다.
 - 표에는 `FocusIndicator`를 쓰지 않는다(FlatLaf가 같은 값으로 표의 선택 색도 정한다). 대신 `ListTable`이 감싼 스크롤 패인의 테두리를 회색 선(`UIColors.BORDER`)으로 바꾼다.
-- 공용 컴포넌트가 아닌 표나 입력란(`LicenseTab`, `FileStepPanel`의 스피너)은 각 화면에서 처리한다.
+- 공용 컴포넌트가 아닌 입력란(`FileStepPanel`의 스피너)은 각 화면에서 처리한다.
 
 ## 목록 표
 

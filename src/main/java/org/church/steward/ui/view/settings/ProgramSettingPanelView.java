@@ -20,6 +20,7 @@ import org.church.steward.ui.MenuActivatable;
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.field.StyledComboBox;
 import org.church.steward.ui.component.label.SuccessIndicatorLabel;
+import org.church.steward.ui.component.panel.CardPanel;
 import org.church.steward.ui.util.AsyncTask;
 import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.util.UIFonts;
@@ -29,8 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 프로그램 설정 탭. 프로그램 전체에 하나뿐인 설정을 고르며, 관리자가 아닌 사용자도 바꿀 수 있다. 값을 고르면 바로 저장한다.
  * <p>
- * 설정 항목은 왼쪽 위의 카드({@link SettingsCardPanel})에 한 줄씩 놓는다. 항목을 추가할 때는
- * {@link SettingsCardPanel#addRow}로 한 줄을 더한다.
+ * 설정 항목은 왼쪽 위의 카드({@link CardPanel})에 한 줄씩 놓는다. 항목을 추가할 때는
+ * {@link CardPanel#addRow}로 한 줄을 더한다.
  */
 @UiView
 @Slf4j
@@ -85,7 +86,7 @@ public class ProgramSettingPanelView extends JPanel implements MenuActivatable {
         weeklyClosingDayControl.add(Box.createHorizontalStrut(SAVED_INDICATOR_GAP));
         weeklyClosingDayControl.add(savedIndicator);
 
-        SettingsCardPanel card = new SettingsCardPanel();
+        CardPanel card = new CardPanel();
         card.addRow("주간 결산 요일", weeklyClosingDayControl,
                 "본 설정은 수입/지출 관리의 조회 기간(주간)과 주간 회계 결산 보고서의 조회 기간에 적용됩니다.",
                 "주일에 결산하시는 경우 일요일로 지정하시면, 전주 월요일부터 주일까지가 조회 기간이 됩니다.");
