@@ -62,46 +62,6 @@ class ContactMapperTest {
     }
 
     @Nested
-    @DisplayName("toEntity 테스트")
-    class ToEntityTest {
-
-        @Test
-        @DisplayName("ContactDto가 존재할 때, Contact 엔티티로 올바르게 변환되어야 한다")
-        void toEntity_ValidDto_ReturnsContact() {
-            // Given
-            ContactDto dto = ContactDto.builder()
-                    .type(ContactType.INDIVIDUAL)
-                    .name("John Doe")
-                    .remarks("Remarks")
-                    .isHidden(false)
-                    .build();
-
-            // When
-            Contact result = contactMapper.toEntity(dto);
-
-            // Then
-            assertThat(result).isNotNull();
-            assertThat(result.getType()).isEqualTo(dto.getType());
-            assertThat(result.getName()).isEqualTo(dto.getName());
-            assertThat(result.getRemarks()).isEqualTo(dto.getRemarks());
-            assertThat(result.isHidden()).isEqualTo(dto.isHidden());
-        }
-
-        @Test
-        @DisplayName("ContactDto가 null일 때, null을 반환해야 한다")
-        void toEntity_NullDto_ReturnsNull() {
-            // Given
-            ContactDto dto = null;
-
-            // When
-            Contact result = contactMapper.toEntity(dto);
-
-            // Then
-            assertThat(result).isNull();
-        }
-    }
-
-    @Nested
     @DisplayName("toAutocompleteDto 테스트")
     class ToAutocompleteDtoTest {
 

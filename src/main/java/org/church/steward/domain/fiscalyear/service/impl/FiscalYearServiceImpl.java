@@ -19,6 +19,7 @@ import org.church.steward.domain.fiscalyear.entity.FiscalYearConstraints;
 import org.church.steward.domain.fiscalyear.mapper.FiscalYearMapper;
 import org.church.steward.domain.fiscalyear.repository.FiscalYearRepository;
 import org.church.steward.domain.fiscalyear.service.FiscalYearService;
+import org.church.steward.util.TextUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,10 +47,10 @@ public class FiscalYearServiceImpl implements FiscalYearService {
 
     @Override
     public void createFiscalYear(String name, LocalDate startDate, LocalDate endDate) {
-        String trimmedName = validateName(name, null);
+        String normalizedName = validateName(name, null);
         validatePeriod(null, startDate, endDate);
 
-        saveNewFiscalYear(trimmedName, startDate, endDate);
+        saveNewFiscalYear(normalizedName, startDate, endDate);
     }
 
     @Override
@@ -58,11 +59,11 @@ public class FiscalYearServiceImpl implements FiscalYearService {
         if (sourceFiscalYearId == null || !fiscalYearRepository.existsById(sourceFiscalYearId)) {
             throw new IllegalArgumentException("존재하지 않는 원본 회계 연도입니다.");
         }
-        String trimmedName = validateName(name, null);
+        String normalizedName = validateName(name, null);
         validatePeriod(null, startDate, endDate);
 
         // 1. 새 회계 연도 생성
-        FiscalYear newFiscalYear = saveNewFiscalYear(trimmedName, startDate, endDate);
+        FiscalYear newFiscalYear = saveNewFiscalYear(normalizedName, startDate, endDate);
 
         // 2. 기존 예산 복사 (트리 구조 유지). 원본 회계 연도는 바꾸지 않으므로 마감되어 있어도 복사할 수 있다.
         List<Budget> allSourceBudgets = budgetRepository.findAllByFiscalYearId(sourceFiscalYearId);
@@ -104,13 +105,13 @@ public class FiscalYearServiceImpl implements FiscalYearService {
         if (fiscalYear.isClosed()) {
             throw new IllegalArgumentException("마감된 회계 연도는 수정할 수 없습니다.");
         }
-        String trimmedName = validateName(name, id);
+        String normalizedName = validateName(name, id);
         validatePeriod(id, startDate, endDate);
         validatePeriodCoversRecords(id, startDate, endDate);
 
         EntitySnapshot<FiscalYear> oldSnapshot = entitySnapshotCapturer.capture(fiscalYear);
 
-        fiscalYear.update(trimmedName, startDate, endDate);
+        fiscalYear.update(normalizedName, startDate, endDate);
 
         FiscalYear saved = fiscalYearRepository.save(fiscalYear);
         activityLogService.logUpdate(oldSnapshot, saved);
@@ -138,24 +139,24 @@ public class FiscalYearServiceImpl implements FiscalYearService {
      * 이름이 비어 있지 않고 너무 길지 않은지, 다른 회계 연도의 이름과 같지 않은지 확인한다.
      *
      * @param id 이름을 지정하려는 회계 연도의 ID. 중복을 확인할 때 자기 자신은 제외한다. 새 회계 연도이면 null이다.
-     * @return 앞뒤 공백을 없앤 이름
+     * @return 앞뒤 공백(전각 공백 등 포함)을 없앤 이름
      */
     private String validateName(String name, Long id) {
-        String trimmedName = name == null ? "" : name.trim();
-        if (trimmedName.isEmpty()) {
+        String normalizedName = TextUtils.normalize(name);
+        if (normalizedName == null) {
             throw new IllegalArgumentException("회계 연도의 이름을 입력해주세요.");
         }
-        if (trimmedName.length() > FiscalYearConstraints.NAME_MAX_LENGTH) {
+        if (normalizedName.length() > FiscalYearConstraints.NAME_MAX_LENGTH) {
             throw new IllegalArgumentException(
                     String.format("회계 연도의 이름은 %d자를 넘을 수 없습니다.", FiscalYearConstraints.NAME_MAX_LENGTH));
         }
 
-        boolean duplicated = id == null ? fiscalYearRepository.existsByName(trimmedName)
-                : fiscalYearRepository.existsByNameAndIdNot(trimmedName, id);
+        boolean duplicated = id == null ? fiscalYearRepository.existsByName(normalizedName)
+                : fiscalYearRepository.existsByNameAndIdNot(normalizedName, id);
         if (duplicated) {
             throw new IllegalArgumentException("같은 이름의 회계 연도가 이미 있습니다.");
         }
-        return trimmedName;
+        return normalizedName;
     }
 
     /**

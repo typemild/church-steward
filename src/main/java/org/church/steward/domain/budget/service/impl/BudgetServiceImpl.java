@@ -23,6 +23,7 @@ import org.church.steward.domain.financialrecord.repository.BudgetAmountProjecti
 import org.church.steward.domain.financialrecord.repository.FinancialRecordRepository;
 import org.church.steward.domain.fiscalyear.entity.FiscalYear;
 import org.church.steward.domain.fiscalyear.repository.FiscalYearRepository;
+import org.church.steward.util.TextUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -88,8 +89,10 @@ public class BudgetServiceImpl implements BudgetService {
         FiscalYear fiscalYear = fiscalYearRepository.findById(fiscalYearId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회계 연도입니다."));
         validateNotClosed(fiscalYear);
-        validateName(name);
-        validateRemarks(remarks);
+        String normalizedName = TextUtils.normalize(name);
+        validateName(normalizedName);
+        String normalizedRemarks = TextUtils.normalize(remarks);
+        validateRemarks(normalizedRemarks);
 
         Budget parent = null;
         if (parentId != null) {
@@ -121,10 +124,10 @@ public class BudgetServiceImpl implements BudgetService {
 
         return budgetRepository.save(Budget.builder()
                 .fiscalYear(fiscalYear)
-                .name(name)
+                .name(normalizedName)
                 .parent(parent)
                 .amount(amount)
-                .remarks(normalizeRemarks(remarks))
+                .remarks(normalizedRemarks)
                 .type(type)
                 .sortOrder(nextSortOrder)
                 .build());
@@ -135,13 +138,15 @@ public class BudgetServiceImpl implements BudgetService {
         Budget budget = budgetRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("예산 항목을 찾을 수 없습니다."));
         validateNotClosed(budget.getFiscalYear());
-        validateName(newName);
-        validateRemarks(newRemarks);
+        String normalizedName = TextUtils.normalize(newName);
+        validateName(normalizedName);
+        String normalizedRemarks = TextUtils.normalize(newRemarks);
+        validateRemarks(normalizedRemarks);
 
         // 변경 전 상태를 스냅샷으로 캡처
         EntitySnapshot<Budget> oldSnapshot = snapshotCapturer.capture(budget);
 
-        applyUpdate(budget, newName, newAmount, newRemarks);
+        applyUpdate(budget, normalizedName, newAmount, normalizedRemarks);
         activityLogService.logUpdate(oldSnapshot, budget);
     }
 
@@ -150,16 +155,22 @@ public class BudgetServiceImpl implements BudgetService {
         Budget budget = budgetRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("예산 항목을 찾을 수 없습니다."));
         validateNotClosed(budget.getFiscalYear());
-        validateName(newName);
-        validateRemarks(newRemarks);
+        String normalizedName = TextUtils.normalize(newName);
+        validateName(normalizedName);
+        String normalizedRemarks = TextUtils.normalize(newRemarks);
+        validateRemarks(normalizedRemarks);
 
-        applyUpdate(budget, newName, newAmount, newRemarks);
+        applyUpdate(budget, normalizedName, newAmount, normalizedRemarks);
         return budget;
     }
 
+    /**
+     * @param newName    앞뒤 공백을 지운 예산명
+     * @param newRemarks 앞뒤 공백을 지우고 빈 값을 null로 바꾼 비고
+     */
     private void applyUpdate(Budget budget, String newName, long newAmount, String newRemarks) {
         budget.setName(newName);
-        budget.setRemarks(normalizeRemarks(newRemarks));
+        budget.setRemarks(newRemarks);
 
         if (budget.hasChildren()) {
             // 부모 항목은 하위 항목들의 합으로 금액이 결정되므로, 금액을 직접 수정할 수 없다.
@@ -284,7 +295,8 @@ public class BudgetServiceImpl implements BudgetService {
 
     /**
      * 예산명은 비워 둘 수 없고 {@value BudgetConstraints#NAME_MAX_LENGTH}자 이내여야 한다.
-     * {@code <}와 {@code >}는 전체 예산명("예산A > 예산B")의 구분 문자와 섞이지 않도록 쓸 수 없다.
+     * {@code <}와 {@code >}는 전체 예산명("예산A > 예산B")의 구분 문자와 섞이지 않도록 쓸 수 없다. 앞뒤 공백을 지운
+     * 이름으로 받는다.
      */
     private void validateName(String name) {
         if (name == null || name.isBlank()) {
@@ -302,14 +314,6 @@ public class BudgetServiceImpl implements BudgetService {
         if (remarks != null && remarks.length() > BudgetConstraints.REMARKS_MAX_LENGTH) {
             throw new IllegalArgumentException("비고는 " + BudgetConstraints.REMARKS_MAX_LENGTH + "자 이내로 입력해주세요.");
         }
-    }
-
-    /**
-     * 비고가 비어 있으면 null로 저장한다. 비고가 없던 기존 예산(null)과 빈 비고로 저장한 예산이 같은 값이어야, 가져오기에서 빈 칸인
-     * 비고를 기존 예산의 비고와 다르다고 보지 않는다.
-     */
-    private static String normalizeRemarks(String remarks) {
-        return remarks == null || remarks.isBlank() ? null : remarks;
     }
 
     private int findIndexInSiblings(List<Budget> siblings, Long id) {

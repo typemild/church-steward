@@ -467,6 +467,31 @@ class BackupManagerTest {
         }
 
         @Test
+        @DisplayName("1.0.0~1.1.0의 스키마로 만든 백업을 복원하면 빈 문자열이나 공백으로 저장된 내용과 비고가 null로 바뀐다")
+        void restore_BackupFromFirstReleasedSchema_ConvertsBlankTextsToNull() throws Exception {
+            // Given
+            Installation source = createFirstReleasedInstallation("source");
+            try (HikariDataSource dataSource = openDataSource(source);
+                    Connection connection = dataSource.getConnection();
+                    Statement statement = connection.createStatement()) {
+                statement.execute("UPDATE USERS SET REMARKS = ''");
+                statement.execute("UPDATE CONTACT SET REMARKS = ''");
+                statement.execute("UPDATE FINANCIAL_RECORD SET DESCRIPTION = '', REMARKS = '  '");
+            }
+            Path backupFile = createBackup(source);
+            Installation target = createInstallation("target", PROGRAM_VERSION);
+
+            // When
+            target.backupManager().restore(backupFile, ADMIN_ID, ADMIN_PASSWORD);
+
+            // Then
+            target.databaseManager().loadDatabasePassword(ADMIN_ID, ADMIN_PASSWORD);
+            assertThat(readRows(target, "SELECT U.REMARKS, C.REMARKS, R.DESCRIPTION, R.REMARKS"
+                    + " FROM USERS U, CONTACT C, FINANCIAL_RECORD R"))
+                    .containsExactly("null|null|null|null");
+        }
+
+        @Test
         @DisplayName("백업한 데이터의 스키마를 이 버전에 맞게 올리지 못하면 복원하지 않고 기존 데이터를 그대로 둔다")
         void restore_MigrationFailure_KeepsExistingData() throws Exception {
             // Given

@@ -23,6 +23,7 @@ import org.church.steward.domain.contact.repository.ContactGroupRepository;
 import org.church.steward.domain.contact.repository.ContactRepository;
 import org.church.steward.domain.contact.service.ContactService;
 import org.church.steward.domain.financialrecord.repository.FinancialRecordContactRepository;
+import org.church.steward.util.TextUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,13 +77,22 @@ public class ContactServiceImpl implements ContactService {
 
     @Override
     public Contact createContactWithoutLog(ContactDto dto) {
-        validateContact(dto.getType(), dto.getName(), dto.getRemarks());
-        return contactRepository.save(contactMapper.toEntity(dto));
+        String name = TextUtils.normalize(dto.getName());
+        String remarks = TextUtils.normalize(dto.getRemarks());
+        validateContact(dto.getType(), name, remarks);
+        return contactRepository.save(Contact.builder()
+                .type(dto.getType())
+                .name(name)
+                .remarks(remarks)
+                .isHidden(dto.isHidden())
+                .build());
     }
 
     @Override
     public void updateContact(Long id, ContactType type, String name, String remarks, boolean isHidden) {
-        validateContact(type, name, remarks);
+        String normalizedName = TextUtils.normalize(name);
+        String normalizedRemarks = TextUtils.normalize(remarks);
+        validateContact(type, normalizedName, normalizedRemarks);
         Contact contact = contactRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 관계자를 찾을 수 없습니다."));
 
@@ -90,8 +100,8 @@ public class ContactServiceImpl implements ContactService {
 
         // 내역에는 관계자의 이름만 스냅샷으로 남으므로 구분을 바꿔도 과거 내역은 변하지 않는다.
         contact.setType(type);
-        contact.setName(name);
-        contact.setRemarks(remarks);
+        contact.setName(normalizedName);
+        contact.setRemarks(normalizedRemarks);
         contact.setHidden(isHidden);
 
         activityLogService.logUpdate(oldSnapshot, contact);
@@ -217,7 +227,7 @@ public class ContactServiceImpl implements ContactService {
     }
 
     /**
-     * 구분과 이름은 필수이고, 이름과 비고는 칼럼 길이 이내여야 한다.
+     * 구분과 이름은 필수이고, 이름과 비고는 칼럼 길이 이내여야 한다. 이름과 비고는 앞뒤 공백을 지운 값으로 받는다.
      */
     private void validateContact(ContactType type, String name, String remarks) {
         if (type == null) {

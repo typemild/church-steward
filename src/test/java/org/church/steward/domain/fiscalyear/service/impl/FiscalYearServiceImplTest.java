@@ -170,6 +170,34 @@ class FiscalYearServiceImplTest {
         }
 
         @Test
+        @DisplayName("이름 앞뒤의 전각 공백도 없애고 저장한다")
+        void createFiscalYear_NameWithFullWidthSpaces_SavesStrippedName() {
+            // Given
+            when(fiscalYearRepository.save(any(FiscalYear.class)))
+                    .thenReturn(createFiscalYear(ID, NAME, START_DATE, END_DATE));
+            ArgumentCaptor<FiscalYear> fiscalYearCaptor = ArgumentCaptor.forClass(FiscalYear.class);
+
+            // When
+            fiscalYearService.createFiscalYear("　" + NAME + "　", START_DATE, END_DATE);
+
+            // Then
+            verify(fiscalYearRepository).save(fiscalYearCaptor.capture());
+            assertThat(fiscalYearCaptor.getValue().getName()).isEqualTo(NAME);
+        }
+
+        @Test
+        @DisplayName("전각 공백을 붙여도 공백을 없앤 이름이 다른 회계 연도와 같으면 추가할 수 없다")
+        void createFiscalYear_DuplicateNameWithFullWidthSpaces_Failure() {
+            // Given
+            when(fiscalYearRepository.existsByName(NAME)).thenReturn(true);
+
+            // When & Then
+            assertThatThrownBy(() -> fiscalYearService.createFiscalYear("　" + NAME, START_DATE, END_DATE))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("같은 이름의 회계 연도가 이미 있습니다.");
+        }
+
+        @Test
         @DisplayName("한 해에 두 번째 회계 연도도 이름과 기간이 다르면 추가할 수 있다")
         void createFiscalYear_SecondFiscalYearInSameYear_Success() {
             // Given

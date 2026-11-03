@@ -733,6 +733,52 @@ class FinancialRecordServiceImplTest {
         }
 
         @Test
+        @DisplayName("내용과 비고가 비어 있거나 공백뿐이면 null로 저장한다")
+        void createFinancialRecord_blankTexts_savesNull() {
+            // Given
+            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.EXPENSE, List.of(10L));
+            dto.setDescription("");
+            dto.setRemarks(" 　");
+            ArgumentCaptor<FinancialRecord> recordCaptor = ArgumentCaptor.forClass(FinancialRecord.class);
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findById(1L))
+                    .thenReturn(Optional.of(createBudget(1L, BudgetType.EXPENSE, fiscalYear)));
+            when(contactRepository.findAllById(Set.of(10L))).thenReturn(List.of(createContact(10L, "Kim")));
+
+            // When
+            financialRecordService.createFinancialRecord(dto);
+
+            // Then
+            verify(financialRecordRepository).save(recordCaptor.capture());
+            assertThat(recordCaptor.getValue().getDescription()).isNull();
+            assertThat(recordCaptor.getValue().getRemarks()).isNull();
+        }
+
+        @Test
+        @DisplayName("내용과 비고의 앞뒤 공백을 지우고 저장하며, 길이는 공백을 지운 값으로 검증한다")
+        void createFinancialRecord_textsWithSurroundingSpaces_savesStripped() {
+            // Given
+            String description = "가".repeat(FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH);
+            String remarks = "나".repeat(FinancialRecordConstraints.REMARKS_MAX_LENGTH);
+            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.EXPENSE, List.of(10L));
+            dto.setDescription(" " + description + "　");
+            dto.setRemarks("\t" + remarks + " ");
+            ArgumentCaptor<FinancialRecord> recordCaptor = ArgumentCaptor.forClass(FinancialRecord.class);
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findById(1L))
+                    .thenReturn(Optional.of(createBudget(1L, BudgetType.EXPENSE, fiscalYear)));
+            when(contactRepository.findAllById(Set.of(10L))).thenReturn(List.of(createContact(10L, "Kim")));
+
+            // When
+            financialRecordService.createFinancialRecord(dto);
+
+            // Then
+            verify(financialRecordRepository).save(recordCaptor.capture());
+            assertThat(recordCaptor.getValue().getDescription()).isEqualTo(description);
+            assertThat(recordCaptor.getValue().getRemarks()).isEqualTo(remarks);
+        }
+
+        @Test
         @DisplayName("수입의 봉헌자가 한 명도 없으면 예외가 발생한다")
         void createFinancialRecord_incomeWithNoContacts_throwsException() {
             // Given
@@ -973,6 +1019,50 @@ class FinancialRecordServiceImplTest {
             assertThat(financialRecord.getDate()).isEqualTo(LocalDate.of(2025, 3, 2));
             assertThat(financialRecord.getDescription()).isEqualTo("New Description");
             assertThat(financialRecord.getAmount()).isEqualTo(20000L);
+            assertThat(financialRecord.getRemarks()).isEqualTo("New Remarks");
+        }
+
+        @Test
+        @DisplayName("내용과 비고를 비우면 null로 저장한다")
+        void updateFinancialRecord_blankTexts_setsNull() {
+            // Given
+            FinancialRecord financialRecord = createExistingRecord(FinancialRecordType.INCOME);
+            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.INCOME, List.of(10L));
+            dto.setDescription("");
+            dto.setRemarks("  ");
+            when(financialRecordRepository.findById(1L)).thenReturn(Optional.of(financialRecord));
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findById(1L))
+                    .thenReturn(Optional.of(createBudget(1L, BudgetType.INCOME, fiscalYear)));
+            when(contactRepository.findAllById(Set.of(10L))).thenReturn(List.of(createContact(10L, "Contact")));
+
+            // When
+            financialRecordService.updateFinancialRecord(1L, dto);
+
+            // Then
+            assertThat(financialRecord.getDescription()).isNull();
+            assertThat(financialRecord.getRemarks()).isNull();
+        }
+
+        @Test
+        @DisplayName("내용과 비고의 앞뒤 공백을 지우고 저장한다")
+        void updateFinancialRecord_textsWithSurroundingSpaces_setsStripped() {
+            // Given
+            FinancialRecord financialRecord = createExistingRecord(FinancialRecordType.INCOME);
+            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.INCOME, List.of(10L));
+            dto.setDescription("　New Description ");
+            dto.setRemarks(" New Remarks\t");
+            when(financialRecordRepository.findById(1L)).thenReturn(Optional.of(financialRecord));
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findById(1L))
+                    .thenReturn(Optional.of(createBudget(1L, BudgetType.INCOME, fiscalYear)));
+            when(contactRepository.findAllById(Set.of(10L))).thenReturn(List.of(createContact(10L, "Contact")));
+
+            // When
+            financialRecordService.updateFinancialRecord(1L, dto);
+
+            // Then
+            assertThat(financialRecord.getDescription()).isEqualTo("New Description");
             assertThat(financialRecord.getRemarks()).isEqualTo("New Remarks");
         }
 

@@ -93,6 +93,43 @@ class UserServiceImplTest {
         }
 
         @Test
+        @DisplayName("createUser_비고가 비어 있으면 null로 저장되어야 한다.")
+        void createUser_EmptyRemarks_SavesNull() {
+            // Given
+            String id = "new_user";
+            String rawPassword = "password123";
+            when(userRepository.existsById(id)).thenReturn(false);
+            when(passwordEncoder.encode(rawPassword)).thenReturn("encoded_password_abc");
+
+            // When
+            userService.createUser(id, rawPassword, "");
+
+            // Then
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().getRemarks()).isNull();
+        }
+
+        @Test
+        @DisplayName("createUser_비고의 앞뒤 공백을 지우고 저장하며, 길이는 공백을 지운 값으로 검증해야 한다.")
+        void createUser_RemarksWithSurroundingSpaces_SavesStripped() {
+            // Given
+            String id = "new_user";
+            String rawPassword = "password123";
+            String remarks = "가".repeat(UserConstraints.REMARKS_MAX_LENGTH);
+            when(userRepository.existsById(id)).thenReturn(false);
+            when(passwordEncoder.encode(rawPassword)).thenReturn("encoded_password_abc");
+
+            // When
+            userService.createUser(id, rawPassword, "　" + remarks + " ");
+
+            // Then
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().getRemarks()).isEqualTo(remarks);
+        }
+
+        @Test
         @DisplayName("createUser_이미 존재하는 ID로 추가 시 IllegalArgumentException이 발생해야 한다.")
         void createUser_Fail_DuplicateId() {
             // Given
@@ -354,6 +391,24 @@ class UserServiceImplTest {
             User savedUser = userCaptor.getValue();
             assertThat(savedUser.getId()).isEqualTo(id);
             assertThat(savedUser.getRole()).isEqualTo(UserRole.ADMIN);
+        }
+
+        @Test
+        @DisplayName("createAdmin_비고가 비어 있으면 null로 저장되어야 한다.")
+        void createAdmin_EmptyRemarks_SavesNull() {
+            // Given
+            String id = "new_admin";
+            String rawPassword = "admin_password";
+            when(userRepository.existsById(id)).thenReturn(false);
+            when(passwordEncoder.encode(rawPassword)).thenReturn("encoded_admin_password");
+
+            // When
+            userService.createAdmin(id, rawPassword, "");
+
+            // Then
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().getRemarks()).isNull();
         }
 
         @Test
@@ -657,6 +712,40 @@ class UserServiceImplTest {
             User updatedUser = userCaptor.getValue();
             assertThat(updatedUser.getPassword()).isEqualTo("old_password");
             assertThat(updatedUser.getRemarks()).isEqualTo(remarks);
+        }
+
+        @Test
+        @DisplayName("updateUser_비고를 공백뿐인 값으로 비우면 null로 저장되어야 한다.")
+        void updateUser_BlankRemarks_SavesNull() {
+            // Given
+            String userId = "user1";
+            User user = User.builder().id(userId).password("old_password").remarks("old_remarks").build();
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+            // When
+            userService.updateUser(userId, null, " 　");
+
+            // Then
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().getRemarks()).isNull();
+        }
+
+        @Test
+        @DisplayName("updateUser_비고의 앞뒤 공백을 지우고 저장되어야 한다.")
+        void updateUser_RemarksWithSurroundingSpaces_SavesStripped() {
+            // Given
+            String userId = "user1";
+            User user = User.builder().id(userId).password("old_password").remarks("old_remarks").build();
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+            // When
+            userService.updateUser(userId, null, " 비고만 수정\n");
+
+            // Then
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().getRemarks()).isEqualTo("비고만 수정");
         }
 
         @Test

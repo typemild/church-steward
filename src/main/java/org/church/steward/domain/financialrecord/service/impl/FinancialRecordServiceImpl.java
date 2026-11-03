@@ -28,6 +28,7 @@ import org.church.steward.domain.financialrecord.service.FinancialRecordService;
 import org.church.steward.domain.financialrecord.specification.FinancialRecordSpecification;
 import org.church.steward.domain.fiscalyear.entity.FiscalYear;
 import org.church.steward.domain.fiscalyear.repository.FiscalYearRepository;
+import org.church.steward.util.TextUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,7 +82,9 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
             throw new IllegalArgumentException("Invalid Financial Record Type");
         }
         validateAmount(dto.getAmount());
-        validateTexts(dto.getDescription(), dto.getRemarks());
+        String description = TextUtils.normalize(dto.getDescription());
+        String remarks = TextUtils.normalize(dto.getRemarks());
+        validateTexts(description, remarks);
         validateContacts(type, dto.getContactIds());
         FiscalYear fiscalYear = findFiscalYear(dto.getFiscalYearId());
         validateNotClosed(fiscalYear);
@@ -99,9 +102,9 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
                 .fiscalYear(fiscalYear)
                 .date(dto.getDate())
                 .budget(budget)
-                .description(dto.getDescription())
+                .description(description)
                 .amount(dto.getAmount())
-                .remarks(dto.getRemarks())
+                .remarks(remarks)
                 .build();
 
         Set<Long> contactIdSet = new HashSet<>(dto.getContactIds());
@@ -115,7 +118,9 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
     @Override
     public FinancialRecordResponseDto updateFinancialRecord(Long id, FinancialRecordRequestDto dto) {
         validateAmount(dto.getAmount());
-        validateTexts(dto.getDescription(), dto.getRemarks());
+        String description = TextUtils.normalize(dto.getDescription());
+        String remarks = TextUtils.normalize(dto.getRemarks());
+        validateTexts(description, remarks);
         FinancialRecord financialRecord = financialRecordRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Financial Record not found"));
         // 구분은 바꿀 수 없으므로 요청의 구분은 보지 않고 기존 내역의 구분을 따른다.
@@ -139,8 +144,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
 
         EntitySnapshot<FinancialRecord> oldSnapshot = entitySnapshotCapturer.capture(financialRecord);
 
-        financialRecord.update(fiscalYear, dto.getDate(), budget, dto.getDescription(), dto.getAmount(),
-                dto.getRemarks());
+        financialRecord.update(fiscalYear, dto.getDate(), budget, description, dto.getAmount(), remarks);
         financialRecord.replaceContacts(contacts);
 
         financialRecordRepository.save(financialRecord);
@@ -271,7 +275,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
     }
 
     /**
-     * 내용과 비고는 비워 둘 수 있고, 적으면 칼럼 길이 이내여야 한다.
+     * 내용과 비고는 비워 둘 수 있고, 적으면 칼럼 길이 이내여야 한다. 앞뒤 공백을 지운 값으로 받는다.
      */
     private void validateTexts(String description, String remarks) {
         if (description != null && description.length() > FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH) {

@@ -19,6 +19,7 @@ import org.church.steward.domain.activitylog.util.EntitySnapshotCapturer;
 import org.church.steward.domain.budget.dto.BudgetAutocompleteDto;
 import org.church.steward.domain.budget.dto.BudgetDto;
 import org.church.steward.domain.budget.entity.Budget;
+import org.church.steward.domain.budget.entity.BudgetConstraints;
 import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.budget.mapper.BudgetMapper;
 import org.church.steward.domain.budget.repository.BudgetRepository;
@@ -339,6 +340,51 @@ class BudgetServiceImplTest {
             // Then
             verify(budgetRepository).save(budgetCaptor.capture());
             assertThat(budgetCaptor.getValue().getRemarks()).isNull();
+        }
+
+        @Test
+        @DisplayName("예산명의 앞뒤 공백(전각 공백 포함)을 지우고 추가하며, 길이는 공백을 지운 값으로 검증한다")
+        void createBudget_NameWithSurroundingSpaces_SavesStripped() {
+            // Given
+            String name = "가".repeat(BudgetConstraints.NAME_MAX_LENGTH);
+            ArgumentCaptor<Budget> budgetCaptor = ArgumentCaptor.forClass(Budget.class);
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+
+            // When
+            budgetService.createBudget(FISCAL_YEAR_ID, null, "　" + name + " ", 100L, null, BudgetType.INCOME);
+
+            // Then
+            verify(budgetRepository).save(budgetCaptor.capture());
+            assertThat(budgetCaptor.getValue().getName()).isEqualTo(name);
+        }
+
+        @Test
+        @DisplayName("예산명이 전각 공백뿐이면 예산을 추가할 수 없다")
+        void createBudget_FullWidthSpaceName_Failure() {
+            // Given
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+
+            // When & Then
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, "　", 100L, null, BudgetType.INCOME))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("예산명을 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("비고의 앞뒤 공백을 지우고 추가하며, 길이는 공백을 지운 값으로 검증한다")
+        void createBudget_RemarksWithSurroundingSpaces_SavesStripped() {
+            // Given
+            String remarks = "가".repeat(100);
+            ArgumentCaptor<Budget> budgetCaptor = ArgumentCaptor.forClass(Budget.class);
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+
+            // When
+            budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, "　" + remarks + " ", BudgetType.INCOME);
+
+            // Then
+            verify(budgetRepository).save(budgetCaptor.capture());
+            assertThat(budgetCaptor.getValue().getRemarks()).isEqualTo(remarks);
         }
 
         @Test
@@ -936,6 +982,46 @@ class BudgetServiceImplTest {
 
             // Then
             assertThat(budget.getRemarks()).isNull();
+        }
+
+        @Test
+        @DisplayName("예산명의 앞뒤 공백(전각 공백 포함)을 지우고 저장한다")
+        void updateBudget_NameWithSurroundingSpaces_NameStripped() {
+            // Given
+            Budget budget = Budget.builder()
+                    .id(1L)
+                    .fiscalYear(fiscalYear)
+                    .type(BudgetType.INCOME)
+                    .name("십일조")
+                    .amount(1000L)
+                    .build();
+            when(budgetRepository.findById(1L)).thenReturn(Optional.of(budget));
+
+            // When
+            budgetService.updateBudget(1L, "　감사헌금 ", 1000L, null);
+
+            // Then
+            assertThat(budget.getName()).isEqualTo("감사헌금");
+        }
+
+        @Test
+        @DisplayName("비고의 앞뒤 공백을 지우고 저장한다")
+        void updateBudget_RemarksWithSurroundingSpaces_RemarksStripped() {
+            // Given
+            Budget budget = Budget.builder()
+                    .id(1L)
+                    .fiscalYear(fiscalYear)
+                    .type(BudgetType.INCOME)
+                    .name("십일조")
+                    .amount(1000L)
+                    .build();
+            when(budgetRepository.findById(1L)).thenReturn(Optional.of(budget));
+
+            // When
+            budgetService.updateBudget(1L, "십일조", 1000L, " 새 비고　");
+
+            // Then
+            assertThat(budget.getRemarks()).isEqualTo("새 비고");
         }
 
         @Test
