@@ -1,6 +1,7 @@
 package org.church.steward.ui.view.report.composer;
 
 import java.text.DecimalFormat;
+import java.time.LocalDate;
 
 /**
  * 보고서에 적는 숫자의 표기 형식
@@ -47,5 +48,12 @@ final class ReportFormats {
      */
     static String rate(Double rate) {
         return rate == null ? NONE : String.format("%.1f%%", rate);
+    }
+
+    /**
+     * 기간을 "2026-01-01 ~ 2026-12-31"처럼 적는다.
+     */
+    static String period(LocalDate startDate, LocalDate endDate) {
+        return String.format("%s ~ %s", startDate, endDate);
     }
 }

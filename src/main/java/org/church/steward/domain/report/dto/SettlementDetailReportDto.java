@@ -1,5 +1,6 @@
 package org.church.steward.domain.report.dto;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.church.steward.domain.budget.entity.BudgetType;
@@ -18,6 +19,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SettlementDetailReportDto {
     private String fiscalYearName;
+    /** 회계 연도의 기간. 제목 아래에 적는다. */
+    private LocalDate fiscalYearStartDate;
+    private LocalDate fiscalYearEndDate;
     private BudgetType type;
 
     /** 예산 관리 화면의 트리와 같은 순서로 나열한 예산 */

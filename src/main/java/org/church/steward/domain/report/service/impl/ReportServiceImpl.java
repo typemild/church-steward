@@ -126,6 +126,8 @@ public class ReportServiceImpl implements ReportService {
 
         return BudgetPlanReportDto.builder()
                 .fiscalYearName(fiscalYear.getName())
+                .fiscalYearStartDate(fiscalYear.getStartDate())
+                .fiscalYearEndDate(fiscalYear.getEndDate())
                 .type(type)
                 .rows(rows)
                 .totalAmount(totalAmount)
@@ -168,7 +170,13 @@ public class ReportServiceImpl implements ReportService {
 
         return AnnualSettlementReportDto.builder()
                 .fiscalYearName(fiscalYear.getName())
+                .fiscalYearStartDate(fiscalYear.getStartDate())
+                .fiscalYearEndDate(fiscalYear.getEndDate())
                 .previousFiscalYearName(previousFiscalYear.map(FiscalYear::getName)
+                        .orElse(null))
+                .previousFiscalYearStartDate(previousFiscalYear.map(FiscalYear::getStartDate)
+                        .orElse(null))
+                .previousFiscalYearEndDate(previousFiscalYear.map(FiscalYear::getEndDate)
                         .orElse(null))
                 .previousYear(previousSummary)
                 .currentYear(summarize(records))
@@ -192,6 +200,8 @@ public class ReportServiceImpl implements ReportService {
 
         return SettlementDetailReportDto.builder()
                 .fiscalYearName(fiscalYear.getName())
+                .fiscalYearStartDate(fiscalYear.getStartDate())
+                .fiscalYearEndDate(fiscalYear.getEndDate())
                 .type(type)
                 .rows(toExecutionRows(tree, tree.flatten(), records, recordType))
                 .totalBudgetedAmount(totalBudgetedAmount)

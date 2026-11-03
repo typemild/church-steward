@@ -132,12 +132,13 @@ class ReportMapperTest {
         }
 
         @Test
-        @DisplayName("예산명과 넘겨받은 깊이, 예산액, 집행액, 비율을 DTO로 옮긴다")
+        @DisplayName("예산명과 비고, 넘겨받은 깊이, 예산액, 집행액, 비율을 DTO로 옮긴다")
         void toBudgetExecutionDto_budgetWithValues_returnsCorrectDto() {
             // Given
             Budget entity = Budget.builder()
                     .name("교육부")
                     .amount(999L)
+                    .remarks("주일학교 포함")
                     .build();
 
             // When
@@ -150,6 +151,7 @@ class ReportMapperTest {
             assertThat(result.getActualAmount()).isEqualTo(400L);
             assertThat(result.getShareRate()).isEqualTo(25.0);
             assertThat(result.getExecutionRate()).isEqualTo(40.0);
+            assertThat(result.getRemarks()).isEqualTo("주일학교 포함");
         }
     }
 
@@ -171,11 +173,12 @@ class ReportMapperTest {
         }
 
         @Test
-        @DisplayName("예산명과 넘겨받은 깊이, 예산액, 점유율, 직전 회계 연도 금액을 DTO로 옮긴다")
+        @DisplayName("예산명과 비고, 넘겨받은 깊이, 예산액, 점유율, 직전 회계 연도 금액을 DTO로 옮긴다")
         void toBudgetPlanRowDto_budgetWithValues_returnsCorrectDto() {
             // Given
             Budget entity = Budget.builder()
                     .name("십일조")
+                    .remarks("월정 헌금 포함")
                     .build();
 
             // When
@@ -187,6 +190,7 @@ class ReportMapperTest {
             assertThat(result.getAmount()).isEqualTo(700L);
             assertThat(result.getShareRate()).isEqualTo(70.0);
             assertThat(result.getPreviousAmount()).isEqualTo(500L);
+            assertThat(result.getRemarks()).isEqualTo("월정 헌금 포함");
         }
     }
 }

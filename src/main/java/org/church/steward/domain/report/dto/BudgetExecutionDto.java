@@ -22,4 +22,6 @@ public class BudgetExecutionDto {
     private Double shareRate;
     /** 예산액 대비 집행액의 비율(%). 예산액이 0이면 null */
     private Double executionRate;
+    /** 예산의 비고. 없으면 null */
+    private String remarks;
 }

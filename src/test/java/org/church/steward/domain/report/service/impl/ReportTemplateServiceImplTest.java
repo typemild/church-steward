@@ -219,14 +219,71 @@ class ReportTemplateServiceImplTest {
         }
 
         @Test
-        @DisplayName("양식에서 정할 것이 없는 보고서는 결재란과 표가 없다")
-        void getReportTemplate_ReportWithoutTemplate_ReturnsEmptyTemplate() {
+        @DisplayName("결재란이 없는 보고서는 결재란이 null이다")
+        void getReportTemplate_ReportWithoutApproval_ReturnsNullApproval() {
             // When
             ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.INCOME_BUDGET_PLAN);
 
             // Then
             assertThat(actual.getApproval()).isNull();
-            assertThat(actual.getTables()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("저장한 적이 없으면 예산안의 표는 예산 항목, 예산액, 점유율, 직전 대비 증감액, 비고 순이다")
+        void getReportTemplate_BudgetPlanNotSaved_ReturnsDefaultColumns() {
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.EXPENSE_BUDGET_PLAN);
+
+            // Then
+            assertThat(actual.getTables()).containsOnlyKeys(ReportTemplateTable.EXPENSE_BUDGET_PLAN);
+            assertThat(actual.getTables()
+                    .get(ReportTemplateTable.EXPENSE_BUDGET_PLAN)).extracting(ReportColumnDto::getColumn)
+                    .containsExactly(ReportColumn.BUDGET_NAME, ReportColumn.BUDGETED_AMOUNT, ReportColumn.SHARE_RATE,
+                            ReportColumn.CHANGE, ReportColumn.REMARKS);
+        }
+
+        @Test
+        @DisplayName("저장한 적이 없으면 수입 결산 세부 내역서의 표는 예산 항목, 예산액, 점유율, 수입액, 달성률, 비고 순이다")
+        void getReportTemplate_SettlementDetailNotSaved_ReturnsDefaultColumns() {
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.INCOME_SETTLEMENT_DETAIL);
+
+            // Then
+            assertThat(actual.getTables()
+                    .get(ReportTemplateTable.INCOME_SETTLEMENT_DETAIL)).extracting(ReportColumnDto::getColumn)
+                    .containsExactly(ReportColumn.BUDGET_NAME, ReportColumn.BUDGETED_AMOUNT, ReportColumn.SHARE_RATE,
+                            ReportColumn.ACTUAL_AMOUNT, ReportColumn.RATE, ReportColumn.REMARKS);
+        }
+
+        @Test
+        @DisplayName("결산 세부 내역서는 비율 칸이 있어도 막대 설정이 없다")
+        void getReportTemplate_SettlementDetail_HasNoRateBarOption() {
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.EXPENSE_SETTLEMENT_DETAIL);
+
+            // Then
+            assertThat(actual.getRateBarVisible()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("회계 연도 결산 보고서의 현황 표는 주간 보고서의 현황 표와 따로 막대 설정을 읽는다")
+        void getReportTemplate_AnnualSettlement_ReadsOwnRateBarOptions() {
+            // Given
+            when(reportTableOptionRepository.findById(any()))
+                    .thenAnswer(invocation -> invocation.getArgument(0) == ReportTemplateTable.ANNUAL_INCOME_STATUS
+                            ? Optional.of(ReportTableOption.builder()
+                                    .tableType(ReportTemplateTable.ANNUAL_INCOME_STATUS)
+                                    .rateBarVisible(false)
+                                    .build())
+                            : Optional.empty());
+
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.ANNUAL_SETTLEMENT);
+
+            // Then
+            assertThat(actual.getRateBarVisible()).containsOnly(
+                    entry(ReportTemplateTable.ANNUAL_INCOME_STATUS, false),
+                    entry(ReportTemplateTable.ANNUAL_EXPENSE_STATUS, true));
         }
 
         @Test
@@ -500,18 +557,61 @@ class ReportTemplateServiceImplTest {
         }
 
         @Test
-        @DisplayName("양식에서 정할 것이 없는 보고서이면 예외를 던진다")
-        void updateReportTemplate_ReportWithoutTemplate_ThrowsException() {
+        @DisplayName("예산안의 첫 번째 칸이 예산 항목이 아니면 예외를 던진다")
+        void updateReportTemplate_BudgetPlanFirstColumnNotBudget_ThrowsException() {
             // Given
             ReportTemplateDto template = ReportTemplateDto.builder()
-                    .reportType(ReportType.ANNUAL_SETTLEMENT)
-                    .tables(Map.of())
+                    .reportType(ReportType.INCOME_BUDGET_PLAN)
+                    .tables(Map.of(ReportTemplateTable.INCOME_BUDGET_PLAN, createColumns(List.of(
+                            ReportColumn.BUDGETED_AMOUNT, ReportColumn.BUDGET_NAME, ReportColumn.SHARE_RATE,
+                            ReportColumn.CHANGE, ReportColumn.REMARKS))))
+                    .rateBarVisible(Map.of())
                     .build();
 
             // When & Then
             assertThatThrownBy(() -> reportTemplateService.updateReportTemplate(template))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("양식을 정할 수 없는 보고서입니다.");
+                    .hasMessage("수입 예산안의 첫 번째 칸에는 예산 항목만 둘 수 있습니다.");
+        }
+
+        @Test
+        @DisplayName("결산 세부 내역서의 칸 순서를 저장한다")
+        void updateReportTemplate_SettlementDetail_SavesColumns() {
+            // Given
+            List<ReportColumn> order = List.of(ReportColumn.BUDGET_NAME, ReportColumn.REMARKS,
+                    ReportColumn.BUDGETED_AMOUNT, ReportColumn.ACTUAL_AMOUNT, ReportColumn.RATE,
+                    ReportColumn.SHARE_RATE);
+            ReportTemplateDto template = ReportTemplateDto.builder()
+                    .reportType(ReportType.EXPENSE_SETTLEMENT_DETAIL)
+                    .tables(Map.of(ReportTemplateTable.EXPENSE_SETTLEMENT_DETAIL, createColumns(order)))
+                    .rateBarVisible(Map.of())
+                    .build();
+
+            // When
+            reportTemplateService.updateReportTemplate(template);
+
+            // Then
+            verify(reportTableColumnRepository).saveAll(columnsCaptor.capture());
+            assertThat(columnsCaptor.getValue()).extracting(ReportTableColumn::getColumnType)
+                    .containsExactlyElementsOf(order);
+        }
+
+        @Test
+        @DisplayName("결산 세부 내역서는 막대 설정이 없으므로 저장하지 않는다")
+        void updateReportTemplate_SettlementDetail_DoesNotSaveOption() {
+            // Given
+            ReportTemplateDto template = ReportTemplateDto.builder()
+                    .reportType(ReportType.INCOME_SETTLEMENT_DETAIL)
+                    .tables(Map.of(ReportTemplateTable.INCOME_SETTLEMENT_DETAIL, createColumns(
+                            ReportTemplateTable.INCOME_SETTLEMENT_DETAIL.getDefaultColumns())))
+                    .rateBarVisible(Map.of())
+                    .build();
+
+            // When
+            reportTemplateService.updateReportTemplate(template);
+
+            // Then
+            verify(reportTableOptionRepository, never()).save(any());
         }
 
         @Test

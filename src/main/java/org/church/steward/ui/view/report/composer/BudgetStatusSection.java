@@ -4,10 +4,10 @@ import java.awt.Font;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.report.dto.BudgetExecutionDto;
+import org.church.steward.domain.report.dto.ReportColumnDto;
+import org.church.steward.domain.report.dto.ReportTemplateDto;
 import org.church.steward.domain.report.entity.ReportColumn;
-import org.church.steward.domain.report.entity.ReportTemplateConstraints;
 import org.church.steward.domain.report.entity.ReportTemplateTable;
 import org.church.steward.ui.view.report.layout.ReportAlign;
 import org.church.steward.ui.view.report.layout.ReportCanvas;
@@ -26,7 +26,7 @@ import org.church.steward.ui.view.report.layout.ReportText;
  * <p>
  * 칸의 순서와 비율 칸(달성률/집행률)의 막대는 보고서 양식이 정한다. 막대는 따로 칸을 두지 않고 비율 칸 안의 왼쪽에 그리며, 비율은
  * 가운데 정렬한다. 모든 칸이 폭을 고르게 나눠 갖는다(글자를 키워 금액이나 비율이 들어가지 않는 칸은 넓어지고 예산 항목이 그만큼
- * 좁아진다).
+ * 좁아진다). 막대를 숨겨도 비율 칸은 그대로 고른 폭을 갖고 비율을 그 가운데에 적는다.
  */
 final class BudgetStatusSection {
 
@@ -36,16 +36,25 @@ final class BudgetStatusSection {
     /**
      * 현황 표 하나의 양식
      *
+     * @param table          양식의 표. 칸의 이름을 정한다.
      * @param columns        보일 칸의 순서
      * @param rateBarVisible 비율 칸의 왼쪽에 막대를 함께 그리는지 여부
      */
-    record Layout(List<ReportColumn> columns, boolean rateBarVisible) {
+    record Layout(ReportTemplateTable table, List<ReportColumn> columns, boolean rateBarVisible) {
 
         /**
-         * 양식을 정할 수 없는 보고서(회계 연도 수입/지출 결산 보고서)가 쓰는 양식. 주간 보고서의 기본 양식과 같다.
+         * 보고서 양식에서 현황 표의 양식을 꺼낸다. 숨긴 칸은 뺀다.
          */
-        static final Layout DEFAULT = new Layout(ReportTemplateTable.WEEKLY_INCOME_STATUS.getDefaultColumns(),
-                ReportTemplateConstraints.DEFAULT_RATE_BAR_VISIBLE);
+        static Layout of(ReportTemplateDto template, ReportTemplateTable table) {
+            List<ReportColumn> columns = template.getTables()
+                    .get(table)
+                    .stream()
+                    .filter(column -> !column.isHidden())
+                    .map(ReportColumnDto::getColumn)
+                    .toList();
+            return new Layout(table, columns, template.getRateBarVisible()
+                    .get(table));
+        }
     }
 
     private static final String WIDEST_RATE = "999.9%";
@@ -68,10 +77,9 @@ final class BudgetStatusSection {
         double columnWidth = (canvas.getContentWidth() - COLUMN_GAP) / 2;
         double expenseLeft = canvas.getLeft() + columnWidth + COLUMN_GAP;
 
-        ReportTable incomeTable = createTable(canvas.getStyle(), BudgetType.INCOME, incomeStatus, incomeLayout,
-                baseSize, columnWidth);
-        ReportTable expenseTable = createTable(canvas.getStyle(), BudgetType.EXPENSE, expenseStatus, expenseLayout,
-                baseSize, columnWidth);
+        ReportTable incomeTable = createTable(canvas.getStyle(), incomeStatus, incomeLayout, baseSize, columnWidth);
+        ReportTable expenseTable = createTable(canvas.getStyle(), expenseStatus, expenseLayout, baseSize,
+                columnWidth);
 
         double tableHeight = Math.max(incomeTable.measureHeight(columnWidth),
                 expenseTable.measureHeight(columnWidth));
@@ -93,8 +101,8 @@ final class BudgetStatusSection {
     /**
      * @param tableWidth 표의 폭. 칸마다 이 폭을 칸 수로 나눈 폭을 준다.
      */
-    private static ReportTable createTable(ReportStyle style, BudgetType type, List<BudgetExecutionDto> rows,
-            Layout layout, float baseSize, double tableWidth) {
+    private static ReportTable createTable(ReportStyle style, List<BudgetExecutionDto> rows, Layout layout,
+            float baseSize, double tableWidth) {
         long totalBudgeted = 0;
         long totalActual = 0;
         for (BudgetExecutionDto row : rows) {
@@ -109,7 +117,8 @@ final class BudgetStatusSection {
         List<Column> columns = new ArrayList<>();
         for (ReportColumn column : layout.columns()) {
             double width = column == ReportColumn.BUDGET_NAME ? 0 : evenWidth;
-            columns.add(new Column(headerOf(column, type), width, alignOf(column)));
+            columns.add(new Column(layout.table()
+                    .labelOf(column), width, alignOf(column)));
         }
         ReportTable table = new ReportTable(style, baseSize, columns.toArray(Column[]::new));
 
@@ -123,15 +132,6 @@ final class BudgetStatusSection {
         Double totalRate = totalBudgeted > 0 ? totalActual * 100.0 / totalBudgeted : null;
         table.addRow(RowStyle.TOTAL, 0, cellsOf(layout, rateWidth, "합계", totalActual, totalBudgeted, totalRate));
         return table;
-    }
-
-    /**
-     * 칸의 머리글. 수입은 예산을 채운 정도(달성), 지출은 예산을 쓴 정도(집행)로 부른다.
-     */
-    private static String headerOf(ReportColumn column, BudgetType type) {
-        ReportTemplateTable table = type == BudgetType.INCOME ? ReportTemplateTable.WEEKLY_INCOME_STATUS
-                : ReportTemplateTable.WEEKLY_EXPENSE_STATUS;
-        return table.labelOf(column);
     }
 
     private static ReportAlign alignOf(ReportColumn column) {

@@ -5,6 +5,8 @@ import java.time.YearMonth;
 import org.church.steward.domain.dashboard.dto.MonthlyTrendDto;
 import org.church.steward.domain.report.dto.AnnualSettlementReportDto;
 import org.church.steward.domain.report.dto.ReportSummaryDto;
+import org.church.steward.domain.report.dto.ReportTemplateDto;
+import org.church.steward.domain.report.entity.ReportTemplateTable;
 import org.church.steward.ui.view.report.layout.ReportAlign;
 import org.church.steward.ui.view.report.layout.ReportCanvas;
 import org.church.steward.ui.view.report.layout.ReportDocument;
@@ -17,7 +19,7 @@ import org.church.steward.ui.view.report.layout.ReportTable.RowStyle;
 
 /**
  * 회계 연도 수입/지출 결산 보고서를 배치한다. 위에서부터 직전 회계 연도와 해당 회계 연도의 총괄, 월별 수입/지출(차트와 표), 수입
- * 현황과 지출 현황 순이다.
+ * 현황과 지출 현황 순이다. 현황 표의 칸 순서와 막대는 보고서 양식({@link ReportTemplateDto})이 정한다.
  */
 public final class AnnualSettlementReportComposer {
 
@@ -25,7 +27,6 @@ public final class AnnualSettlementReportComposer {
     private static final float STATUS_SIZE = ReportFonts.SIZE_BODY;
     private static final float CHART_SIZE = ReportFonts.SIZE_SMALL;
 
-    private static final double SUMMARY_AMOUNT_WIDTH = ReportPaper.mm(42);
     private static final double MONTH_WIDTH = ReportPaper.mm(13);
     /** 월별 표가 본문 폭에서 차지하는 비율. 나머지는 차트가 쓴다. */
     private static final double MONTHLY_TABLE_RATIO = 0.48;
@@ -35,7 +36,8 @@ public final class AnnualSettlementReportComposer {
         // 인스턴스화 방지
     }
 
-    public static ReportDocument compose(AnnualSettlementReportDto report, ReportStyle style) {
+    public static ReportDocument compose(AnnualSettlementReportDto report, ReportTemplateDto template,
+            ReportStyle style) {
         String title = String.format("%s 회계 연도 수입/지출 결산 보고서", report.getFiscalYearName());
 
         ReportCanvas canvas = new ReportCanvas(title, style);
@@ -48,30 +50,39 @@ public final class AnnualSettlementReportComposer {
         drawMonthly(canvas, report);
         canvas.moveDown(ReportStyles.SECTION_SPACING);
         BudgetStatusSection.render(canvas, report.getIncomeStatus(), report.getExpenseStatus(),
-                BudgetStatusSection.Layout.DEFAULT, BudgetStatusSection.Layout.DEFAULT, STATUS_SIZE, "");
+                BudgetStatusSection.Layout.of(template, ReportTemplateTable.ANNUAL_INCOME_STATUS),
+                BudgetStatusSection.Layout.of(template, ReportTemplateTable.ANNUAL_EXPENSE_STATUS), STATUS_SIZE, "");
 
         return canvas.finish();
     }
 
     /**
-     * 직전 회계 연도와 해당 회계 연도의 수입 총액, 지출 총액, 차액
+     * 직전 회계 연도와 해당 회계 연도의 수입 총액, 지출 총액, 차액. 금액 칸은 세 칸 모두 가장 넓은 금액(머리글 포함)에 맞춘 같은
+     * 폭이고, 회계 연도 칸이 남은 폭을 가져간다.
      */
     private static void drawSummary(ReportCanvas canvas, AnnualSettlementReportDto report) {
         canvas.section("수입/지출 총괄", ReportFonts.SIZE_SECTION, canvas.getLeft());
 
         ReportTable table = new ReportTable(canvas.getStyle(), BODY_SIZE,
-                new Column("구분", 0, ReportAlign.LEFT),
-                new Column("수입 총액", SUMMARY_AMOUNT_WIDTH, ReportAlign.RIGHT),
-                new Column("지출 총액", SUMMARY_AMOUNT_WIDTH, ReportAlign.RIGHT),
-                new Column("차액", SUMMARY_AMOUNT_WIDTH, ReportAlign.RIGHT));
+                new Column("회계 연도", 0, ReportAlign.LEFT),
+                new Column("수입 총액", 0, ReportAlign.RIGHT),
+                new Column("지출 총액", 0, ReportAlign.RIGHT),
+                new Column("차액", 0, ReportAlign.RIGHT));
 
-        // 직전 회계 연도가 없으면 이름 대신 "없음"으로 적고 금액은 비워 둔다.
-        String previousName = report.getPreviousFiscalYearName() == null ? "없음"
-                : report.getPreviousFiscalYearName();
-        addSummaryRow(table, RowStyle.NORMAL, String.format("직전 회계 연도 (%s)", previousName),
-                report.getPreviousYear());
-        addSummaryRow(table, RowStyle.EMPHASIS, String.format("해당 회계 연도 (%s)", report.getFiscalYearName()),
+        // 직전 회계 연도가 없으면 이름과 기간 대신 "없음"으로 적고 금액은 비워 둔다.
+        String previous = report.getPreviousFiscalYearName() == null ? "없음"
+                : String.format("%s, %s", report.getPreviousFiscalYearName(), ReportFormats.period(
+                        report.getPreviousFiscalYearStartDate(), report.getPreviousFiscalYearEndDate()));
+        addSummaryRow(table, RowStyle.NORMAL, String.format("직전 (%s)", previous), report.getPreviousYear());
+        addSummaryRow(table, RowStyle.EMPHASIS, String.format("당해 (%s, %s)", report.getFiscalYearName(),
+                ReportFormats.period(report.getFiscalYearStartDate(), report.getFiscalYearEndDate())),
                 report.getCurrentYear());
+
+        double amountWidth = 0;
+        for (int i = 1; i <= 3; i++) {
+            amountWidth = Math.max(amountWidth, table.measureNaturalWidth(i));
+        }
+        table.setWidths(0, amountWidth, amountWidth, amountWidth);
         table.render(canvas);
     }
 

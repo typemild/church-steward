@@ -317,28 +317,28 @@ public class ReportingView extends JPanel implements MenuActivatable {
      */
     private Function<ReportStyle, ReportDocument> fetch(ReportType type, Long fiscalYearId, LocalDate startDate,
             LocalDate endDate) {
+        // 양식은 따로 보관하지 않고 조회할 때 보고서와 함께 읽는다. 양식 설정에서 저장하면 다시 조회하므로 바뀐 양식이 반영된다.
+        ReportTemplateDto template = reportController.getReportTemplate(type);
         return switch (type) {
         case WEEKLY_SETTLEMENT -> {
             WeeklySettlementReportDto report = reportController.getWeeklySettlementReport(fiscalYearId, startDate,
                     endDate);
-            // 양식은 따로 보관하지 않고 조회할 때 보고서와 함께 읽는다. 양식 설정에서 저장하면 다시 조회하므로 바뀐 양식이 반영된다.
-            ReportTemplateDto template = reportController.getReportTemplate(type);
             yield style -> WeeklySettlementReportComposer.compose(report, template, style);
         }
         case INCOME_BUDGET_PLAN, EXPENSE_BUDGET_PLAN -> {
             BudgetType budgetType = type == ReportType.INCOME_BUDGET_PLAN ? BudgetType.INCOME : BudgetType.EXPENSE;
             BudgetPlanReportDto report = reportController.getBudgetPlanReport(fiscalYearId, budgetType);
-            yield style -> BudgetPlanReportComposer.compose(report, style);
+            yield style -> BudgetPlanReportComposer.compose(report, template, style);
         }
         case ANNUAL_SETTLEMENT -> {
             AnnualSettlementReportDto report = reportController.getAnnualSettlementReport(fiscalYearId);
-            yield style -> AnnualSettlementReportComposer.compose(report, style);
+            yield style -> AnnualSettlementReportComposer.compose(report, template, style);
         }
         case INCOME_SETTLEMENT_DETAIL, EXPENSE_SETTLEMENT_DETAIL -> {
             BudgetType budgetType = type == ReportType.INCOME_SETTLEMENT_DETAIL ? BudgetType.INCOME
                     : BudgetType.EXPENSE;
             SettlementDetailReportDto report = reportController.getSettlementDetailReport(fiscalYearId, budgetType);
-            yield style -> SettlementDetailReportComposer.compose(report, style);
+            yield style -> SettlementDetailReportComposer.compose(report, template, style);
         }
         };
     }

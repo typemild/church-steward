@@ -381,6 +381,22 @@ class ReportServiceImplTest {
         }
 
         @Test
+        @DisplayName("제목 아래에 적을 회계 연도의 이름과 기간을 담는다")
+        void getBudgetPlanReport_FiscalYear_IncludesNameAndPeriod() {
+            // Given
+            when(fiscalYearRepository.findById(CURRENT_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearIdAndType(CURRENT_ID, BudgetType.INCOME)).thenReturn(List.of());
+
+            // When
+            BudgetPlanReportDto result = reportService.getBudgetPlanReport(CURRENT_ID, BudgetType.INCOME);
+
+            // Then
+            assertThat(result.getFiscalYearName()).isEqualTo("2026년");
+            assertThat(result.getFiscalYearStartDate()).isEqualTo(LocalDate.of(2026, 1, 1));
+            assertThat(result.getFiscalYearEndDate()).isEqualTo(LocalDate.of(2026, 12, 31));
+        }
+
+        @Test
         @DisplayName("점유율은 같은 구분의 예산 총액에서 각 예산이 차지하는 비율이다")
         void getBudgetPlanReport_MultipleBudgets_CalculatesShareOfTotal() {
             // Given
@@ -479,9 +495,9 @@ class ReportServiceImplTest {
         }
 
         @Test
-        @DisplayName("해당 회계 연도와 직전 회계 연도의 이름을 담는다")
+        @DisplayName("해당 회계 연도와 직전 회계 연도의 이름과 기간을 담는다")
         @SuppressWarnings("unchecked")
-        void getAnnualSettlementReport_PreviousYearExists_ContainsFiscalYearNames() {
+        void getAnnualSettlementReport_PreviousYearExists_ContainsFiscalYearNamesAndPeriods() {
             // Given
             when(fiscalYearRepository.findById(CURRENT_ID)).thenReturn(Optional.of(fiscalYear));
             when(fiscalYearRepository.findFirstByStartDateLessThanOrderByStartDateDesc(fiscalYear.getStartDate()))
@@ -497,11 +513,15 @@ class ReportServiceImplTest {
 
             // Then
             assertThat(result.getFiscalYearName()).isEqualTo("2026년");
+            assertThat(result.getFiscalYearStartDate()).isEqualTo(LocalDate.of(2026, 1, 1));
+            assertThat(result.getFiscalYearEndDate()).isEqualTo(LocalDate.of(2026, 12, 31));
             assertThat(result.getPreviousFiscalYearName()).isEqualTo("2025년 하반기");
+            assertThat(result.getPreviousFiscalYearStartDate()).isEqualTo(LocalDate.of(2025, 7, 1));
+            assertThat(result.getPreviousFiscalYearEndDate()).isEqualTo(LocalDate.of(2025, 12, 31));
         }
 
         @Test
-        @DisplayName("직전 회계 연도가 없으면 직전 회계 연도의 이름을 비워 둔다")
+        @DisplayName("직전 회계 연도가 없으면 직전 회계 연도의 이름과 기간을 비워 둔다")
         @SuppressWarnings("unchecked")
         void getAnnualSettlementReport_NoPreviousYear_LeavesPreviousFiscalYearNameEmpty() {
             // Given
@@ -517,6 +537,8 @@ class ReportServiceImplTest {
 
             // Then
             assertThat(result.getPreviousFiscalYearName()).isNull();
+            assertThat(result.getPreviousFiscalYearStartDate()).isNull();
+            assertThat(result.getPreviousFiscalYearEndDate()).isNull();
         }
 
         @Test
@@ -662,6 +684,24 @@ class ReportServiceImplTest {
             assertThat(result.getTotalBudgetedAmount()).isEqualTo(800L);
             assertThat(result.getTotalActualAmount()).isEqualTo(200L);
             assertThat(result.getTotalExecutionRate()).isEqualTo(25.0);
+        }
+
+        @Test
+        @DisplayName("제목 아래에 적을 회계 연도의 이름과 기간을 담는다")
+        @SuppressWarnings("unchecked")
+        void getSettlementDetailReport_FiscalYear_IncludesNameAndPeriod() {
+            // Given
+            when(fiscalYearRepository.findById(CURRENT_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearIdAndType(CURRENT_ID, BudgetType.INCOME)).thenReturn(List.of());
+            when(financialRecordRepository.findAll(any(Specification.class))).thenReturn(List.of());
+
+            // When
+            SettlementDetailReportDto result = reportService.getSettlementDetailReport(CURRENT_ID, BudgetType.INCOME);
+
+            // Then
+            assertThat(result.getFiscalYearName()).isEqualTo("2026년");
+            assertThat(result.getFiscalYearStartDate()).isEqualTo(LocalDate.of(2026, 1, 1));
+            assertThat(result.getFiscalYearEndDate()).isEqualTo(LocalDate.of(2026, 12, 31));
         }
     }
 

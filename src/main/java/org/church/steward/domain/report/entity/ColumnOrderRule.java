@@ -45,10 +45,9 @@ public interface ColumnOrderRule {
     String labelOf(ReportColumn column);
 
     /**
-     * 비율 칸(달성률/집행률)의 왼쪽에 막대를 함께 그릴지 정할 수 있는 표인지 여부. 비율 칸이 있는 표(현황 표)이며, 이 표는 모든 칸이
-     * 폭을 고르게 나눠 갖는다.
+     * 비율 칸(달성률/집행률)의 왼쪽에 막대를 함께 그릴지 정할 수 있는 표인지 여부. 보고서의 현황 표만 정할 수 있다.
      */
     default boolean hasRateBarOption() {
-        return getDefaultColumns().contains(ReportColumn.RATE);
+        return false;
     }
 }

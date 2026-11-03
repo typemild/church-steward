@@ -1,6 +1,7 @@
 package org.church.steward.ui.view.report.composer;
 
 import java.awt.Font;
+import java.time.LocalDate;
 
 import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.view.report.layout.ReportAlign;
@@ -25,15 +26,34 @@ final class ReportStyles {
     static final float BUDGET_TABLE_SIZE = 9f;
     static final float BUDGET_TABLE_UNIT_SIZE = 8f;
 
+    /** 회계 연도 단위 보고서에서 제목 아래에 회계 연도의 기간을 적는 글자의 크기 */
+    static final float SUBTITLE_SIZE = 9f;
+
     /** 제목과 그 아래 내용 사이의 간격 */
     static final double TITLE_GAP = 4;
     /** 절과 절 사이의 간격 */
     static final double SECTION_SPACING = 10;
 
+    private static final double SUBTITLE_GAP = 2;
     private static final double UNIT_GAP = 2;
 
     private ReportStyles() {
         // 인스턴스화 방지
+    }
+
+    /**
+     * 회계 연도 단위 보고서의 제목을 놓고, 그 아래 가운데에 "2026-01-01 ~ 2026-12-31"처럼 회계 연도의 기간을 적은 뒤
+     * 제목 아래의 간격만큼 이동한다.
+     */
+    static void drawAnnualTitle(ReportCanvas canvas, String title, LocalDate startDate, LocalDate endDate) {
+        canvas.title(title, ANNUAL_TITLE_SIZE);
+        canvas.moveDown(SUBTITLE_GAP);
+
+        Font font = canvas.getStyle()
+                .regular(SUBTITLE_SIZE);
+        canvas.text(ReportFormats.period(startDate, endDate), font, ReportAlign.CENTER,
+                (canvas.getLeft() + canvas.getRight()) / 2, canvas.getY() + ReportText.ascent(font));
+        canvas.moveDown(ReportText.lineHeight(font) + TITLE_GAP);
     }
 
     /**

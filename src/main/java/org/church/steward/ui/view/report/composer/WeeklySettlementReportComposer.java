@@ -7,10 +7,8 @@ import java.util.List;
 import java.util.Locale;
 
 import org.church.steward.domain.report.dto.ReportApprovalDto;
-import org.church.steward.domain.report.dto.ReportColumnDto;
 import org.church.steward.domain.report.dto.ReportTemplateDto;
 import org.church.steward.domain.report.dto.WeeklySettlementReportDto;
-import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.domain.report.entity.ReportTemplateTable;
 import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.view.report.layout.ReportAlign;
@@ -83,8 +81,9 @@ public final class WeeklySettlementReportComposer {
         String statusSuffix = String.format(" (%s까지 누계)", report.getEndDate()
                 .format(SHORT_DATE_FORMAT));
         BudgetStatusSection.render(canvas, report.getIncomeStatus(), report.getExpenseStatus(),
-                statusLayout(template, ReportTemplateTable.WEEKLY_INCOME_STATUS),
-                statusLayout(template, ReportTemplateTable.WEEKLY_EXPENSE_STATUS), STATUS_SIZE, statusSuffix);
+                BudgetStatusSection.Layout.of(template, ReportTemplateTable.WEEKLY_INCOME_STATUS),
+                BudgetStatusSection.Layout.of(template, ReportTemplateTable.WEEKLY_EXPENSE_STATUS), STATUS_SIZE,
+                statusSuffix);
         canvas.moveDown(SECTION_SPACING);
 
         new WeeklyRecordSection(style).render(canvas, report.getIncomeRecords(), report.getExpenseRecords(),
@@ -93,17 +92,6 @@ public final class WeeklySettlementReportComposer {
                 template.getTables()
                         .get(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS));
         return canvas.finish();
-    }
-
-    private static BudgetStatusSection.Layout statusLayout(ReportTemplateDto template, ReportTemplateTable table) {
-        List<ReportColumn> columns = template.getTables()
-                .get(table)
-                .stream()
-                .filter(column -> !column.isHidden())
-                .map(ReportColumnDto::getColumn)
-                .toList();
-        return new BudgetStatusSection.Layout(columns, template.getRateBarVisible()
-                .get(table));
     }
 
     /**
