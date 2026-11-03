@@ -47,4 +47,9 @@ public interface FinancialRecordActionHandler {
      * 수입/지출 상세 보기 다이얼로그를 연다. 마감된 회계 연도처럼 내역을 바꿀 수 없을 때 쓴다.
      */
     void viewRecord(FinancialRecordResponseDto record);
+
+    /**
+     * 예산별 보기의 칸 설정이 프로그램 설정에 있음을 알리고, 확인하면 그 화면으로 이동한다.
+     */
+    void showColumnSettings();
 }

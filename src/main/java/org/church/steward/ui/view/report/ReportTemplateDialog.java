@@ -32,6 +32,7 @@ import org.church.steward.ui.component.field.StyledComboBox;
 import org.church.steward.ui.component.field.StyledTextField;
 import org.church.steward.ui.component.label.FieldLabel;
 import org.church.steward.ui.component.label.SubFieldLabel;
+import org.church.steward.ui.component.panel.ColumnOrderPanel;
 import org.church.steward.ui.util.AsyncTask;
 import org.church.steward.ui.util.DialogKeyHandler;
 import org.church.steward.ui.util.UIColors;
@@ -56,7 +57,7 @@ class ReportTemplateDialog extends JDialog {
     private final StyledCheckBox approvalVisibleCheckBox = new StyledCheckBox("결재란 표시", ComponentSize.MEDIUM);
     private final StyledComboBox<Integer> cellCountComboBox = new StyledComboBox<>(ComponentSize.MEDIUM);
     private final List<StyledTextField> titleFields = new ArrayList<>();
-    private final Map<ReportTemplateTable, ReportColumnOrderPanel> columnPanels = new EnumMap<>(
+    private final Map<ReportTemplateTable, ColumnOrderPanel> columnPanels = new EnumMap<>(
             ReportTemplateTable.class);
 
     private final PrimaryButton saveButton = new PrimaryButton("저장", ComponentSize.MEDIUM);
@@ -84,10 +85,11 @@ class ReportTemplateDialog extends JDialog {
             tabbedPane.addTab("결재란", createApprovalPanel(template.getApproval()));
         }
         for (ReportTemplateTable table : ReportTemplateTable.of(template.getReportType())) {
-            ReportColumnOrderPanel panel = new ReportColumnOrderPanel(table, template.getTables()
+            ColumnOrderPanel panel = new ColumnOrderPanel(table, template.getTables()
                     .get(table),
                     Boolean.TRUE.equals(template.getRateBarVisible()
-                            .get(table)));
+                            .get(table)),
+                    createColumnHints(table));
             columnPanels.put(table, panel);
             tabbedPane.addTab(table.getLabel(), panel);
         }
@@ -120,6 +122,23 @@ class ReportTemplateDialog extends JDialog {
 
         pack();
         setLocationRelativeTo(owner);
+    }
+
+    /**
+     * 칸 설정 패널에 덧붙일 보고서의 안내. 숨긴 칸의 값을 적는 방식과 칸이 폭을 나누는 방식이다.
+     */
+    private static List<String> createColumnHints(ReportTemplateTable table) {
+        List<String> lines = new ArrayList<>();
+        if (table.getDefaultColumns()
+                .stream()
+                .filter(table::canBeFirst)
+                .count() > 1) {
+            lines.add("숨긴 칸에 값이 있으면 그 내역의 아랫줄에 적습니다.");
+        }
+        // 현황 표는 모든 칸이 폭을 고르게 나눠 갖고, 내역은 금액 뒤의 칸들이 남은 폭을 나눠 갖는다.
+        lines.add(table.hasRateBarOption() ? "모든 칸이 폭을 고르게 나눠 갖습니다."
+                : "금액까지는 내용에 맞춘 폭이고, 금액 뒤의 칸들이 남은 폭을 나눠 갖습니다.");
+        return lines;
     }
 
     private JPanel createApprovalPanel(ReportApprovalDto approval) {
@@ -234,7 +253,7 @@ class ReportTemplateDialog extends JDialog {
 
         Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, Boolean> rateBarVisible = new EnumMap<>(ReportTemplateTable.class);
-        for (Map.Entry<ReportTemplateTable, ReportColumnOrderPanel> entry : columnPanels.entrySet()) {
+        for (Map.Entry<ReportTemplateTable, ColumnOrderPanel> entry : columnPanels.entrySet()) {
             tables.put(entry.getKey(), entry.getValue()
                     .getColumns());
             if (entry.getKey()

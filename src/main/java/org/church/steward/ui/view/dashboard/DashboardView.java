@@ -108,8 +108,8 @@ public class DashboardView extends JPanel implements MenuActivatable {
         this.controller = controller;
         this.fiscalYearSelector = fiscalYearSelector;
 
-        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일): 720 x 600
-        Dimension minSize = new Dimension(720, 600);
+        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일): 820 x 600
+        Dimension minSize = new Dimension(820, 600);
         setPreferredSize(minSize);
         setMinimumSize(minSize);
         setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));

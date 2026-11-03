@@ -50,8 +50,8 @@ public class SettingsView extends JPanel implements MenuActivatable {
         this.userManagementPanelView = userManagementPanelView;
         this.userSessionHolder = userSessionHolder;
 
-        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일) : 720 x 600
-        setPreferredSize(new Dimension(720, 600));
+        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일) : 820 x 600
+        setPreferredSize(new Dimension(820, 600));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         setLayout(new BorderLayout());
@@ -103,6 +103,17 @@ public class SettingsView extends JPanel implements MenuActivatable {
             initializeTabs();
         }
         tabbedPane.setSelectedIndex(FISCAL_YEAR_TAB_INDEX);
+    }
+
+    /**
+     * 프로그램 설정 탭을 보여준다. 설정 메뉴가 선택된 뒤({@link #onMenuSelected()})에 호출해야 한다. 다른 탭을 보고
+     * 있었다면 탭이 바뀌면서 프로그램 설정 화면이 데이터를 불러온다.
+     */
+    public void showProgramSettingTab() {
+        if (!tabsInitialized) {
+            initializeTabs();
+        }
+        tabbedPane.setSelectedComponent(programSettingPanelView);
     }
 
 }

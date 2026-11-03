@@ -6,6 +6,16 @@ CREATE TABLE PROGRAM_SETTING (
     CONSTRAINT PK_PROGRAM_SETTING PRIMARY KEY (ID)
 );
 
+-- 수입/지출 관리의 예산별 보기에서 표(수입/지출)의 칸 순서와 숨김. 표마다 그 표의 모든 칸을 한 행씩 둔다.
+-- 보고서 양식(REPORT_TABLE_COLUMN)과 따로 둔다. 행이 없으면 기본 순서(보고서의 주간 내역과 같다)를 쓴다.
+CREATE TABLE BUDGET_VIEW_COLUMN (
+    TABLE_TYPE  VARCHAR(10) NOT NULL,
+    COLUMN_TYPE VARCHAR(20) NOT NULL,
+    SORT_ORDER  INTEGER     NOT NULL,
+    HIDDEN      BOOLEAN     NOT NULL,
+    CONSTRAINT PK_BUDGET_VIEW_COLUMN PRIMARY KEY (TABLE_TYPE, COLUMN_TYPE)
+);
+
 -- 보고서 양식(프로그램 전체 설정이며 사용자별 서식인 REPORT_SETTING과 따로 둔다)
 -- 행은 처음 저장할 때 만든다. 행이 없으면(기존 데이터, 과거 버전의 백업) 기본 양식을 쓴다.
 -- 결재란. 직함은 칸 순서대로이며 칸 수보다 뒤의 직함과 빈 직함은 NULL이다.

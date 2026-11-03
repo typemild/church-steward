@@ -1,4 +1,4 @@
-package org.church.steward.ui.view.report;
+package org.church.steward.ui.component.panel;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -19,8 +19,8 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellRenderer;
 
 import org.church.steward.domain.report.dto.ReportColumnDto;
+import org.church.steward.domain.report.entity.ColumnOrderRule;
 import org.church.steward.domain.report.entity.ReportColumn;
-import org.church.steward.domain.report.entity.ReportTemplateTable;
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.button.IconButton;
 import org.church.steward.ui.component.field.StyledComboBox;
@@ -30,12 +30,12 @@ import org.church.steward.ui.component.table.ListTable;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 /**
- * 보고서 양식 설정에서 표 하나의 칸 순서와 숨김을 정하는 패널. 칸 목록의 체크를 끄면 그 칸을 숨기고, 위로/아래로 버튼으로 순서를
- * 바꾼다. 첫 번째 칸에 올 수 없는 칸은 그 자리로 옮길 수 없고, 숨길 수 없는 칸(첫 번째 칸 포함)은 체크를 끌 수 없다. 숨긴 칸을
- * 첫 번째 칸으로 옮기면 다시 보이게 한다. 현황 표는 목록 위에 비율 칸(달성률/집행률)의 왼쪽에 막대를 함께 그릴지 고르는 콤보박스를
- * 둔다.
+ * 표 하나의 칸 순서와 숨김을 정하는 패널. 보고서 양식 설정과 예산별 보기의 칸 설정이 함께 쓴다. 칸 목록의 체크를 끄면 그 칸을
+ * 숨기고, 위로/아래로 버튼으로 순서를 바꾼다. 첫 번째 칸에 올 수 없는 칸은 그 자리로 옮길 수 없고, 숨길 수 없는 칸(첫 번째 칸
+ * 포함)은 체크를 끌 수 없다. 숨긴 칸을 첫 번째 칸으로 옮기면 다시 보이게 한다. 비율 칸의 막대를 정할 수 있는 표(현황 표)는 목록
+ * 위에 비율 칸(달성률/집행률)의 왼쪽에 막대를 함께 그릴지 고르는 콤보박스를 둔다.
  */
-class ReportColumnOrderPanel extends JPanel {
+public class ColumnOrderPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
@@ -46,7 +46,7 @@ class ReportColumnOrderPanel extends JPanel {
     private static final String RATE_BAR_SHOWN = "막대와 함께 표시";
     private static final String RATE_BAR_HIDDEN = "비율만 표시";
 
-    private final ReportTemplateTable table;
+    private final ColumnOrderRule rule;
     private final ColumnTableModel model = new ColumnTableModel();
     private final ListTable listTable = new ListTable(model);
     private final IconButton upButton = new IconButton(FontAwesomeSolid.ARROW_UP, ComponentSize.SMALL);
@@ -68,14 +68,17 @@ class ReportColumnOrderPanel extends JPanel {
 
     /**
      * @param rateBarVisible 비율 칸의 왼쪽에 막대를 함께 그리는지 여부. 막대를 정할 수 없는 표이면 쓰지 않는다.
+     * @param extraHints     표의 규칙 안내 아래에 덧붙일 문장. 칸을 숨기거나 폭을 나누는 방식처럼 표를 쓰는 곳마다 다른
+     *                       내용이다.
      */
-    ReportColumnOrderPanel(ReportTemplateTable table, List<ReportColumnDto> columns, boolean rateBarVisible) {
-        this.table = table;
+    public ColumnOrderPanel(ColumnOrderRule rule, List<ReportColumnDto> columns, boolean rateBarVisible,
+            List<String> extraHints) {
+        this.rule = rule;
         setOpaque(false);
         setLayout(new BorderLayout(0, GAP));
         setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
 
-        if (table.hasRateBarOption()) {
+        if (rule.hasRateBarOption()) {
             add(createRateBarPanel(rateBarVisible), BorderLayout.NORTH);
         }
 
@@ -122,7 +125,7 @@ class ReportColumnOrderPanel extends JPanel {
         listPanel.add(buttonPanel, BorderLayout.EAST);
 
         add(listPanel, BorderLayout.CENTER);
-        add(new SubFieldLabel(createHint(), ComponentSize.SMALL), BorderLayout.SOUTH);
+        add(new SubFieldLabel(createHint(extraHints), ComponentSize.SMALL), BorderLayout.SOUTH);
 
         setColumns(columns);
     }
@@ -131,7 +134,7 @@ class ReportColumnOrderPanel extends JPanel {
      * 비율 칸(달성률/집행률)의 왼쪽에 막대를 함께 그릴지 고르는 줄
      */
     private JPanel createRateBarPanel(boolean rateBarVisible) {
-        String rateLabel = table.labelOf(ReportColumn.RATE);
+        String rateLabel = rule.labelOf(ReportColumn.RATE);
         rateBarComboBox.addItem(RATE_BAR_SHOWN);
         rateBarComboBox.addItem(RATE_BAR_HIDDEN);
         rateBarComboBox.setSelectedItem(rateBarVisible ? RATE_BAR_SHOWN : RATE_BAR_HIDDEN);
@@ -147,12 +150,12 @@ class ReportColumnOrderPanel extends JPanel {
     /**
      * 표의 규칙을 알리는 안내 문구. 레이블에서 줄을 바꾸려면 HTML을 써야 한다.
      */
-    private String createHint() {
+    private String createHint(List<String> extraHints) {
         List<String> lines = new ArrayList<>();
-        List<String> candidates = table.getDefaultColumns()
+        List<String> candidates = rule.getDefaultColumns()
                 .stream()
-                .filter(table::canBeFirst)
-                .map(table::labelOf)
+                .filter(rule::canBeFirst)
+                .map(rule::labelOf)
                 .toList();
         if (candidates.size() == 1) {
             lines.add(String.format("%s 칸은 항상 첫 번째 칸입니다.", candidates.get(0)));
@@ -160,34 +163,29 @@ class ReportColumnOrderPanel extends JPanel {
             lines.add(String.format("첫 번째 칸에는 %s만 둘 수 있고, 일자는 그 칸의 왼쪽에 붙여 적습니다.",
                     String.join(" 또는 ", candidates)));
         }
-        String hideable = table.getDefaultColumns()
+        String hideable = rule.getDefaultColumns()
                 .stream()
-                .filter(table.getHideableColumns()::contains)
-                .map(table::labelOf)
+                .filter(rule.getHideableColumns()::contains)
+                .map(rule::labelOf)
                 .collect(Collectors.joining(", "));
         if (!hideable.isEmpty()) {
             lines.add(String.format("체크를 끄면 칸을 숨깁니다(숨길 수 있는 칸: %s).", hideable));
         }
-        if (candidates.size() > 1) {
-            lines.add("숨긴 칸에 값이 있으면 그 내역의 아랫줄에 적습니다.");
-        }
-        // 현황 표는 모든 칸이 폭을 고르게 나눠 갖고, 내역은 금액 뒤의 칸들이 남은 폭을 나눠 갖는다.
-        lines.add(table.hasRateBarOption() ? "모든 칸이 폭을 고르게 나눠 갖습니다."
-                : "금액까지는 내용에 맞춘 폭이고, 금액 뒤의 칸들이 남은 폭을 나눠 갖습니다.");
+        lines.addAll(extraHints);
         return "<html>" + String.join("<br>", lines) + "</html>";
     }
 
     /**
      * 비율 칸의 왼쪽에 막대를 함께 그리는지 여부. 막대를 정할 수 없는 표이면 의미가 없다.
      */
-    boolean isRateBarVisible() {
+    public boolean isRateBarVisible() {
         return RATE_BAR_SHOWN.equals(rateBarComboBox.getSelectedItem());
     }
 
     /**
      * 칸의 순서와 숨김. 목록의 순서가 칸의 순서다.
      */
-    List<ReportColumnDto> getColumns() {
+    public List<ReportColumnDto> getColumns() {
         return model.rows.stream()
                 .map(row -> ReportColumnDto.builder()
                         .column(row.column)
@@ -196,7 +194,7 @@ class ReportColumnOrderPanel extends JPanel {
                 .toList();
     }
 
-    void setColumns(List<ReportColumnDto> columns) {
+    public void setColumns(List<ReportColumnDto> columns) {
         model.rows.clear();
         for (ReportColumnDto column : columns) {
             model.rows.add(new Row(column.getColumn(), column.isHidden()));
@@ -232,7 +230,7 @@ class ReportColumnOrderPanel extends JPanel {
             return true;
         }
         ReportColumn newFirst = (to == 0 ? model.rows.get(from) : model.rows.get(to)).column;
-        return table.canBeFirst(newFirst);
+        return rule.canBeFirst(newFirst);
     }
 
     private void updateButtons() {
@@ -274,13 +272,13 @@ class ReportColumnOrderPanel extends JPanel {
 
         @Override
         public boolean isCellEditable(int row, int column) {
-            return column == SHOWN_COLUMN && table.canHide(rows.get(row).column, row == 0);
+            return column == SHOWN_COLUMN && rule.canHide(rows.get(row).column, row == 0);
         }
 
         @Override
         public Object getValueAt(int row, int column) {
             Row value = rows.get(row);
-            return column == SHOWN_COLUMN ? !value.hidden : table.labelOf(value.column);
+            return column == SHOWN_COLUMN ? !value.hidden : rule.labelOf(value.column);
         }
 
         @Override

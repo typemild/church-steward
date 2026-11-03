@@ -96,20 +96,31 @@ final class WeeklyRecordSection {
     /**
      * 보이는 칸 하나
      *
+     * @param first  첫 번째 칸인지 여부. 첫 번째 칸은 일자를 붙여 적으므로 왼쪽 정렬이다.
      * @param header 머리글
      * @param left   단의 왼쪽 끝에서 칸의 왼쪽 끝까지의 거리
      */
-    private record Cell(ReportColumn column, String header, double left, double width) {
+    private record Cell(ReportColumn column, boolean first, String header, double left, double width) {
 
+        /**
+         * 금액은 오른쪽, 첫 번째 칸이 아닌 관계자는 가운데(이름은 짧다), 나머지는 왼쪽 정렬이다. 수입/지출 관리의 예산별 보기와 같다.
+         */
         ReportAlign align() {
-            return column == ReportColumn.AMOUNT ? ReportAlign.RIGHT : ReportAlign.LEFT;
+            if (column == ReportColumn.AMOUNT) {
+                return ReportAlign.RIGHT;
+            }
+            return column == ReportColumn.CONTACT && !first ? ReportAlign.CENTER : ReportAlign.LEFT;
         }
 
         /**
          * 단의 왼쪽 끝에서 글자의 정렬 기준까지의 거리
          */
         double anchorX() {
-            return align() == ReportAlign.RIGHT ? left + width - PADDING_X : left + PADDING_X;
+            return switch (align()) {
+            case RIGHT -> left + width - PADDING_X;
+            case CENTER -> left + width / 2;
+            default -> left + PADDING_X;
+            };
         }
     }
 
@@ -327,7 +338,7 @@ final class WeeklyRecordSection {
         double budgetNameWidth = 0;
         double amountRight = 0;
         for (int i = 0; i < visible.size(); i++) {
-            Cell cell = new Cell(visible.get(i), headers[i], x, widths[i]);
+            Cell cell = new Cell(visible.get(i), i == 0, headers[i], x, widths[i]);
             cells.add(cell);
             x += widths[i];
             if (cell.column() == ReportColumn.AMOUNT) {

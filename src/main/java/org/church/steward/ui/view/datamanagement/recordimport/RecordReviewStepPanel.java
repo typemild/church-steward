@@ -93,7 +93,7 @@ class RecordReviewStepPanel extends JPanel {
             columns.getColumn(column).setCellRenderer(renderer);
         }
         // 체크박스, 행, 구분, 상태 칸은 내용의 길이가 일정하므로 창이 커져도 넓히지 않고, 나머지 칸이 늘어난 폭을 나눠 쓴다.
-        // 칸이 11개이므로 비고 칸까지 모두 보여도 화면 폭(720px) 안에 들어가도록 기본 폭을 잡는다.
+        // 칸이 11개이므로 비고 칸까지 모두 보여도 화면 폭(최소 820px) 안에 들어가도록 기본 폭을 잡는다.
         table.setCheckColumnWidth(36);
         table.setNonGrowingColumnWidth(COLUMN_ROW_NUMBER, 38);
         table.setNonGrowingColumnWidth(COLUMN_TYPE, 40);

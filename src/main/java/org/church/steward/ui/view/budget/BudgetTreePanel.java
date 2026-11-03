@@ -22,6 +22,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
@@ -54,12 +55,11 @@ public class BudgetTreePanel extends JPanel {
     private List<BudgetDto> allDtos = new ArrayList<>();
 
     /**
-     * 예산 관리 화면에서 쓰는 금액 칸과 비율 칸의 폭. 수입 예산과 지출 예산을 좌우로 나란히 놓으면 표 하나가 320px 남짓이어서,
-     * 항목명에 폭을 남기도록 금액 칸은 억 단위("100,000,000")까지, 비율 칸은 "100.0%"까지 들어갈 만큼만 둔다. 칸에 넘치는
-     * 금액은 툴팁으로 확인할 수 있다.
+     * 예산 관리 화면에서 폭을 내용에 맞추는 칸(예산, 수입액/집행액, 달성률/집행률). 수입 예산과 지출 예산을 좌우로 나란히 놓으면 표
+     * 하나가 최소 370px 남짓이어서, 이 칸들은 머리글과 가장 긴 값이 들어갈 만큼만 두고 남는 폭은 항목명 칸이 모두 쓴다.
      */
-    private static final int AMOUNT_COLUMN_WIDTH = 78;
-    private static final int RATE_COLUMN_WIDTH = 54;
+    private static final int[] FITTED_COLUMNS = { BudgetTableModel.COLUMN_AMOUNT,
+            BudgetTableModel.COLUMN_ACTUAL_AMOUNT, BudgetTableModel.COLUMN_RATE };
 
     private final String title;
     private final BudgetType type;
@@ -96,15 +96,13 @@ public class BudgetTreePanel extends JPanel {
         TableColumnModel columns = table.getColumnModel();
         columns.getColumn(BudgetTableModel.COLUMN_AMOUNT).setCellRenderer(new AmountCellRenderer());
         if (!readOnly) {
-            // 항목명 칸이 남는 폭을 모두 쓰도록 금액과 비율 칸은 폭을 고정한다.
-            setFixedWidth(columns.getColumn(BudgetTableModel.COLUMN_AMOUNT), AMOUNT_COLUMN_WIDTH);
-            setFixedWidth(columns.getColumn(BudgetTableModel.COLUMN_ACTUAL_AMOUNT), AMOUNT_COLUMN_WIDTH);
             columns.getColumn(BudgetTableModel.COLUMN_ACTUAL_AMOUNT).setCellRenderer(new AmountCellRenderer());
-            setFixedWidth(columns.getColumn(BudgetTableModel.COLUMN_RATE), RATE_COLUMN_WIDTH);
-            // 칸이 좁으므로 금액 칸과 같이 안쪽 여백 없이 오른쪽에 붙여 적는다.
+            // 칸이 좁으므로 안쪽 여백 없이 오른쪽에 붙여 적는다.
             DefaultTableCellRenderer rateRenderer = new DefaultTableCellRenderer();
             rateRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
             columns.getColumn(BudgetTableModel.COLUMN_RATE).setCellRenderer(rateRenderer);
+            // 예산을 읽기 전에는 머리글에 맞춘다.
+            fitColumnsToContent();
         }
         table.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && selectionListener != null) {
@@ -192,9 +190,31 @@ public class BudgetTreePanel extends JPanel {
         return headerPanel;
     }
 
-    private void setFixedWidth(TableColumn column, int width) {
-        column.setMinWidth(width);
-        column.setMaxWidth(width);
+    /**
+     * 금액과 비율 칸의 폭을 머리글과 모든 예산의 값 중 가장 넓은 것에 맞춰 고정하고, 남는 폭은 항목명 칸이 모두 쓰게 한다. 접힌 예산의
+     * 값도 재므로 펼치거나 접어도 폭이 바뀌지 않는다. 창을 넓혀도 금액이 잘리지 않고, 금액이 작으면 항목명에 폭을 더 남긴다.
+     */
+    private void fitColumnsToContent() {
+        TableColumnModel columns = table.getColumnModel();
+        TableCellRenderer headerRenderer = table.getTableHeader()
+                .getDefaultRenderer();
+        for (int modelColumn : FITTED_COLUMNS) {
+            int viewColumn = table.convertColumnIndexToView(modelColumn);
+            TableColumn column = columns.getColumn(viewColumn);
+            int width = headerRenderer
+                    .getTableCellRendererComponent(table, column.getHeaderValue(), false, false, -1, viewColumn)
+                    .getPreferredSize().width;
+            TableCellRenderer cellRenderer = column.getCellRenderer();
+            for (BudgetDto dto : allDtos) {
+                Object value = tableModel.valueOf(dto, modelColumn);
+                width = Math.max(width, cellRenderer
+                        .getTableCellRendererComponent(table, value, false, false, 0, viewColumn)
+                        .getPreferredSize().width);
+            }
+            column.setMinWidth(width);
+            column.setMaxWidth(width);
+            column.setPreferredWidth(width);
+        }
     }
 
     /**
@@ -230,6 +250,9 @@ public class BudgetTreePanel extends JPanel {
     private void flattenAndPopulate(List<BudgetDto> dtos) {
         this.allDtos = dtos;
         this.tableModel.setRoots(buildTree(dtos));
+        if (!readOnly) {
+            fitColumnsToContent();
+        }
 
         if (selectedIdToRestore != null) {
             restoreSelection(selectedIdToRestore);

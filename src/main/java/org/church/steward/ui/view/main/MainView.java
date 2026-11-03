@@ -111,7 +111,9 @@ public class MainView extends JFrame {
                 System.exit(0);
             }
         });
-        Dimension frameSize = new Dimension(900, 600);
+        // 창의 최소 크기. 1024×768 화면과 1920×1080 노트북의 150% 배율(1280×720)에도 들어가도록 높이는 600으로 둔다.
+        // 콘텐츠 영역은 사이드바(180)를 뺀 820 x 600이다.
+        Dimension frameSize = new Dimension(1000, 600);
         setSize(frameSize);
         setMinimumSize(frameSize);
         setLocationRelativeTo(null);
@@ -179,6 +181,7 @@ public class MainView extends JFrame {
         fiscalYearSelector.addChangeListener(this::onFiscalYearChanged);
         fiscalYearSelector.setManageAction(this::showFiscalYearManagement);
         setupReminder.setShortcutActions(this::showFiscalYearManagement, () -> selectMenu("BUDGET"));
+        incomeExpenseView.setColumnSettingsAction(this::showProgramSetting);
         fiscalYearSelector.reload();
 
         setVisible(true);
@@ -190,6 +193,14 @@ public class MainView extends JFrame {
     private void showFiscalYearManagement() {
         selectMenu("SETTINGS");
         settingsView.showFiscalYearManagementTab();
+    }
+
+    /**
+     * 설정 메뉴의 프로그램 설정 화면으로 이동한다. 수입/지출 관리의 예산별 보기에서 칸 설정 버튼을 눌렀을 때 실행된다.
+     */
+    private void showProgramSetting() {
+        selectMenu("SETTINGS");
+        settingsView.showProgramSettingTab();
     }
 
     /**

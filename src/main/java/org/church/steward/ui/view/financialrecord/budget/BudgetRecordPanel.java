@@ -6,6 +6,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,10 +18,14 @@ import javax.swing.JSeparator;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
 import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
+import org.church.steward.domain.programsetting.entity.BudgetViewTable;
+import org.church.steward.domain.report.dto.ReportColumnDto;
+import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.button.IconButton;
 import org.church.steward.ui.component.label.FieldLabel;
@@ -42,8 +47,14 @@ public class BudgetRecordPanel extends JPanel {
     private static final long serialVersionUID = 1L;
 
     private final FinancialRecordType type;
+    /** 칸 설정의 규칙과 칸 이름 */
+    private final BudgetViewTable viewTable;
     private final BudgetRecordTableModel tableModel;
     private final TreeTable table;
+    /** 트리 칸을 뺀 칸들. 칸 설정에 따라 표의 칸 모델에서 빼거나 순서를 바꿔 다시 넣는다. */
+    private final Map<ReportColumn, TableColumn> recordColumns = new EnumMap<>(ReportColumn.class);
+    /** 지금 표에 적용한 칸 설정 */
+    private List<ReportColumnDto> appliedColumns;
 
     /** 예산 일괄 변경 버튼. 선택된 내역이 없으면 꺼진다. */
     private final IconButton btnChangeBudget = new IconButton(FontAwesomeSolid.COINS, ComponentSize.SMALL);
@@ -57,6 +68,8 @@ public class BudgetRecordPanel extends JPanel {
     private final IconButton btnDelete = new IconButton(FontAwesomeSolid.TRASH_ALT, ComponentSize.SMALL);
     /** 상세 보기 버튼. 편집할 수 없을 때(마감된 회계 연도) 일괄 변경/추가/수정/삭제 버튼 대신 보인다. */
     private final IconButton btnView = new IconButton(FontAwesomeSolid.EDIT, ComponentSize.SMALL);
+    /** 칸 설정 버튼. 설정은 프로그램 설정에 있으므로 누르면 그 화면으로 이동할지 묻는다. */
+    private final IconButton btnColumnSettings = new IconButton(FontAwesomeSolid.COG, ComponentSize.SMALL);
     private boolean editable = true;
     private final FieldLabel selectionSumLabel = new FieldLabel("", SwingConstants.RIGHT, ComponentSize.MEDIUM);
 
@@ -64,6 +77,7 @@ public class BudgetRecordPanel extends JPanel {
 
     public BudgetRecordPanel(FinancialRecordType type, FinancialRecordActionHandler actionHandler) {
         this.type = type;
+        this.viewTable = BudgetViewTable.of(type);
         this.actionHandler = actionHandler;
         this.tableModel = new BudgetRecordTableModel();
 
@@ -104,13 +118,15 @@ public class BudgetRecordPanel extends JPanel {
         toolbarPanel.add(btnDelete);
         toolbarPanel.add(btnView);
 
-        // 제목 옆의 모두 펼치기/접기는 보기만 바꾸므로 마감된 회계 연도에서도 쓸 수 있다(setEditable의 대상이 아니다).
+        // 제목 옆의 모두 펼치기/접기와 칸 설정은 보기만 바꾸므로 마감된 회계 연도에서도 쓸 수 있다(setEditable의 대상이 아니다).
+        btnColumnSettings.setToolTipText("칸 설정");
         JPanel titlePanel = new JPanel(new GridBagLayout());
         titlePanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         titlePanel.add(new SectionHeaderLabel(type.getLabel(), SwingConstants.LEFT), gbc);
         gbc.insets = new Insets(0, 4, 0, 0);
         titlePanel.add(new ExpandCollapseAllButton(table, ComponentSize.SMALL), gbc);
+        titlePanel.add(btnColumnSettings, gbc);
 
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
@@ -126,9 +142,19 @@ public class BudgetRecordPanel extends JPanel {
         table.getColumnModel()
                 .getColumn(BudgetRecordTableModel.COLUMN_NAME)
                 .setPreferredWidth(130);
-        setupColumn(BudgetRecordTableModel.COLUMN_DESCRIPTION, 70, new PaddedCellRenderer(SwingConstants.LEADING));
-        setupColumn(BudgetRecordTableModel.COLUMN_AMOUNT, 70, new AmountCellRenderer());
-        setupColumn(BudgetRecordTableModel.COLUMN_REMARKS, 50, new PaddedCellRenderer(SwingConstants.LEADING));
+        // 관계자가 첫 번째 칸이면 트리 칸에 적으므로 이 칸은 첫 번째 칸이 아닐 때만 보인다. 이름은 짧아 가운데에 둔다.
+        setupColumn(ReportColumn.CONTACT, 70, new PaddedCellRenderer(SwingConstants.CENTER));
+        setupColumn(ReportColumn.DESCRIPTION, 70, new PaddedCellRenderer(SwingConstants.LEADING));
+        setupColumn(ReportColumn.AMOUNT, 70, new AmountCellRenderer());
+        setupColumn(ReportColumn.REMARKS, 50, new PaddedCellRenderer(SwingConstants.LEADING));
+        // 칸 설정을 읽기 전에는 기본 순서로 둔다.
+        setColumns(viewTable.getDefaultColumns()
+                .stream()
+                .map(column -> ReportColumnDto.builder()
+                        .column(column)
+                        .hidden(false)
+                        .build())
+                .toList());
 
         // 가로 스크롤 없이 컬럼 폭을 테이블 폭에 맞춘다.
         JScrollPane scrollPane = new JScrollPane(table);
@@ -137,12 +163,47 @@ public class BudgetRecordPanel extends JPanel {
         return scrollPane;
     }
 
-    private void setupColumn(int column, int preferredWidth, TableCellRenderer renderer) {
+    /**
+     * 칸의 폭과 렌더러를 정하고, 칸 설정에 따라 빼거나 다시 넣을 수 있게 잡아 둔다. 칸을 표에서 빼도 폭과 렌더러는 이 객체에 남는다.
+     */
+    private void setupColumn(ReportColumn column, int preferredWidth, TableCellRenderer renderer) {
+        TableColumn tableColumn = table.getColumnModel()
+                .getColumn(table.convertColumnIndexToView(BudgetRecordTableModel.columnIndexOf(column)));
+        tableColumn.setPreferredWidth(preferredWidth);
+        tableColumn.setCellRenderer(renderer);
+        tableColumn.setHeaderValue(viewTable.labelOf(column));
+        recordColumns.put(column, tableColumn);
+    }
+
+    /**
+     * 칸의 순서와 숨김을 정한다. 첫 번째 칸은 따로 두지 않고 트리 칸에 날짜와 함께 적으며, 나머지 칸은 정한 순서대로 트리 칸 뒤에 두고
+     * 숨긴 칸은 뺀다. 설정이 없거나 지금과 같으면 그대로 둔다.
+     */
+    public void setColumns(List<ReportColumnDto> columns) {
+        if (columns == null || columns.isEmpty() || columns.equals(appliedColumns)) {
+            return;
+        }
+        appliedColumns = columns;
+
+        ReportColumn first = columns.getFirst()
+                .getColumn();
+        tableModel.setFirstColumn(first);
+
         TableColumnModel columnModel = table.getColumnModel();
-        columnModel.getColumn(column)
-                .setPreferredWidth(preferredWidth);
-        columnModel.getColumn(column)
-                .setCellRenderer(renderer);
+        for (TableColumn tableColumn : recordColumns.values()) {
+            columnModel.removeColumn(tableColumn);
+        }
+        // 트리 칸만 남았으므로 나머지 칸을 차례로 붙이면 트리 칸 뒤에 정한 순서대로 놓인다.
+        for (ReportColumnDto column : columns.subList(1, columns.size())) {
+            TableColumn tableColumn = recordColumns.get(column.getColumn());
+            if (!column.isHidden() && tableColumn != null) {
+                columnModel.addColumn(tableColumn);
+            }
+        }
+        columnModel.getColumn(table.convertColumnIndexToView(BudgetRecordTableModel.COLUMN_NAME))
+                .setHeaderValue("일자 · " + viewTable.labelOf(first));
+        table.getTableHeader()
+                .repaint();
     }
 
     private void setupEvents() {
@@ -162,6 +223,7 @@ public class BudgetRecordPanel extends JPanel {
         btnEdit.addActionListener(_ -> onEdit());
         btnDelete.addActionListener(_ -> onDelete());
         btnView.addActionListener(_ -> onView());
+        btnColumnSettings.addActionListener(_ -> actionHandler.showColumnSettings());
     }
 
     /**

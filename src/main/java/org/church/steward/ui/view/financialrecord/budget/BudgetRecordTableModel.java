@@ -9,28 +9,68 @@ import java.util.Map;
 import java.util.Set;
 
 import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
+import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.ui.component.table.AbstractTreeTableModel;
 import org.church.steward.ui.component.table.TooltipTableModel;
 import org.church.steward.ui.component.table.TreeTableNode;
+import org.church.steward.ui.view.financialrecord.FinancialRecordFormats;
 import org.church.steward.util.NumberUtils;
 
 /**
  * "예산별 보기" 탭의 테이블 모델. 수입/지출 내역을 예산별로 묶어, 예산 행 아래에 그 예산의 내역 행들을 두는 형태로 보여준다. 예산
  * 행은 기본적으로 접혀 있다. 예산 행의 키는 예산 ID이고, 내역 행의 키는 {@link RecordKey}다.
+ * <p>
+ * 모델은 칸 설정과 무관하게 모든 칸을 갖는다. 첫 번째 칸(트리 칸)에는 예산 행이면 예산명, 내역 행이면 날짜와 첫 번째로 정한 칸의
+ * 값을 적고, 칸의 순서와 숨김은 표의 칸 모델이 정한다({@code BudgetRecordPanel#setColumns}). 칸을 바꿀
+ * 때마다 모델의 구조를 바꾸면 표가 칸을 새로 만들어 트리 칸의 렌더러와 칸 폭이 사라지기 때문이다.
  */
 public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordRow> implements TooltipTableModel {
 
     private static final long serialVersionUID = 1L;
 
     public static final int COLUMN_NAME = 0;
-    public static final int COLUMN_DESCRIPTION = 1;
-    public static final int COLUMN_AMOUNT = 2;
-    public static final int COLUMN_REMARKS = 3;
+    public static final int COLUMN_CONTACT = 1;
+    public static final int COLUMN_DESCRIPTION = 2;
+    public static final int COLUMN_AMOUNT = 3;
+    public static final int COLUMN_REMARKS = 4;
 
-    private final String[] columns = { "구분", "내용", "금액", "비고" };
+    private final String[] columns = { "구분", "관계자", "내용", "금액", "비고" };
+
+    /** 트리 칸에 날짜와 함께 적는 칸. 관계자 또는 내용이다. */
+    private ReportColumn firstColumn = ReportColumn.CONTACT;
 
     public BudgetRecordTableModel() {
         super(false);
+    }
+
+    /**
+     * 칸 설정의 칸에 해당하는 모델 기준 칸 번호
+     */
+    public static int columnIndexOf(ReportColumn column) {
+        return switch (column) {
+        case CONTACT -> COLUMN_CONTACT;
+        case DESCRIPTION -> COLUMN_DESCRIPTION;
+        case AMOUNT -> COLUMN_AMOUNT;
+        case REMARKS -> COLUMN_REMARKS;
+        default -> throw new IllegalArgumentException("예산별 보기에 없는 칸입니다: " + column);
+        };
+    }
+
+    /**
+     * 트리 칸의 내역 행에 날짜와 함께 적을 칸을 정한다.
+     *
+     * @param firstColumn 관계자({@link ReportColumn#CONTACT}) 또는
+     *                    내용({@link ReportColumn#DESCRIPTION})
+     */
+    public void setFirstColumn(ReportColumn firstColumn) {
+        if (this.firstColumn == firstColumn) {
+            return;
+        }
+        this.firstColumn = firstColumn;
+        // 선택이 풀리지 않도록 구조나 전체 데이터가 아니라 행이 바뀌었다고 알린다.
+        if (getRowCount() > 0) {
+            fireTableRowsUpdated(0, getRowCount() - 1);
+        }
     }
 
     /**
@@ -119,7 +159,7 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
     public Object getValueAt(int rowIndex, int col) {
         BudgetRecordRow row = getRowValue(rowIndex);
         return switch (col) {
-        case COLUMN_NAME -> row.getDisplayName();
+        case COLUMN_NAME -> row.getDisplayName(firstColumn);
         case COLUMN_AMOUNT -> row.getAmount();
         default -> getText(row, col);
         };
@@ -136,7 +176,7 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
 
         BudgetRecordRow row = getRowValue(rowIndex);
         String text = switch (col) {
-        case COLUMN_NAME -> row.getDisplayName();
+        case COLUMN_NAME -> row.getDisplayName(firstColumn);
         case COLUMN_AMOUNT -> NumberUtils.toKoreanAmount(row.getAmount());
         default -> getText(row, col);
         };
@@ -148,6 +188,8 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
             return null;
         }
         return switch (col) {
+        case COLUMN_CONTACT -> FinancialRecordFormats.joinNames(row.getRecord()
+                .getContactNames());
         case COLUMN_DESCRIPTION -> row.getRecord()
                 .getDescription();
         case COLUMN_REMARKS -> row.getRecord()

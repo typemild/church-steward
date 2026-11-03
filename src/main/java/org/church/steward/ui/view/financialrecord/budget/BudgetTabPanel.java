@@ -9,6 +9,8 @@ import javax.swing.JPanel;
 
 import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
+import org.church.steward.domain.programsetting.dto.BudgetViewColumnsDto;
+import org.church.steward.domain.programsetting.entity.BudgetViewTable;
 import org.church.steward.ui.view.financialrecord.FinancialRecordActionHandler;
 
 /**
@@ -39,6 +41,16 @@ public class BudgetTabPanel extends JPanel {
     public void setEditable(boolean editable) {
         incomePanel.setEditable(editable);
         expensePanel.setEditable(editable);
+    }
+
+    /**
+     * 수입 표와 지출 표의 칸 순서와 숨김을 정한다. 설정에 빠진 표가 있으면 그 표는 그대로 둔다.
+     */
+    public void setColumns(BudgetViewColumnsDto columns) {
+        incomePanel.setColumns(columns.getTables()
+                .get(BudgetViewTable.INCOME));
+        expensePanel.setColumns(columns.getTables()
+                .get(BudgetViewTable.EXPENSE));
     }
 
     /**

@@ -51,7 +51,13 @@ class BudgetTableModel extends AbstractTreeTableModel<BudgetDto> implements Tool
 
     @Override
     public Object getValueAt(int row, int col) {
-        BudgetDto dto = getRowValue(row);
+        return valueOf(getRowValue(row), col);
+    }
+
+    /**
+     * 예산 하나의 칸 값. 접혀 있어 행으로 보이지 않는 예산의 값도 구할 수 있어, 칸 폭을 내용에 맞출 때 쓴다.
+     */
+    Object valueOf(BudgetDto dto, int col) {
         return switch (col) {
         case COLUMN_NAME -> dto.getName();
         case COLUMN_AMOUNT -> getBudgetedAmount(dto);

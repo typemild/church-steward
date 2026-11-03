@@ -2,6 +2,7 @@ package org.church.steward.domain.programsetting.controller;
 
 import java.time.DayOfWeek;
 
+import org.church.steward.domain.programsetting.dto.BudgetViewColumnsDto;
 import org.church.steward.domain.programsetting.service.ProgramSettingService;
 import org.church.steward.infrastructure.annotation.UiController;
 
@@ -22,5 +23,13 @@ public class ProgramSettingController {
 
     public void updateWeeklyClosingDay(DayOfWeek weeklyClosingDay) {
         programSettingService.updateWeeklyClosingDay(weeklyClosingDay);
+    }
+
+    public BudgetViewColumnsDto getBudgetViewColumns() {
+        return programSettingService.getBudgetViewColumns();
+    }
+
+    public void updateBudgetViewColumns(BudgetViewColumnsDto columns) {
+        programSettingService.updateBudgetViewColumns(columns);
     }
 }

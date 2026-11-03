@@ -521,6 +521,25 @@ class WeeklySettlementReportComposerTest {
         }
 
         @Test
+        @DisplayName("첫 번째 칸이 아닌 관계자는 머리글과 같이 칸의 가운데에 적는다")
+        void compose_ContactNotFirst_CentersContactInColumn() {
+            // Given
+            WeeklySettlementReportDto report = report(List.of(),
+                    List.of(group("관리비", List.of(record("OO설비", "수리비", "")))));
+
+            // When
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, createTemplate(),
+                    ReportStyle.DEFAULT);
+
+            // Then
+            ReportElement.Text header = findLeftmost(document, "수취인");
+            ReportElement.Text contact = findLeftmost(document, "OO설비");
+            double headerCenter = header.x() + ReportText.width(header.text(), header.font()) / 2;
+            double contactCenter = contact.x() + ReportText.width(contact.text(), contact.font()) / 2;
+            assertThat(contactCenter).isCloseTo(headerCenter, within(0.01));
+        }
+
+        @Test
         @DisplayName("기본 양식에서는 수입 내역의 금액이 봉헌자 바로 옆에 붙는다")
         void compose_DefaultIncomeRecords_PutsAmountNextToContact() {
             // Given

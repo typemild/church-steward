@@ -13,7 +13,7 @@ import lombok.Getter;
  * 정해져 있다. 첫 번째 칸은 숨길 수 없다.
  */
 @Getter
-public enum ReportTemplateTable {
+public enum ReportTemplateTable implements ColumnOrderRule {
 
     WEEKLY_INCOME_STATUS(ReportType.WEEKLY_SETTLEMENT, "수입 현황", BudgetType.INCOME,
             List.of(ReportColumn.BUDGET_NAME, ReportColumn.ACTUAL_AMOUNT, ReportColumn.BUDGETED_AMOUNT,
@@ -64,33 +64,12 @@ public enum ReportTemplateTable {
                 .toList();
     }
 
-    /**
-     * 비율 칸(달성률/집행률)의 왼쪽에 막대를 함께 그릴지 정할 수 있는 표인지 여부. 비율 칸이 있는 표(현황 표)이며, 이 표는 모든 칸이
-     * 폭을 고르게 나눠 갖는다.
-     */
-    public boolean hasRateBarOption() {
-        return defaultColumns.contains(ReportColumn.RATE);
-    }
-
-    /**
-     * 칸이 첫 번째 자리에 올 수 있는지 여부
-     */
+    @Override
     public boolean canBeFirst(ReportColumn column) {
         return firstColumnCandidates.contains(column);
     }
 
-    /**
-     * 칸을 숨길 수 있는지 여부
-     *
-     * @param first 그 칸이 첫 번째 칸인지 여부. 첫 번째 칸은 숨길 수 없다.
-     */
-    public boolean canHide(ReportColumn column, boolean first) {
-        return !first && hideableColumns.contains(column);
-    }
-
-    /**
-     * 이 표에서 칸을 부르는 이름
-     */
+    @Override
     public String labelOf(ReportColumn column) {
         boolean income = budgetType == BudgetType.INCOME;
         return switch (column) {

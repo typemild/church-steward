@@ -154,8 +154,8 @@ public class ReportingView extends JPanel implements MenuActivatable {
         this.programSettingController = programSettingController;
         this.fiscalYearSelector = fiscalYearSelector;
 
-        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일) : 720 x 600
-        setPreferredSize(new Dimension(720, 600));
+        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일) : 820 x 600
+        setPreferredSize(new Dimension(820, 600));
         setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         setBackground(UIColors.BACKGROUND);
         setLayout(new BorderLayout(0, 10));
@@ -321,7 +321,7 @@ public class ReportingView extends JPanel implements MenuActivatable {
         case WEEKLY_SETTLEMENT -> {
             WeeklySettlementReportDto report = reportController.getWeeklySettlementReport(fiscalYearId, startDate,
                     endDate);
-            // 양식은 다른 사용자도 바꿀 수 있는 프로그램 전체 설정이므로 캐시하지 않고 조회할 때마다 읽는다.
+            // 양식은 따로 보관하지 않고 조회할 때 보고서와 함께 읽는다. 양식 설정에서 저장하면 다시 조회하므로 바뀐 양식이 반영된다.
             ReportTemplateDto template = reportController.getReportTemplate(type);
             yield style -> WeeklySettlementReportComposer.compose(report, template, style);
         }

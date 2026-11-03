@@ -2,6 +2,7 @@ package org.church.steward.ui.view.financialrecord;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,7 @@ import org.church.steward.domain.financialrecord.dto.FinancialRecordSearchReques
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
 import org.church.steward.domain.fiscalyear.dto.FiscalYearDto;
 import org.church.steward.domain.programsetting.controller.ProgramSettingController;
+import org.church.steward.domain.programsetting.dto.BudgetViewColumnsDto;
 import org.church.steward.infrastructure.annotation.UiView;
 import org.church.steward.ui.MenuActivatable;
 import org.church.steward.ui.component.ComponentSize;
@@ -79,6 +81,9 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     private long searchSequence = 0;
     /** 마지막 추가 다이얼로그에서 확정한 입력값. 아직 추가한 적이 없거나 회계 연도가 바뀌면 null이다. */
     private LastAddInput lastAddInput;
+    /** 설정 메뉴의 프로그램 설정 화면으로 이동하는 동작. 순환 의존을 피하려고 MainView가 넘긴다. */
+    private Runnable columnSettingsAction = () -> {
+    };
 
     /**
      * 추가 다이얼로그에서 확정한 구분, 날짜, 예산. 다음 추가 다이얼로그의 초기값으로 쓴다.
@@ -90,6 +95,12 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
      * 조회 결과. 수입/지출 내역과 예산 ID별 표시 위치.
      */
     private record SearchResult(List<FinancialRecordResponseDto> records, Map<Long, Integer> budgetPositions) {
+    }
+
+    /**
+     * 메뉴에 들어올 때마다 읽는 프로그램 설정. 설정 메뉴에서 바뀔 수 있다.
+     */
+    private record ViewSettings(DayOfWeek weeklyClosingDay, BudgetViewColumnsDto budgetViewColumns) {
     }
 
     public FinancialRecordView(FinancialRecordController financialRecordController,
@@ -107,8 +118,8 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
         this.budgetTabPanel = new BudgetTabPanel(this);
         this.itemizedTabPanel = new ItemizedTabPanel(this);
 
-        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일): 720 x 600
-        setPreferredSize(new Dimension(720, 600));
+        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일): 820 x 600
+        setPreferredSize(new Dimension(820, 600));
         setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         setBackground(UIColors.BACKGROUND);
         setLayout(new BorderLayout(0, 10));
@@ -172,18 +183,37 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
         closedNoticeLabel.setVisible(fiscalYear != null && fiscalYear.isClosed());
         budgetTabPanel.setEditable(editable);
         itemizedTabPanel.setEditable(editable);
-        // 주간 결산 요일은 설정 메뉴에서 바뀔 수 있으므로 매번 읽어 조회 기간을 맞춘 뒤 조회한다.
+        // 주간 결산 요일과 예산별 보기의 칸 설정은 설정 메뉴에서 바뀔 수 있으므로 매번 읽어 조회 기간과 표의 칸을 맞춘 뒤 조회한다.
         AsyncTask.run(tabbedPane,
-                programSettingController::getWeeklyClosingDay,
-                weeklyClosingDay -> {
-                    searchPanel.setWeeklyClosingDay(weeklyClosingDay);
+                () -> new ViewSettings(programSettingController.getWeeklyClosingDay(),
+                        programSettingController.getBudgetViewColumns()),
+                settings -> {
+                    searchPanel.setWeeklyClosingDay(settings.weeklyClosingDay());
+                    budgetTabPanel.setColumns(settings.budgetViewColumns());
                     search();
                 },
                 err -> {
-                    log.error("Failed to load weekly closing day", err);
-                    JOptionPane.showMessageDialog(this, "주간 결산 요일을 불러오는데 실패했습니다: " + err.getMessage());
+                    log.error("Failed to load program settings", err);
+                    JOptionPane.showMessageDialog(this, "프로그램 설정을 불러오는데 실패했습니다: " + err.getMessage());
                     search();
                 });
+    }
+
+    /**
+     * 설정 메뉴의 프로그램 설정 화면으로 이동하는 동작을 정한다.
+     */
+    public void setColumnSettingsAction(Runnable columnSettingsAction) {
+        this.columnSettingsAction = columnSettingsAction;
+    }
+
+    @Override
+    public void showColumnSettings() {
+        int answer = JOptionPane.showConfirmDialog(this,
+                "예산별 보기의 칸 순서와 숨길 칸은 설정 > 프로그램 설정에서 바꿀 수 있습니다.\n프로그램 설정으로 이동할까요?", "칸 설정",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (answer == JOptionPane.OK_OPTION) {
+            columnSettingsAction.run();
+        }
     }
 
     private void search() {

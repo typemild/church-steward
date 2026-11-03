@@ -2,11 +2,8 @@ package org.church.steward.domain.report.service.impl;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.church.steward.domain.report.dto.ReportApprovalDto;
 import org.church.steward.domain.report.dto.ReportColumnDto;
@@ -22,6 +19,7 @@ import org.church.steward.domain.report.mapper.ReportTemplateMapper;
 import org.church.steward.domain.report.repository.ReportApprovalRepository;
 import org.church.steward.domain.report.repository.ReportTableColumnRepository;
 import org.church.steward.domain.report.repository.ReportTableOptionRepository;
+import org.church.steward.domain.report.service.ColumnOrderValidator;
 import org.church.steward.domain.report.service.ReportTemplateService;
 import org.church.steward.util.TextUtils;
 import org.springframework.stereotype.Service;
@@ -167,43 +165,15 @@ public class ReportTemplateServiceImpl implements ReportTemplateService {
     }
 
     /**
-     * 표의 칸이 규칙에 맞는지 확인한다. 표의 모든 칸이 한 번씩 있어야 하고, 첫 번째 칸은 그 자리에 올 수 있는 칸이어야 하며, 숨긴 칸은
-     * 숨길 수 있는 칸이어야 한다.
+     * 표의 칸이 규칙에 맞는지 확인한다({@link ColumnOrderValidator#findError}).
      *
      * @return 맞지 않으면 사용자에게 보일 이유, 맞으면 null
      */
     private static String findColumnError(ReportTemplateTable table, List<ReportColumnDto> columns) {
-        if (columns == null || columns.stream()
-                .anyMatch(column -> column == null || column.getColumn() == null)) {
+        if (ColumnOrderValidator.hasMissing(columns)) {
             return "보고서 양식에 빠진 항목이 있습니다.";
         }
-        Set<ReportColumn> distinct = new HashSet<>();
-        for (ReportColumnDto column : columns) {
-            distinct.add(column.getColumn());
-        }
-        if (columns.size() != table.getDefaultColumns()
-                .size() || !distinct.equals(Set.copyOf(table.getDefaultColumns()))) {
-            return String.format("%s의 칸 구성이 올바르지 않습니다.", table.getLabel());
-        }
-
-        ReportColumn first = columns.get(0)
-                .getColumn();
-        if (!table.canBeFirst(first)) {
-            String candidates = table.getDefaultColumns()
-                    .stream()
-                    .filter(table::canBeFirst)
-                    .map(table::labelOf)
-                    .collect(Collectors.joining(" 또는 "));
-            return String.format("%s의 첫 번째 칸에는 %s만 둘 수 있습니다.", table.getLabel(), candidates);
-        }
-        for (int i = 0; i < columns.size(); i++) {
-            ReportColumnDto column = columns.get(i);
-            if (column.isHidden() && !table.canHide(column.getColumn(), i == 0)) {
-                return String.format("%s의 %s 칸은 숨길 수 없습니다.", table.getLabel(),
-                        table.labelOf(column.getColumn()));
-            }
-        }
-        return null;
+        return ColumnOrderValidator.findError(table, columns);
     }
 
     private void saveApproval(ReportType reportType, boolean visible, List<String> titles) {
