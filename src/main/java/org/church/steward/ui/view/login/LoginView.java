@@ -12,7 +12,6 @@ import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.SwingConstants;
 
 import org.church.steward.infrastructure.config.AppSettingManager;
@@ -48,7 +47,7 @@ public class LoginView extends JFrame {
     private TitleLabel titleLabel;
     private StyledTextField idField;
     private ValidatedPasswordField passwordField;
-    private JProgressBar progressBar;
+    private StartupProgressBar progressBar;
     private PrimaryButton loginButton;
 
     public LoginView(AppSettingManager appSettingManager) {
@@ -69,10 +68,8 @@ public class LoginView extends JFrame {
         FocusIndicator.show(idField);
         FocusIndicator.show(passwordField);
 
-        progressBar = new JProgressBar();
-        progressBar.setIndeterminate(true);
-        progressBar.setForeground(UIColors.PRIMARY_BACKGROUND);
-        progressBar.setVisible(false);
+        // 로그인하는 동안 진행 표시가 나타나도 입력란이 밀리지 않도록 자리를 비워 둔다.
+        progressBar = new StartupProgressBar();
 
         loginButton = new PrimaryButton("로그인", ComponentSize.LARGE);
         loginButton.setPreferredSize(new Dimension(0, 40));
@@ -189,7 +186,7 @@ public class LoginView extends JFrame {
 
             // 비동기 작업 시작
             loginButton.setEnabled(false);
-            progressBar.setVisible(true);
+            progressBar.setRunning(true);
 
             AsyncTask.run(this,
                     () -> {
@@ -217,7 +214,7 @@ public class LoginView extends JFrame {
                         }
 
                         loginButton.setEnabled(true);
-                        progressBar.setVisible(false);
+                        progressBar.setRunning(false);
                     });
         });
 

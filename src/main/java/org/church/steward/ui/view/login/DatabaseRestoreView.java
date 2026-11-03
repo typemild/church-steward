@@ -11,7 +11,6 @@ import java.util.Optional;
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.SwingConstants;
 
 import org.church.steward.infrastructure.backup.BackupManager;
@@ -33,6 +32,8 @@ import org.church.steward.ui.util.UIColors;
 public class DatabaseRestoreView extends JDialog {
 
     private static final long serialVersionUID = 1L;
+
+    private static final int WINDOW_WIDTH = 450;
 
     /**
      * 복원과 그 기록을 수행하는 동작. 데이터베이스를 교체한 뒤 활동 기록까지 남기려면 Spring 컨텍스트가 필요하므로, 컨텍스트를 띄울 수
@@ -62,7 +63,7 @@ public class DatabaseRestoreView extends JDialog {
     }
 
     private final RestoreFormPanel formPanel;
-    private final JProgressBar progressBar;
+    private final StartupProgressBar progressBar;
     private final SecondaryButton cancelButton;
     private final PrimaryButton restoreButton;
 
@@ -86,10 +87,8 @@ public class DatabaseRestoreView extends JDialog {
         SubTitleLabel subTitleLabel = new SubTitleLabel("백업한 시점의 관리자 비밀번호로 확인합니다.", SwingConstants.CENTER);
         formPanel = new RestoreFormPanel(backupManager, restoreAction);
 
-        progressBar = new JProgressBar();
-        progressBar.setIndeterminate(true);
-        progressBar.setVisible(false);
-        progressBar.setForeground(UIColors.PRIMARY_BACKGROUND);
+        // 복원하는 동안 진행 표시가 나타나도 주의사항이 가려지지 않도록 자리를 비워 둔다.
+        progressBar = new StartupProgressBar();
 
         cancelButton = new SecondaryButton("취소", ComponentSize.LARGE);
         restoreButton = new PrimaryButton("복원", ComponentSize.LARGE);
@@ -104,10 +103,11 @@ public class DatabaseRestoreView extends JDialog {
         headerPanel.add(titleLabel, BorderLayout.NORTH);
         headerPanel.add(subTitleLabel, BorderLayout.SOUTH);
 
+        // 주의사항을 가운데(남는 높이를 모두 차지하는 자리)에 두면 창 높이에 따라 상자가 늘어나므로, 입력부 아래에 붙인다.
         JPanel inputPanel = new JPanel(new BorderLayout(0, 20));
         inputPanel.setOpaque(false);
         inputPanel.add(formPanel, BorderLayout.NORTH);
-        inputPanel.add(RestoreFormPanel.createWarningNotice(), BorderLayout.CENTER);
+        inputPanel.add(RestoreFormPanel.createWarningNotice(), BorderLayout.SOUTH);
 
         JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 12, 0));
         buttonPanel.setOpaque(false);
@@ -120,7 +120,7 @@ public class DatabaseRestoreView extends JDialog {
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         mainPanel.add(headerPanel, BorderLayout.NORTH);
-        mainPanel.add(inputPanel, BorderLayout.CENTER);
+        mainPanel.add(wrapAtTop(inputPanel), BorderLayout.CENTER);
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
         getContentPane().add(mainPanel);
 
@@ -153,13 +153,17 @@ public class DatabaseRestoreView extends JDialog {
      */
     public boolean showRestoreDialog(Path initialFile) {
         restored = false;
-        setSize(450, 660);
         setResizable(false);
-        setLocationRelativeTo(getOwner());
 
         if (initialFile != null) {
             formPanel.selectBackupFile(initialFile);
         }
+
+        // 주의사항의 글은 폭에 따라 줄 수가 달라지므로, 정한 폭으로 배치한 뒤 내용에 맞는 높이를 잰다.
+        StartupWindows.layoutAtWidth(this, WINDOW_WIDTH);
+        setSize(WINDOW_WIDTH, getPreferredSize().height);
+        validate();
+        setLocationRelativeTo(getOwner());
 
         setVisible(true);
         return restored;
@@ -169,7 +173,17 @@ public class DatabaseRestoreView extends JDialog {
         this.busy = busy;
         cancelButton.setEnabled(!busy);
         restoreButton.setEnabled(!busy);
-        progressBar.setVisible(busy);
+        progressBar.setRunning(busy);
+    }
+
+    /**
+     * 내용을 위쪽에 붙이고 남는 높이는 비워 둔다.
+     */
+    private static JPanel wrapAtTop(JPanel content) {
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.add(content, BorderLayout.NORTH);
+        return wrapper;
     }
 
 }

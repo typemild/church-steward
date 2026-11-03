@@ -3,7 +3,6 @@ package org.church.steward.ui.view.login;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Component;
-import java.awt.Container;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -30,7 +29,6 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -96,8 +94,6 @@ public class InitialSetupView extends JDialog {
     private static final String RESTORE_CARD = "백업에서 복원";
 
     private static final int WINDOW_WIDTH = 450;
-    /** 높이를 재려고 처음 배치할 때 주는 높이. 어느 단계 화면보다 커야 한다. */
-    private static final int MEASURE_HEIGHT = 1000;
 
     /** 단계 표시와 그 아래 구분선 사이의 간격 */
     private static final int HEADER_BOTTOM_GAP = 12;
@@ -163,7 +159,8 @@ public class InitialSetupView extends JDialog {
     private final StyledTextField fiscalYearNameField = new StyledTextField(ComponentSize.MEDIUM);
     private final FiscalYearPeriodField fiscalYearPeriodField = new FiscalYearPeriodField(ComponentSize.MEDIUM);
 
-    private final JProgressBar progressBar = new JProgressBar();
+    /** 작업하지 않을 때도 자리를 차지하므로, 창 높이를 잴 때 함께 들어간다. */
+    private final StartupProgressBar progressBar = new StartupProgressBar();
     /** 진행 표시와 버튼 줄. 버튼이 없는 시작 방법 선택에서는 숨긴다(간격만 남지 않게). */
     private final JPanel bottomPanel = new JPanel(new BorderLayout(0, 15));
     private final JPanel navigationPanel = new JPanel(new GridLayout(1, 0, 12, 0));
@@ -225,10 +222,6 @@ public class InitialSetupView extends JDialog {
             FocusIndicator.show(picker);
             FocusIndicator.show(picker.getInputComponent());
         }
-
-        progressBar.setIndeterminate(true);
-        progressBar.setVisible(false);
-        progressBar.setForeground(UIColors.PRIMARY_BACKGROUND);
 
         // 2. 레이아웃 구성
         JPanel mainPanel = new JPanel(new BorderLayout(0, 20));
@@ -337,19 +330,14 @@ public class InitialSetupView extends JDialog {
      * 화면에 빈 곳이 크게 남기 때문이다. 세 단계는 단계를 오갈 때 창이 들썩이지 않도록 셋 중 가장 큰 높이를 함께 쓴다.
      * <p>
      * 줄바꿈하는 글({@link WrappingDescriptionLabel})은 폭이 정해져야 높이를 알 수 있으므로, 먼저 정한 폭으로 한
-     * 번 배치한 뒤 선호 높이를 잰다. 화면들은 {@link CardLayout}에 있어 숨은 화면도 함께 배치된다. 창 높이는 "화면마다 다른
-     * 둘레(단계 표시와 버튼 줄이 보이는지에 따라 다르다) + 그 화면 내용의 높이"이므로, 화면마다 그 상태로 바꿔 둘레를 잰다.
+     * 번 배치한 뒤 선호 높이를 잰다({@link StartupWindows#layoutAtWidth}). 화면들은
+     * {@link CardLayout}에 있어 숨은 화면도 함께 배치된다. 창 높이는 "화면마다 다른 둘레(단계 표시와 버튼 줄이 보이는지에
+     * 따라 다르다) + 그 화면 내용의 높이"이므로, 화면마다 그 상태로 바꿔 둘레를 잰다. 버튼 줄의 둘레에는 진행 표시의 자리도 들어 있어,
+     * 초기화나 복원을 하는 동안 내용이 가려지지 않는다.
      */
     private void measureWindowHeights() {
-        // 창이 화면에 표시될 준비가 되어야 제목 표시줄을 포함한 창 테두리의 크기를 알 수 있다.
-        pack();
         showStep(0);
-        // 아직 배치되지 않은 글은 한 줄 높이로 알리므로, 배치에 넉넉한 높이를 준다.
-        setSize(WINDOW_WIDTH, MEASURE_HEIGHT);
-        validate();
-        // 배치되며 정해진 폭으로 줄바꿈 높이가 바뀌었으므로 다시 잰다.
-        invalidateTree(getContentPane());
-        validate();
+        StartupWindows.layoutAtWidth(this, WINDOW_WIDTH);
 
         int stepContentHeight = 0;
         for (JPanel content : stepContents) {
@@ -419,15 +407,6 @@ public class InitialSetupView extends JDialog {
                         action.run();
                     }
                 });
-    }
-
-    private static void invalidateTree(Component component) {
-        component.invalidate();
-        if (component instanceof Container container) {
-            for (Component child : container.getComponents()) {
-                invalidateTree(child);
-            }
-        }
     }
 
     private JPanel createChoiceStep() {
@@ -818,7 +797,7 @@ public class InitialSetupView extends JDialog {
         this.busy = busy;
         previousButton.setEnabled(!busy);
         nextButton.setEnabled(!busy);
-        progressBar.setVisible(busy);
+        progressBar.setRunning(busy);
     }
 
 }

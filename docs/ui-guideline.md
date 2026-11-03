@@ -56,7 +56,7 @@
 - 입력 폼은 `GridBagLayout`으로 레이블과 입력란을 정렬한다.
 - 컴포넌트 사이의 간격은 8~25px로 하고, 화면 가장자리에는 30px 이상의 `EmptyBorder`를 둔다.
 - 주 버튼은 아래쪽 가운데나 오른쪽에 둔다.
-- 진행 표시는 Primary 색의 indeterminate 진행 막대를 쓴다.
+- 진행 표시는 Primary 색의 indeterminate 진행 막대를 쓴다. 기동 화면(로그인, 최초 실행, 복원)은 창 높이가 고정되어 있거나 내용에 맞춰져 있어 막대가 나타나며 자리를 차지하면 내용이 밀리거나 가려지므로, 작업하지 않을 때도 막대의 자리를 비워 둔다(`StartupProgressBar`). 예약된 복원 화면도 최초 실행 화면처럼 창 높이를 내용에 맞춘다(`StartupWindows#layoutAtWidth`로 정한 폭에 배치한 뒤 잰다).
 - 아이콘은 Ikonli의 FontAwesome 5 Solid를 `FontIcon.of(FontAwesomeSolid.X, size)`로 쓴다. Font Awesome Free의 라이선스(아이콘 CC BY 4.0, 글꼴 OFL 1.1)는 라이선스 리포트에 나오지 않으므로 프로그램 정보의 오픈소스 목록에 직접 넣어 두었다(`ProgramInfoServiceImpl`).
 - **프로그램 아이콘**: 부모 창이 없는 창(`MainView`, `LoginView`, `InitialSetupView`, `DatabaseRestoreView`)은 `AppIcons.apply(this)`를 호출한다. 부모 없는 메시지 창과 macOS Dock은 `main`의 `AppIcons.install()`이 맡고, 부모 창이 있는 다이얼로그는 부모의 아이콘을 따른다. 새로 부모 없는 창을 만들면 `apply`를 호출한다.
 
