@@ -98,7 +98,7 @@ Logback은 `main`보다 먼저(로거를 가진 클래스가 초기화될 때) �
 
 DB 비밀번호는 로그인한 뒤에야 알 수 있으므로, `ChurchStewardApplication.main`은 Spring 컨텍스트를 띄우기 *전에* 다음을 수행한다.
 
-1. `DatabaseManager.isInitializationRequired()`가 `./data/church_steward.mv.db`가 있는지 확인한다. 없으면 `DatabaseInitView`로 관리자 계정 정보를 받고, `DatabaseManager.initialize`가 H2(`CIPHER=AES`)의 파일/사용자 비밀번호를 무작위로 만든 뒤, 관리자 계정과 첫 회계 연도(이름 "{올해}년", 기간 올해 1월 1일 ~ 12월 31일)를 만들기 위해 Spring 컨텍스트를 잠깐 띄웠다가 닫는다.
+1. `DatabaseManager.isInitializationRequired()`가 `./data/church_steward.mv.db`가 있는지 확인한다. 없으면 `InitialSetupView`가 먼저 새로 시작할지 백업에서 복원할지 고르게 하고, 새로 시작하면 세 단계로 관리자 계정, 주간 결산 요일, 첫 회계 연도(기본값은 이름 "{올해}년", 기간 올해 1월 1일 ~ 12월 31일)를 받는다. 마지막 단계에서 "완료"를 누르면 `DatabaseManager.initialize`가 H2(`CIPHER=AES`)의 파일/사용자 비밀번호를 무작위로 만든 뒤, 관리자 계정을 만들고 주간 결산 요일을 저장하고 첫 회계 연도를 만들기 위해 Spring 컨텍스트를 잠깐 띄웠다가 닫는다. DB 파일을 만든 뒤에 실패하면 되돌릴 수 없으므로 입력값은 단계마다 화면에서 미리 검증하고, 완료 전에 창을 닫으면 아무것도 만들지 않는다.
 2. `LoginView`로 계정 정보를 받는다 → `DatabaseManager.loadDatabasePassword`가 DB 비밀번호를 복호화한다 → `SpringApplication.run`으로 실제 컨텍스트를 띄운다 → `UserService.login` → `MainView` 빈을 표시한다.
 
 `DatabaseManager`, `AppSettingManager`, `BackupManager`는 `main`에서 만든 정적 싱글톤이며, 애플리케이션 클래스의 `@Bean` 메서드로 Spring에 노출된다(`AppSettingManager`는 노출하지 않는다). `DataSource` 빈은 복호화된 비밀번호로 만든다. 이 클래스들은 `@Component`가 아니다.
@@ -136,7 +136,7 @@ DB 비밀번호는 로그인한 뒤에야 알 수 있으므로, `ChurchStewardAp
 - **백업 파일**(확장자 `csbackup`)은 ZIP이며 `manifest.json`(형식 버전, 프로그램 버전, 일시, 사용자별 DB 접근 키)과 `database.sql`(H2 `SCRIPT` 덤프)을 담는다. 덤프는 DB 파일 비밀번호로 암호화하고(`DatabaseManager#writeDump`), 그 비밀번호는 사용자별 DB 접근 키 안에 각 사용자의 비밀번호로 암호화되어 있다. 그래서 별도의 백업 암호가 없고, 복원에는 백업한 시점의 계정과 비밀번호가 필요하다.
 - **파일 복사가 아니라 덤프를 쓰는 이유**: H2의 파일 형식은 버전 사이에 호환되지 않은 전례가 있고, Spring Boot를 올리면 H2도 올라간다. `H2ScriptRoundTripTest`는 같은 H2 안에서 암호화된 DB의 덤프 왕복을 확인한다. 과거 H2 버전이 만든 덤프를 읽을 수 있는지는 `H2DumpCompatibilityTest`가 확인한다. 이 테스트는 H2 버전마다 만들어 커밋해 둔 고정 덤프(`src/test/resources/h2-dump-fixtures/h2-{H2 버전}.sql`)를 모두 `DatabaseManager#runDump`로 되살리고, 같은 데이터(`H2DumpFixtureData`)를 지금의 H2에 새로 넣은 결과와 표 구조까지 비교한다. 고정 덤프는 실제 스키마와 무관한 임의의 구조(실제 스키마의 자료형, 제약 조건, 인덱스 형태만 흉내 냄)라서 마이그레이션을 실행하지 않으며, 스키마가 바뀌어도 고칠 필요가 없다. 고정 덤프는 릴리스할 때 `./gradlew generateH2DumpFixture`로 만든다(그 H2 버전의 파일이 이미 있으면 만들지 않는다). 과거 버전의 실제 스키마로 만든 백업이 마이그레이션으로 현재 스키마까지 올라가는지는 `BackupManagerTest`가 확인한다([스키마와 마이그레이션](#스키마와-마이그레이션) 절의 "백업과의 관계" 항목).
 - **백업**은 실행 중에 한다: `BackupController` → `BackupService`(`domain/backup`) → `BackupManager#createBackup`. 성공한 뒤에 활동 기록(`ActivityType.BACKUP`)를 남기므로 그 기록은 방금 만든 백업 파일에는 들어 있지 않다.
-- **복원**은 DB 파일을 교체하므로 Spring 컨텍스트가 없을 때만 할 수 있다. 데이터 관리 화면은 복원을 예약만 하고(`./application.yml`의 `scheduled-restore-file`) 프로그램을 끝낸다. 다음 실행 때 `main`이 로그인 전에 `DatabaseRestoreView`를 띄운다(예약은 한 번만 유효하며 취소하면 기존 데이터로 로그인한다). 최초 실행 화면의 "백업에서 복원"도 같은 다이얼로그를 쓴다.
+- **복원**은 DB 파일을 교체하므로 Spring 컨텍스트가 없을 때만 할 수 있다. 데이터 관리 화면은 복원을 예약만 하고(`./application.yml`의 `scheduled-restore-file`) 프로그램을 끝낸다. 다음 실행 때 `main`이 로그인 전에 `DatabaseRestoreView`를 띄운다(예약은 한 번만 유효하며 취소하면 기존 데이터로 로그인한다). 최초 실행 화면의 시작 방법 선택에서 고르는 "백업에서 복원"은 새 창을 띄우지 않고 초기 설정 창 안의 화면으로 바뀌며, 입력부와 복원 실행(`RestoreFormPanel`)은 이 다이얼로그와 함께 쓴다.
 - **복원 절차**(`DatabaseManager#restore`): 덤프를 임시 DB 파일에 먼저 되살려 Flyway로 현재 스키마까지 올리고, 성공하면 기존 DB 파일과 설정 파일을 `./data/before-restore-{일시}/`로 옮긴 뒤 되살린 파일을 제자리에 놓고 `database-manager` 항목을 백업의 키로 바꾼다. 되살리거나 스키마를 올리다가 실패하면 기존 데이터는 그대로다.
 - **복원의 활동 기록**: 복원 동작(`ChurchStewardApplication#restoreAction`)은 DB를 교체한 뒤 복원한 DB로 Spring 컨텍스트를 잠깐 띄워 `BackupService#logRestore`로 `ActivityType.RESTORE`를 남기고 닫는다(최초 실행의 관리자 생성과 같은 방식). 로그인 세션이 없으므로 복원한 계정 ID를 기록자로 넘긴다. 백업은 관리자만 할 수 있으므로 복원 화면의 계정은 "관리자"로 고정하고 비밀번호만 받는다. 복원은 이미 끝났으므로 기록에 실패해도 복원은 성공으로 보고, 완료 문구에 실패만 알린다.
 - **버전**: 프로그램보다 새 버전에서 만든 백업은 거부한다(`ProgramVersion#isNewer`). 과거 버전의 백업은 복원하면서 현재 스키마까지 올린다.
@@ -174,7 +174,7 @@ DB 비밀번호는 로그인한 뒤에야 알 수 있으므로, `ChurchStewardAp
 ### 프로그램 설정
 
 - 사용자별 설정(`UserSetting`, `ReportSetting`)과 달리 프로그램 전체에 하나뿐인 설정은 `PROGRAM_SETTING` 표(`domain/programsetting`의 `ProgramSetting`)에 둔다. 행은 ID가 `ProgramSettingConstraints.SETTING_ID`인 하나뿐이다. DB에 있으므로 백업에 함께 들어간다.
-- 마이그레이션은 표만 만들고 행을 넣지 않는다. 행이 없으면(설정한 적이 없는 기존 데이터, 과거 버전의 백업) 서비스가 기본값을 돌려주며 저장하지 않고, 처음 바꿀 때 행을 만든다. 보고서 설정과 같은 방식이다.
+- 마이그레이션은 표만 만들고 행을 넣지 않는다. 행이 없으면(설정한 적이 없는 기존 데이터, 과거 버전의 백업) 서비스가 기본값을 돌려주며 저장하지 않고, 처음 바꿀 때 행을 만든다. 보고서 설정과 같은 방식이다. 최초 실행은 고른 주간 결산 요일을 기본값이어도 늘 저장하므로, 행이 없는 것은 과거 버전에서 마이그레이션한 데이터뿐이다.
 - 지금은 주간 결산 요일(`weeklyClosingDay`, `java.time.DayOfWeek`, 기본은 일요일)만 있다. 주간은 결산 요일 다음 날부터 결산 요일까지이며, 수입/지출 관리의 "주간"과 주간 보고서가 함께 쓴다(`PeriodUnit#startOf`가 결산 요일을 받는다). 서버 쪽 집계는 화면이 넘긴 시작일과 종료일만 쓰므로 결산 요일을 알 필요가 없다.
 - 모든 사용자가 바꿀 수 있으므로 `ProgramSettingController`는 권한을 확인하지 않는다. 화면의 기준을 정하는 설정이라 활동 기록을 남기지 않는다.
 

@@ -12,15 +12,22 @@ import org.church.steward.ui.component.field.StyledDatePicker;
 import org.church.steward.ui.component.label.FieldLabel;
 
 /**
- * 회계 연도의 기간을 "시작일 ~ 종료일"로 입력받는 필드
+ * 회계 연도의 기간을 "시작일 ~ 종료일"로 입력받는 필드. 회계 연도 입력 다이얼로그와 최초 실행 화면이 함께 쓴다.
  */
-class FiscalYearPeriodField extends JPanel {
+public class FiscalYearPeriodField extends JPanel {
     private static final long serialVersionUID = 1L;
 
-    private final StyledDatePicker startDatePicker = new StyledDatePicker(ComponentSize.MEDIUM);
-    private final StyledDatePicker endDatePicker = new StyledDatePicker(ComponentSize.MEDIUM);
+    private final StyledDatePicker startDatePicker;
+    private final StyledDatePicker endDatePicker;
 
     FiscalYearPeriodField() {
+        this(ComponentSize.MEDIUM);
+    }
+
+    public FiscalYearPeriodField(ComponentSize componentSize) {
+        startDatePicker = new StyledDatePicker(componentSize);
+        endDatePicker = new StyledDatePicker(componentSize);
+
         setLayout(new GridBagLayout());
         setOpaque(false);
 
@@ -35,7 +42,7 @@ class FiscalYearPeriodField extends JPanel {
         gbc.gridx = 1;
         gbc.weightx = 0;
         gbc.insets = new Insets(0, 8, 0, 8);
-        add(new FieldLabel("~", ComponentSize.MEDIUM), gbc);
+        add(new FieldLabel("~", componentSize), gbc);
 
         gbc.gridx = 2;
         gbc.weightx = 1.0;
@@ -43,7 +50,7 @@ class FiscalYearPeriodField extends JPanel {
         add(endDatePicker, gbc);
     }
 
-    void setPeriod(LocalDate startDate, LocalDate endDate) {
+    public void setPeriod(LocalDate startDate, LocalDate endDate) {
         startDatePicker.setDate(startDate);
         endDatePicker.setDate(endDate);
     }
@@ -51,19 +58,19 @@ class FiscalYearPeriodField extends JPanel {
     /**
      * 키보드로 입력란을 옮겨 다니도록 다이얼로그에 등록할 때 쓴다.
      */
-    StyledDatePicker getStartDatePicker() {
+    public StyledDatePicker getStartDatePicker() {
         return startDatePicker;
     }
 
-    StyledDatePicker getEndDatePicker() {
+    public StyledDatePicker getEndDatePicker() {
         return endDatePicker;
     }
 
-    LocalDate getStartDate() {
+    public LocalDate getStartDate() {
         return startDatePicker.getDate();
     }
 
-    LocalDate getEndDate() {
+    public LocalDate getEndDate() {
         return endDatePicker.getDate();
     }
 
@@ -72,7 +79,7 @@ class FiscalYearPeriodField extends JPanel {
      *
      * @return 문제가 있으면 사용자에게 보여줄 메시지, 없으면 null
      */
-    String findInputError() {
+    public String findInputError() {
         LocalDate startDate = getStartDate();
         LocalDate endDate = getEndDate();
         if (startDate == null || endDate == null) {
