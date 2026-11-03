@@ -235,14 +235,15 @@ class RecordImportAnalyzerTest {
             // Given
             RecordImportRequestDto request = RecordImportRequestDto.builder()
                     .rows(List.of(
-                            row(LocalDate.of(2026, 3, 5), "십일조", 1000L, null, "홍길동"),
-                            row(LocalDate.of(2026, 3, 6), "운영비", 0L, 500L, "OO상사")))
+                            row(LocalDate.of(2026, 3, 5), "십일조", 1000L, null, "홍길동", null),
+                            row(LocalDate.of(2026, 3, 6), "운영비", 0L, 500L, "OO상사", "사무용품")))
                     .firstRowNumber(2)
                     .dateColumn(0)
                     .budgetPathColumn(1)
                     .incomeAmountColumn(2)
                     .expenseAmountColumn(3)
                     .contactColumn(4)
+                    .descriptionColumn(5)
                     .build();
 
             // When
@@ -345,7 +346,7 @@ class RecordImportAnalyzerTest {
             // Given
             RecordImportRequestDto request = standardRequest(List.of(
                     row("세입", LocalDate.of(2026, 3, 5), "십일조", 1000L, null, "홍길동", null),
-                    row("세출", LocalDate.of(2026, 3, 5), "운영비", 500L, null, "OO상사", null)))
+                    row("세출", LocalDate.of(2026, 3, 5), "운영비", 500L, "사무용품", "OO상사", null)))
                     .typeMappings(Map.of("세입", FinancialRecordType.INCOME, "세출", FinancialRecordType.EXPENSE))
                     .build();
 
@@ -917,6 +918,90 @@ class RecordImportAnalyzerTest {
                     .extracting(RecordImportItemDto::getDescription, RecordImportItemDto::getStatus,
                             RecordImportItemDto::getMessage)
                     .containsExactly("가".repeat(100), ImportItemStatus.WARNING, "내용이(가) 100자를 넘어 잘립니다.");
+        }
+
+        @Test
+        @DisplayName("지출의 내용이 비어 있으면 전체 경로가 아니라 말단 예산의 이름으로 채우고 경고로 알린다")
+        void analyze_ExpenseWithBlankDescription_FillsLeafBudgetNameWithWarning() {
+            // Given
+            Budget facility = budget(5L, BudgetType.EXPENSE, "시설비", null);
+            Budget repair = budget(6L, BudgetType.EXPENSE, "수리비", facility);
+            RecordImportRequestDto request = standardRequest(List.of(
+                    row("지출", LocalDate.of(2026, 3, 5), "시설비 > 수리비", 500L, null, "OO상사", null)))
+                    .build();
+
+            // When
+            RecordImportAnalysisDto analysis = RecordImportAnalyzer.analyze(request, PERIOD_START, PERIOD_END,
+                    List.of(facility, repair), contacts, List.of());
+
+            // Then
+            assertThat(firstItem(analysis))
+                    .extracting(RecordImportItemDto::getDescription, RecordImportItemDto::getStatus,
+                            RecordImportItemDto::getMessage)
+                    .containsExactly("수리비", ImportItemStatus.WARNING, "내용이 비어 있어 예산명(수리비)으로 채웁니다.");
+        }
+
+        @Test
+        @DisplayName("수입의 내용은 비어 있어도 채우지 않는다")
+        void analyze_IncomeWithBlankDescription_LeavesBlank() {
+            // Given
+            RecordImportRequestDto request = standardRequest(List.of(
+                    row("수입", LocalDate.of(2026, 3, 5), "십일조", 1000L, null, "홍길동", null)))
+                    .build();
+
+            // When
+            RecordImportAnalysisDto analysis = analyze(request);
+
+            // Then
+            assertThat(firstItem(analysis))
+                    .extracting(RecordImportItemDto::getDescription, RecordImportItemDto::getStatus)
+                    .containsExactly("", ImportItemStatus.OK);
+        }
+
+        @Test
+        @DisplayName("예산이 연결되지 않은 지출 행은 내용을 채우지 않고 오류로 둔다")
+        void analyze_ExpenseWithBlankDescriptionAndUnmappedBudget_DoesNotFill() {
+            // Given
+            RecordImportRequestDto request = standardRequest(List.of(
+                    row("지출", LocalDate.of(2026, 3, 5), "선교비", 500L, null, "OO상사", null)))
+                    .build();
+
+            // When
+            RecordImportAnalysisDto analysis = analyze(request);
+
+            // Then
+            assertThat(firstItem(analysis))
+                    .extracting(RecordImportItemDto::getDescription, RecordImportItemDto::getStatus)
+                    .containsExactly("", ImportItemStatus.ERROR);
+        }
+
+        @Test
+        @DisplayName("내용을 예산명으로 채운 지출은 채운 내용으로 기존 내역과의 중복을 가린다")
+        void analyze_ExpenseWithFilledDescription_ComparesDuplicatesWithFilledValue() {
+            // Given
+            FinancialRecord existing = FinancialRecord.builder()
+                    .id(100L)
+                    .type(FinancialRecordType.EXPENSE)
+                    .date(LocalDate.of(2026, 3, 5))
+                    .budget(operating)
+                    .amount(500L)
+                    .description("운영비")
+                    .contacts(List.of(FinancialRecordContact.builder()
+                            .contact(vendor)
+                            .contactName("OO상사")
+                            .build()))
+                    .build();
+            RecordImportRequestDto request = standardRequest(List.of(
+                    row("지출", LocalDate.of(2026, 3, 5), "운영비", 500L, null, "OO상사", null)))
+                    .build();
+
+            // When
+            RecordImportAnalysisDto analysis = analyze(request, contacts, List.of(existing));
+
+            // Then
+            assertThat(firstItem(analysis))
+                    .extracting(RecordImportItemDto::isDuplicate, RecordImportItemDto::getMessage)
+                    .containsExactly(true, "같은 내역이 이미 있습니다. (중복 의심) 내용이 비어 있어 예산명(운영비)으로 채웁니다.");
         }
 
         @Test

@@ -84,7 +84,7 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
         validateAmount(dto.getAmount());
         String description = TextUtils.normalize(dto.getDescription());
         String remarks = TextUtils.normalize(dto.getRemarks());
-        validateTexts(description, remarks);
+        validateTexts(type, description, remarks);
         validateContacts(type, dto.getContactIds());
         FiscalYear fiscalYear = findFiscalYear(dto.getFiscalYearId());
         validateNotClosed(fiscalYear);
@@ -120,11 +120,11 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
         validateAmount(dto.getAmount());
         String description = TextUtils.normalize(dto.getDescription());
         String remarks = TextUtils.normalize(dto.getRemarks());
-        validateTexts(description, remarks);
         FinancialRecord financialRecord = financialRecordRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Financial Record not found"));
         // 구분은 바꿀 수 없으므로 요청의 구분은 보지 않고 기존 내역의 구분을 따른다.
         FinancialRecordType type = financialRecord.getType();
+        validateTexts(type, description, remarks);
         validateContacts(type, dto.getContactIds());
 
         // 내역이 지금 속한 회계 연도와 옮겨 갈 회계 연도가 모두 마감되지 않아야 한다.
@@ -275,9 +275,12 @@ public class FinancialRecordServiceImpl implements FinancialRecordService {
     }
 
     /**
-     * 내용과 비고는 비워 둘 수 있고, 적으면 칼럼 길이 이내여야 한다. 앞뒤 공백을 지운 값으로 받는다.
+     * 지출은 내용이 필수이고, 수입의 내용과 비고는 비워 둘 수 있다. 적으면 칼럼 길이 이내여야 한다. 앞뒤 공백을 지운 값으로 받는다.
      */
-    private void validateTexts(String description, String remarks) {
+    private void validateTexts(FinancialRecordType type, String description, String remarks) {
+        if (type == FinancialRecordType.EXPENSE && description == null) {
+            throw new IllegalArgumentException("지출의 내용을 입력해주세요.");
+        }
         if (description != null && description.length() > FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH) {
             throw new IllegalArgumentException(
                     "내용은 " + FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH + "자 이내로 입력해주세요.");

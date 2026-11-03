@@ -492,6 +492,35 @@ class BackupManagerTest {
         }
 
         @Test
+        @DisplayName("1.0.0~1.1.0의 스키마로 만든 백업을 복원하면 내용이 빈 지출만 말단 예산의 이름으로 채운다")
+        void restore_BackupFromFirstReleasedSchema_FillsBlankExpenseDescriptionWithBudgetName() throws Exception {
+            // Given
+            Installation source = createFirstReleasedInstallation("source");
+            try (HikariDataSource dataSource = openDataSource(source);
+                    Connection connection = dataSource.getConnection();
+                    Statement statement = connection.createStatement()) {
+                statement.execute("INSERT INTO BUDGET (FISCAL_YEAR_ID, TYPE, PARENT_ID, NAME, AMOUNT, SORT_ORDER)"
+                        + " VALUES (1, 'EXPENSE', NULL, '시설비', NULL, 0), (1, 'EXPENSE', 3, '수리비', 500000, 0)");
+                statement.execute("UPDATE FINANCIAL_RECORD SET DESCRIPTION = NULL");
+                statement.execute("INSERT INTO FINANCIAL_RECORD"
+                        + " (TYPE, FISCAL_YEAR_ID, DATE, BUDGET_ID, DESCRIPTION, AMOUNT, REMARKS)"
+                        + " VALUES ('EXPENSE', 1, DATE '2025-03-03', 4, NULL, 10000, NULL),"
+                        + " ('EXPENSE', 1, DATE '2025-03-04', 4, ' ', 20000, NULL),"
+                        + " ('EXPENSE', 1, DATE '2025-03-05', 4, '전등 교체', 30000, NULL)");
+            }
+            Path backupFile = createBackup(source);
+            Installation target = createInstallation("target", PROGRAM_VERSION);
+
+            // When
+            target.backupManager().restore(backupFile, ADMIN_ID, ADMIN_PASSWORD);
+
+            // Then
+            target.databaseManager().loadDatabasePassword(ADMIN_ID, ADMIN_PASSWORD);
+            assertThat(readRows(target, "SELECT TYPE, DESCRIPTION FROM FINANCIAL_RECORD ORDER BY ID"))
+                    .containsExactly("INCOME|null", "EXPENSE|수리비", "EXPENSE|수리비", "EXPENSE|전등 교체");
+        }
+
+        @Test
         @DisplayName("백업한 데이터의 스키마를 이 버전에 맞게 올리지 못하면 복원하지 않고 기존 데이터를 그대로 둔다")
         void restore_MigrationFailure_KeepsExistingData() throws Exception {
             // Given

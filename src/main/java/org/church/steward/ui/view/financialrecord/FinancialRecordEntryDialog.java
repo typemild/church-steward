@@ -477,6 +477,14 @@ public class FinancialRecordEntryDialog extends JDialog {
             return;
         }
 
+        // 지출은 내용이 필수다. 수입은 비워 둘 수 있다.
+        if (getFinancialRecordType() == FinancialRecordType.EXPENSE && descriptionField.getText()
+                .isBlank()) {
+            showInputError("내용을 입력해주세요.");
+            descriptionField.requestFocus();
+            return;
+        }
+
         if (amountField.getAmount() <= 0) {
             showInputError("금액을 입력해주세요.");
             amountField.requestFocus();

@@ -733,16 +733,16 @@ class FinancialRecordServiceImplTest {
         }
 
         @Test
-        @DisplayName("내용과 비고가 비어 있거나 공백뿐이면 null로 저장한다")
+        @DisplayName("수입의 내용과 비고가 비어 있거나 공백뿐이면 null로 저장한다")
         void createFinancialRecord_blankTexts_savesNull() {
             // Given
-            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.EXPENSE, List.of(10L));
+            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.INCOME, List.of(10L));
             dto.setDescription("");
             dto.setRemarks(" 　");
             ArgumentCaptor<FinancialRecord> recordCaptor = ArgumentCaptor.forClass(FinancialRecord.class);
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
             when(budgetRepository.findById(1L))
-                    .thenReturn(Optional.of(createBudget(1L, BudgetType.EXPENSE, fiscalYear)));
+                    .thenReturn(Optional.of(createBudget(1L, BudgetType.INCOME, fiscalYear)));
             when(contactRepository.findAllById(Set.of(10L))).thenReturn(List.of(createContact(10L, "Kim")));
 
             // When
@@ -752,6 +752,19 @@ class FinancialRecordServiceImplTest {
             verify(financialRecordRepository).save(recordCaptor.capture());
             assertThat(recordCaptor.getValue().getDescription()).isNull();
             assertThat(recordCaptor.getValue().getRemarks()).isNull();
+        }
+
+        @Test
+        @DisplayName("지출의 내용이 비어 있거나 공백뿐이면 예외가 발생한다")
+        void createFinancialRecord_expenseWithBlankDescription_throwsException() {
+            // Given
+            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.EXPENSE, List.of(10L));
+            dto.setDescription(" 　");
+
+            // When & Then
+            assertThatThrownBy(() -> financialRecordService.createFinancialRecord(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("지출의 내용을 입력해주세요.");
         }
 
         @Test
@@ -1255,6 +1268,8 @@ class FinancialRecordServiceImplTest {
             // Given
             FinancialRecordRequestDto dto = createRequest(FinancialRecordType.EXPENSE, List.of(10L));
             dto.setDescription("가".repeat(FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH + 1));
+            when(financialRecordRepository.findById(1L))
+                    .thenReturn(Optional.of(createExistingRecord(FinancialRecordType.EXPENSE)));
 
             // When & Then
             assertThatThrownBy(() -> financialRecordService.updateFinancialRecord(1L, dto))
@@ -1268,11 +1283,43 @@ class FinancialRecordServiceImplTest {
             // Given
             FinancialRecordRequestDto dto = createRequest(FinancialRecordType.EXPENSE, List.of(10L));
             dto.setRemarks("나".repeat(FinancialRecordConstraints.REMARKS_MAX_LENGTH + 1));
+            when(financialRecordRepository.findById(1L))
+                    .thenReturn(Optional.of(createExistingRecord(FinancialRecordType.EXPENSE)));
 
             // When & Then
             assertThatThrownBy(() -> financialRecordService.updateFinancialRecord(1L, dto))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("비고는 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("지출의 내용을 비우면 예외가 발생한다")
+        void updateFinancialRecord_expenseWithBlankDescription_throwsException() {
+            // Given
+            FinancialRecord financialRecord = createExistingRecord(FinancialRecordType.EXPENSE);
+            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.EXPENSE, List.of(10L));
+            dto.setDescription("  ");
+            when(financialRecordRepository.findById(1L)).thenReturn(Optional.of(financialRecord));
+
+            // When & Then
+            assertThatThrownBy(() -> financialRecordService.updateFinancialRecord(1L, dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("지출의 내용을 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("요청의 구분이 수입이어도 기존 내역이 지출이면 내용을 비울 수 없다")
+        void updateFinancialRecord_expenseRecordWithIncomeRequestAndBlankDescription_throwsException() {
+            // Given
+            FinancialRecord financialRecord = createExistingRecord(FinancialRecordType.EXPENSE);
+            FinancialRecordRequestDto dto = createRequest(FinancialRecordType.INCOME, List.of(10L));
+            dto.setDescription(null);
+            when(financialRecordRepository.findById(1L)).thenReturn(Optional.of(financialRecord));
+
+            // When & Then
+            assertThatThrownBy(() -> financialRecordService.updateFinancialRecord(1L, dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("지출의 내용을 입력해주세요.");
         }
 
         @Test
