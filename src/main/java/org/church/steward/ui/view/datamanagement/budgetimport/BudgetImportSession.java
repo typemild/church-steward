@@ -216,8 +216,8 @@ public class BudgetImportSession extends ImportSession {
      * 새 분석 결과를 받아들이고 선택을 다시 계산한다. 사용자가 직접 바꾼 선택은 유지하고, 손대지 않은 건은 고를 수 있으면 선택한다. 분석
      * 결과가 달라졌을 수 있으므로 받아 둔 백업은 다시 확인받도록 서비스에 맡긴다(여기서는 지우지 않는다).
      *
-     * @return 이전 분석 결과와 비교해 상태, 할 일, 금액, 비고, 설명이 달라졌거나 새로 생기거나 없어진 건의 수. 이전 분석 결과가 없었으면
-     *         0
+     * @return 이전 분석 결과와 비교해 상태, 할 일, 금액, 비고, 설명이 달라졌거나 새로 생기거나 없어진 건의 수. 이전 분석 결과가
+     *         없었으면 0
      */
     public int applyAnalysis(BudgetImportAnalysisDto newAnalysis) {
         int changedCount = analysis == null ? 0 : countChanges(analysis, newAnalysis);

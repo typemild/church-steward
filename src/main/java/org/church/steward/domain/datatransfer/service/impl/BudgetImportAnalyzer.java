@@ -27,9 +27,11 @@ import org.church.steward.domain.datatransfer.dto.ImportItemStatus;
  * <p>
  * 분석은 세 단계다.
  * <ol>
- * <li>행 읽기: 행마다 예산명(단계별 열 또는 전체 경로 열), 구분, 금액, 비고를 읽는다. 읽지 못한 행은 오류인 건이 된다.</li>
+ * <li>행 읽기: 행마다 예산명(단계별 열 또는 전체 경로 열), 구분, 금액, 비고를 읽는다. 읽지 못한 행은 오류인 건이
+ * 된다.</li>
  * <li>계층 만들기: 구분과 전체 경로가 같으면 같은 예산이다. 하위 예산의 경로에만 나오는 상위 예산은 행이 없어도 만든다.</li>
- * <li>이미 있는 예산과 견주기: 없는 예산은 추가, 있는 예산은 건너뛰거나 금액과 비고를 갱신한다. 오류는 하위 예산으로 번진다.</li>
+ * <li>이미 있는 예산과 견주기: 없는 예산은 추가, 있는 예산은 건너뛰거나 금액과 비고를 갱신한다. 오류는 하위 예산으로
+ * 번진다.</li>
  * </ol>
  */
 final class BudgetImportAnalyzer {
@@ -96,8 +98,8 @@ final class BudgetImportAnalyzer {
     }
 
     /**
-     * 건의 비고를 파일에서 읽었는지 여부. 비고 열을 지정했고 그 예산의 행이 파일에 있어야 한다. 행 없이 만들어진 상위 예산은 비고를
-     * 읽은 적이 없으므로, 이미 있는 예산이어도 비고를 견주지 않는다. 견주면 파일에 적지도 않은 비고를 지우는 것으로 보게 된다.
+     * 건의 비고를 파일에서 읽었는지 여부. 비고 열을 지정했고 그 예산의 행이 파일에 있어야 한다. 행 없이 만들어진 상위 예산은 비고를 읽은
+     * 적이 없으므로, 이미 있는 예산이어도 비고를 견주지 않는다. 견주면 파일에 적지도 않은 비고를 지우는 것으로 보게 된다.
      */
     private boolean hasFileRemarks(Node node) {
         return request.getRemarksColumn() != null && node.rowNumber != null;
@@ -303,7 +305,8 @@ final class BudgetImportAnalyzer {
     }
 
     /**
-     * 비고를 읽는다. 빈 칸은 비고가 없는 것이고, {@value BudgetConstraints#REMARKS_MAX_LENGTH}자를 넘으면 잘라서 경고한다.
+     * 비고를 읽는다. 빈 칸은 비고가 없는 것이고, {@value BudgetConstraints#REMARKS_MAX_LENGTH}자를 넘으면
+     * 잘라서 경고한다.
      */
     private void readRemarks(List<Object> row, Node node) {
         String remarks = text(row, request.getRemarksColumn());

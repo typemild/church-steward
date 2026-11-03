@@ -362,7 +362,8 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.empty());
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, null, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("존재하지 않는 회계 연도입니다.");
         }
@@ -375,7 +376,8 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, null, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("마감된 회계 연도의 예산은 변경할 수 없습니다.");
         }
@@ -387,7 +389,8 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, null, " ", 100L, null, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, " ", 100L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("예산명을 입력해주세요.");
         }
@@ -400,7 +403,8 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, null, name, 100L, null, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, name, 100L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("예산명은 50자 이내로 입력해주세요.");
         }
@@ -426,7 +430,8 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, null, "헌금<일반", 100L, null, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, "헌금<일반", 100L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("예산명에는 '<', '>' 문자를 사용할 수 없습니다.");
         }
@@ -460,7 +465,8 @@ class BudgetServiceImplTest {
             when(budgetRepository.findById(1L)).thenReturn(Optional.of(parentOfOtherFiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, null, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("상위 예산과 같은 회계 연도의 예산만 추가할 수 있습니다.");
         }
@@ -605,7 +611,8 @@ class BudgetServiceImplTest {
             when(financialRecordRepository.existsByBudgetId(1L)).thenReturn(true);
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, null, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -627,7 +634,8 @@ class BudgetServiceImplTest {
             when(financialRecordRepository.existsByBudgetId(1L)).thenReturn(false);
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, null, BudgetType.EXPENSE))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, null, BudgetType.EXPENSE))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 

@@ -322,7 +322,8 @@ class BudgetImportSessionTest {
 
             // Then
             assertThat(request)
-                    .extracting(BudgetImportRequestDto::getRemarksColumn, BudgetImportRequestDto::isUpdateExistingBudgets)
+                    .extracting(BudgetImportRequestDto::getRemarksColumn,
+                            BudgetImportRequestDto::isUpdateExistingBudgets)
                     .containsExactly(5, true);
         }
     }
