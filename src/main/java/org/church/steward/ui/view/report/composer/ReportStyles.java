@@ -34,7 +34,8 @@ final class ReportStyles {
     /** 절과 절 사이의 간격 */
     static final double SECTION_SPACING = 10;
 
-    private static final double SUBTITLE_GAP = 2;
+    /** 제목과 회계 연도 기간 사이의 간격(기간 글자 높이에 대한 비율). 글자 크기를 키우면 간격도 함께 커진다. */
+    private static final double SUBTITLE_GAP_RATIO = 0.5;
     private static final double UNIT_GAP = 2;
 
     private ReportStyles() {
@@ -47,10 +48,10 @@ final class ReportStyles {
      */
     static void drawAnnualTitle(ReportCanvas canvas, String title, LocalDate startDate, LocalDate endDate) {
         canvas.title(title, ANNUAL_TITLE_SIZE);
-        canvas.moveDown(SUBTITLE_GAP);
 
         Font font = canvas.getStyle()
                 .regular(SUBTITLE_SIZE);
+        canvas.moveDown(ReportText.lineHeight(font) * SUBTITLE_GAP_RATIO);
         canvas.text(ReportFormats.period(startDate, endDate), font, ReportAlign.CENTER,
                 (canvas.getLeft() + canvas.getRight()) / 2, canvas.getY() + ReportText.ascent(font));
         canvas.moveDown(ReportText.lineHeight(font) + TITLE_GAP);
