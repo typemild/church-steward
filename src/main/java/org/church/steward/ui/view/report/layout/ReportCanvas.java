@@ -150,6 +150,26 @@ public final class ReportCanvas {
         text(text, font, align, anchorX, baseline, UIColors.REPORT_TEXT);
     }
 
+    /**
+     * 현재 페이지에 한 줄의 글자를 놓되, 폭을 넘으면 말줄임표 없이 글자를 작게 줄여 모두 적는다. 가장 작은 글자를 셀 때는 줄이기 전의
+     * 크기로 센다. 칸에 맞추려고 줄인 글자 때문에 글자 크기를 조정할 수 있는 범위가 좁아지지 않게 하기 위함이다.
+     *
+     * @param maxWidth 글자가 차지할 수 있는 폭
+     */
+    public void shrinkingText(String text, Font font, ReportAlign align, double anchorX, double baseline,
+            double maxWidth) {
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+        double width = ReportText.width(text, font);
+        Font fitted = width > maxWidth && maxWidth > 0 ? font.deriveFont(font.getSize2D() * (float) (maxWidth / width))
+                : font;
+
+        float smallest = smallestFontSize;
+        text(text, fitted, align, anchorX, baseline);
+        smallestFontSize = Math.min(smallest, font.getSize2D());
+    }
+
     public void line(double x1, double y1, double x2, double y2, double width, Color color) {
         page.add(new ReportElement.Line(x1, y1, x2, y2, width, color));
     }

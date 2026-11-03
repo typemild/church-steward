@@ -152,6 +152,26 @@ class ReportServiceImplTest {
         }
 
         @Test
+        @DisplayName("머리 부분에 적을 회계 연도의 이름과 기간을 담는다")
+        @SuppressWarnings("unchecked")
+        void getWeeklySettlementReport_FiscalYear_IncludesNameAndPeriod() {
+            // Given
+            when(fiscalYearRepository.findById(CURRENT_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearIdAndType(CURRENT_ID, BudgetType.INCOME)).thenReturn(List.of());
+            when(budgetRepository.findAllByFiscalYearIdAndType(CURRENT_ID, BudgetType.EXPENSE)).thenReturn(List.of());
+            when(financialRecordRepository.findAll(any(Specification.class))).thenReturn(List.of());
+
+            // When
+            WeeklySettlementReportDto result = reportService.getWeeklySettlementReport(CURRENT_ID, WEEK_START,
+                    WEEK_END);
+
+            // Then
+            assertThat(result.getFiscalYearName()).isEqualTo("2026년");
+            assertThat(result.getFiscalYearStartDate()).isEqualTo(LocalDate.of(2026, 1, 1));
+            assertThat(result.getFiscalYearEndDate()).isEqualTo(LocalDate.of(2026, 12, 31));
+        }
+
+        @Test
         @DisplayName("현황은 최상위 예산별로 하위 예산의 예산액과 종료일까지의 집행액을 합산한다")
         @SuppressWarnings("unchecked")
         void getWeeklySettlementReport_BudgetWithChildren_SumsChildrenIntoTopLevelStatus() {

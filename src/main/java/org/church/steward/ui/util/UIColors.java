@@ -72,6 +72,8 @@ public final class UIColors {
     public static final Color REPORT_LINE = Color.BLACK; // #000000
     public static final Color REPORT_GRID = new Color(170, 170, 170); // #AAAAAA
     public static final Color REPORT_FILL = new Color(235, 235, 235); // #EBEBEB
+    /** 줄무늬(REPORT_FILL)와 구분해야 하는 바탕(주간 내역의 예산 행) */
+    public static final Color REPORT_FILL_STRONG = new Color(212, 212, 212); // #D4D4D4
     public static final Color REPORT_BAR = new Color(85, 85, 85); // #555555
     public static final Color REPORT_PREVIEW_BACKGROUND = new Color(200, 204, 208); // #C8CCD0
 

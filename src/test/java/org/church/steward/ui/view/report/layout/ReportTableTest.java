@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.within;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.view.report.layout.ReportTable.Column;
 import org.church.steward.ui.view.report.layout.ReportTable.RowStyle;
 import org.junit.jupiter.api.DisplayName;
@@ -44,6 +45,62 @@ class ReportTableTest {
             // Then
             assertThat(textsOf(canvas.finish())).contains("1,234,567,890");
         }
+
+        @Test
+        @DisplayName("막대를 곁들인 칸은 오른쪽의 글자 자리에 열의 정렬대로 글자를 적고 나머지 폭에 막대를 그린다")
+        void render_BarTextCell_DrawsBarLeftOfTextArea() {
+            // Given
+            ReportCanvas canvas = new ReportCanvas("시험", ReportStyle.DEFAULT);
+            double textWidth = 40;
+            ReportTable table = new ReportTable(ReportStyle.DEFAULT, 9f,
+                    new Column("비율", 0, ReportAlign.CENTER));
+            table.addRow(RowStyle.NORMAL, 0, ReportTable.barText(0.5, "50.0%", textWidth));
+
+            // When
+            table.renderAt(canvas, canvas.getLeft(), canvas.getY(), 200);
+
+            // Then
+            ReportDocument document = canvas.finish();
+            ReportElement.Text text = findText(document, "50.0%");
+            double textAreaLeft = canvas.getLeft() + 200 - 3 - textWidth;
+            double textCenter = text.x() + ReportText.width(text.text(), text.font()) / 2;
+            assertThat(textCenter).isCloseTo(textAreaLeft + textWidth / 2, within(1e-6));
+            assertThat(document.getElements(0)).filteredOn(element -> element instanceof ReportElement.Rect rect
+                    && UIColors.REPORT_BAR.equals(rect.stroke()))
+                    .singleElement()
+                    .satisfies(element -> assertThat(((ReportElement.Rect) element).x()
+                            + ((ReportElement.Rect) element).width()).isLessThan(textAreaLeft));
+        }
+
+        @Test
+        @DisplayName("막대를 곁들인 칸의 열은 글자 자리와 막대의 최소 폭이 들어가도록 넓어진다")
+        void render_BarTextCellNarrowColumn_WidensColumn() {
+            // Given
+            ReportCanvas canvas = new ReportCanvas("시험", ReportStyle.DEFAULT);
+            ReportTable table = new ReportTable(ReportStyle.DEFAULT, 9f,
+                    new Column("항목", 0, ReportAlign.LEFT),
+                    new Column("비율", 10, ReportAlign.CENTER));
+            table.addRow(RowStyle.NORMAL, 0, ReportTable.text("헌금"), ReportTable.barText(0.5, "50.0%", 40));
+
+            // When
+            table.renderAt(canvas, canvas.getLeft(), canvas.getY(), 200);
+
+            // Then
+            assertThat(canvas.finish()
+                    .getElements(0)).anyMatch(
+                            element -> element instanceof ReportElement.Rect rect
+                                    && UIColors.REPORT_BAR.equals(rect.stroke()) && rect.width() > 0);
+        }
+    }
+
+    private static ReportElement.Text findText(ReportDocument document, String text) {
+        return document.getElements(0)
+                .stream()
+                .filter(element -> element instanceof ReportElement.Text found && found.text()
+                        .equals(text))
+                .map(ReportElement.Text.class::cast)
+                .findFirst()
+                .orElseThrow();
     }
 
     @Nested

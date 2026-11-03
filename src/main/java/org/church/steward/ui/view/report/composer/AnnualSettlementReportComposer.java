@@ -47,7 +47,8 @@ public final class AnnualSettlementReportComposer {
         canvas.moveDown(ReportStyles.SECTION_SPACING);
         drawMonthly(canvas, report);
         canvas.moveDown(ReportStyles.SECTION_SPACING);
-        BudgetStatusSection.render(canvas, report.getIncomeStatus(), report.getExpenseStatus(), STATUS_SIZE, "");
+        BudgetStatusSection.render(canvas, report.getIncomeStatus(), report.getExpenseStatus(),
+                BudgetStatusSection.Layout.DEFAULT, BudgetStatusSection.Layout.DEFAULT, STATUS_SIZE, "");
 
         return canvas.finish();
     }

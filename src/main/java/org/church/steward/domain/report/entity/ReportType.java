@@ -25,4 +25,19 @@ public enum ReportType {
     public boolean isWeekly() {
         return this == WEEKLY_SETTLEMENT;
     }
+
+    /**
+     * 보고서 양식에 결재란이 있는지 여부
+     */
+    public boolean hasApproval() {
+        return this == WEEKLY_SETTLEMENT;
+    }
+
+    /**
+     * 보고서 양식에서 정할 것(결재란, 칸의 순서와 숨김)이 있는지 여부
+     */
+    public boolean hasTemplate() {
+        return hasApproval() || !ReportTemplateTable.of(this)
+                .isEmpty();
+    }
 }

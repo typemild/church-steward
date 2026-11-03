@@ -11,11 +11,13 @@ import org.church.steward.domain.report.dto.AnnualSettlementReportDto;
 import org.church.steward.domain.report.dto.BudgetPlanReportDto;
 import org.church.steward.domain.report.dto.ReportOutputType;
 import org.church.steward.domain.report.dto.ReportSettingDto;
+import org.church.steward.domain.report.dto.ReportTemplateDto;
 import org.church.steward.domain.report.dto.SettlementDetailReportDto;
 import org.church.steward.domain.report.dto.WeeklySettlementReportDto;
 import org.church.steward.domain.report.entity.ReportType;
 import org.church.steward.domain.report.service.ReportService;
 import org.church.steward.domain.report.service.ReportSettingService;
+import org.church.steward.domain.report.service.ReportTemplateService;
 import org.church.steward.domain.user.entity.UserRole;
 import org.church.steward.infrastructure.security.LoggedInUser;
 import org.church.steward.infrastructure.security.UserSessionHolder;
@@ -39,6 +41,9 @@ class ReportControllerTest {
 
     @Mock
     private ReportSettingService reportSettingService;
+
+    @Mock
+    private ReportTemplateService reportTemplateService;
 
     @Mock
     private UserSessionHolder userSessionHolder;
@@ -189,6 +194,47 @@ class ReportControllerTest {
 
             // Then
             verify(reportSettingService).updateReportSetting(user.id(), setting);
+        }
+    }
+
+    @Nested
+    @DisplayName("getReportTemplate 테스트")
+    class GetReportTemplateTest {
+
+        @Test
+        @DisplayName("로그인한 사용자와 무관하게 서비스가 조회한 보고서 양식을 그대로 반환한다")
+        void getReportTemplate_Called_ReturnsServiceResult() {
+            // Given
+            ReportTemplateDto expected = ReportTemplateDto.builder()
+                    .reportType(ReportType.WEEKLY_SETTLEMENT)
+                    .build();
+            when(reportTemplateService.getReportTemplate(ReportType.WEEKLY_SETTLEMENT)).thenReturn(expected);
+
+            // When
+            ReportTemplateDto actual = reportController.getReportTemplate(ReportType.WEEKLY_SETTLEMENT);
+
+            // Then
+            assertThat(actual).isSameAs(expected);
+        }
+    }
+
+    @Nested
+    @DisplayName("updateReportTemplate 테스트")
+    class UpdateReportTemplateTest {
+
+        @Test
+        @DisplayName("권한 확인 없이 받은 양식을 그대로 서비스에 넘긴다")
+        void updateReportTemplate_Called_DelegatesToService() {
+            // Given
+            ReportTemplateDto template = ReportTemplateDto.builder()
+                    .reportType(ReportType.WEEKLY_SETTLEMENT)
+                    .build();
+
+            // When
+            reportController.updateReportTemplate(template);
+
+            // Then
+            verify(reportTemplateService).updateReportTemplate(template);
         }
     }
 }

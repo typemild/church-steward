@@ -81,6 +81,8 @@ public class ReportServiceImpl implements ReportService {
 
         return WeeklySettlementReportDto.builder()
                 .fiscalYearName(fiscalYear.getName())
+                .fiscalYearStartDate(fiscalYear.getStartDate())
+                .fiscalYearEndDate(fiscalYear.getEndDate())
                 .startDate(startDate)
                 .endDate(endDate)
                 .previousBalance(summarize(previousRecords).getDifference())

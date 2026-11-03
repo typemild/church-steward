@@ -44,7 +44,12 @@ public final class ReportTable {
     private record TextCell(String text) implements Cell {
     }
 
-    private record BarCell(Double ratio) implements Cell {
+    /**
+     * 왼쪽에 막대, 오른쪽에 글자를 적는 칸
+     *
+     * @param textWidth 글자를 적을 자리의 폭. 같은 열의 막대 길이가 같도록 열에서 가장 넓은 글자에 맞춘 값을 넘긴다.
+     */
+    private record BarTextCell(Double ratio, String text, double textWidth) implements Cell {
     }
 
     private record Row(RowStyle style, int indent, List<Cell> cells) {
@@ -53,7 +58,7 @@ public final class ReportTable {
     /**
      * 줄바꿈까지 마쳐 높이가 정해진 행
      *
-     * @param cellLines 칸별로 나눈 줄. 막대 칸은 null
+     * @param cellLines 칸별로 나눈 줄
      */
     private record LaidOutRow(Row row, Font font, List<List<String>> cellLines, double height) {
     }
@@ -63,6 +68,10 @@ public final class ReportTable {
     private static final double INDENT_STEP = 8;
     /** 막대의 굵기가 한 줄 높이에서 차지하는 비율 */
     private static final double BAR_HEIGHT_RATIO = 0.55;
+    /** 막대와 글자 사이의 간격 */
+    private static final double BAR_GAP = 3;
+    /** 막대를 곁들인 칸에서 막대가 차지할 최소 폭. 열의 폭이 모자라도 막대가 사라지지 않게 그만큼 열을 넓힌다. */
+    private static final double MIN_BAR_WIDTH = 12;
 
     private static final double STRONG_LINE = 0.8;
     private static final double HEADER_LINE = 0.5;
@@ -94,12 +103,14 @@ public final class ReportTable {
     }
 
     /**
-     * 비율을 채워진 길이로 보여주는 막대 칸을 만든다.
+     * 왼쪽에 비율을 채워진 길이로 보여주는 막대를, 오른쪽에 글자를 적는 칸을 만든다. 글자는 열의 정렬에 따라 글자 자리 안에서 정렬하고,
+     * 막대는 칸에서 글자 자리를 뺀 폭을 모두 차지한다.
      *
-     * @param ratio 채울 비율(1이 가득). 1을 넘으면 가득 채우고, null이면 빈 막대를 그린다.
+     * @param ratio     채울 비율(1이 가득). 1을 넘으면 가득 채우고, null이면 빈 막대를 그린다.
+     * @param textWidth 글자를 적을 자리의 폭. 같은 열의 막대 길이가 같도록 열에서 가장 넓은 글자에 맞춘 값을 넘긴다.
      */
-    public static Cell bar(Double ratio) {
-        return new BarCell(ratio);
+    public static Cell barText(Double ratio, String text, double textWidth) {
+        return new BarTextCell(ratio, text, textWidth);
     }
 
     /**
@@ -115,7 +126,8 @@ public final class ReportTable {
     }
 
     /**
-     * 행을 추가한다. 칸은 {@link #text(String)}와 {@link #bar(Double)}로 만든다.
+     * 행을 추가한다. 칸은 {@link #text(String)}와 {@link #barText(Double, String, double)}로
+     * 만든다.
      */
     public void addRow(RowStyle style, int indent, Cell... cells) {
         if (cells.length != columns.size()) {
@@ -189,15 +201,14 @@ public final class ReportTable {
             List<List<String>> cellLines = new ArrayList<>();
             int lineCount = 1;
             for (int i = 0; i < widths.length; i++) {
-                if (row.cells()
-                        .get(i) instanceof TextCell textCell) {
-                    List<String> lines = ReportText.wrap(textCell.text(), font,
-                            widths[i] - PADDING_X * 2 - indentOf(row, i));
-                    cellLines.add(lines);
-                    lineCount = Math.max(lineCount, lines.size());
-                } else {
-                    cellLines.add(null);
-                }
+                List<String> lines = switch (row.cells()
+                        .get(i)) {
+                case TextCell textCell -> ReportText.wrap(textCell.text(), font,
+                        widths[i] - PADDING_X * 2 - indentOf(row, i));
+                case BarTextCell barTextCell -> ReportText.wrap(barTextCell.text(), font, barTextCell.textWidth());
+                };
+                cellLines.add(lines);
+                lineCount = Math.max(lineCount, lines.size());
             }
             laidOutRows.add(new LaidOutRow(row, font, cellLines, lineCount * style.lineHeight(font)));
         }
@@ -255,23 +266,29 @@ public final class ReportTable {
             double cellX = x + indentOf(row, i);
             double cellWidth = widths[i] - indentOf(row, i);
 
+            // 글자를 적을 자리. 막대를 곁들인 칸은 오른쪽의 글자 자리이고 나머지에 막대를 그린다.
+            double textLeft = cellX + PADDING_X;
+            double textWidth = cellWidth - PADDING_X * 2;
             if (row.cells()
-                    .get(i) instanceof BarCell barCell) {
-                drawBar(canvas, barCell, cellX, top, cellWidth, laidOutRow.height(), ReportText.lineHeight(font));
-            } else {
-                ReportAlign align = columns.get(i)
-                        .align();
-                double anchorX = switch (align) {
-                case LEFT -> cellX + PADDING_X;
-                case CENTER -> cellX + cellWidth / 2;
-                case RIGHT -> cellX + cellWidth - PADDING_X;
-                };
-                double baseline = top + style.baselineOffset(font);
-                for (String line : laidOutRow.cellLines()
-                        .get(i)) {
-                    canvas.text(line, font, align, anchorX, baseline);
-                    baseline += lineHeight;
-                }
+                    .get(i) instanceof BarTextCell barTextCell) {
+                textWidth = barTextCell.textWidth();
+                textLeft = cellX + cellWidth - PADDING_X - textWidth;
+                drawBar(canvas, barTextCell.ratio(), cellX + PADDING_X, top,
+                        textLeft - BAR_GAP - (cellX + PADDING_X), laidOutRow.height(), ReportText.lineHeight(font));
+            }
+
+            ReportAlign align = columns.get(i)
+                    .align();
+            double anchorX = switch (align) {
+            case LEFT -> textLeft;
+            case CENTER -> textLeft + textWidth / 2;
+            case RIGHT -> textLeft + textWidth;
+            };
+            double baseline = top + style.baselineOffset(font);
+            for (String line : laidOutRow.cellLines()
+                    .get(i)) {
+                canvas.text(line, font, align, anchorX, baseline);
+                baseline += lineHeight;
             }
             x += widths[i];
         }
@@ -279,20 +296,20 @@ public final class ReportTable {
 
     /**
      * 테두리만 있는 막대 안을 비율만큼 진한 회색으로 채운다. 색 없이 채움과 비움만으로 읽을 수 있다.
+     *
+     * @param ratio 채울 비율(1이 가득). 1을 넘으면 가득 채우고, null이면 빈 막대를 그린다.
      */
-    private void drawBar(ReportCanvas canvas, BarCell cell, double cellX, double top, double cellWidth,
+    private void drawBar(ReportCanvas canvas, Double ratio, double barX, double top, double barWidth,
             double rowHeight, double lineHeight) {
         double barHeight = lineHeight * BAR_HEIGHT_RATIO;
-        double barX = cellX + PADDING_X;
         double barY = top + (rowHeight - barHeight) / 2;
-        double barWidth = cellWidth - PADDING_X * 2;
         if (barWidth <= 0) {
             return;
         }
 
-        double ratio = cell.ratio() == null ? 0 : Math.max(0, Math.min(1, cell.ratio()));
-        if (ratio > 0) {
-            canvas.fillRect(barX, barY, barWidth * ratio, barHeight, UIColors.REPORT_BAR);
+        double fill = ratio == null ? 0 : Math.max(0, Math.min(1, ratio));
+        if (fill > 0) {
+            canvas.fillRect(barX, barY, barWidth * fill, barHeight, UIColors.REPORT_BAR);
         }
         canvas.strokeRect(barX, barY, barWidth, barHeight, BAR_LINE, UIColors.REPORT_BAR);
     }
@@ -341,15 +358,20 @@ public final class ReportTable {
     }
 
     /**
-     * 열의 머리글과 글자 칸을 모두 한 줄에 적는 데 필요한 폭. 막대 칸은 세지 않는다.
+     * 열의 머리글과 글자를 모두 한 줄에 적는 데 필요한 폭. 막대를 곁들인 칸은 글자 자리에 막대의 최소 폭을 더한다.
      */
     private double requiredWidth(int columnIndex) {
         double width = ReportText.width(columns.get(columnIndex)
                 .header(), boldFont);
         for (Row row : rows) {
-            if (row.cells()
-                    .get(columnIndex) instanceof TextCell textCell && textCell.text() != null) {
+            Cell cell = row.cells()
+                    .get(columnIndex);
+            if (cell instanceof TextCell textCell && textCell.text() != null) {
                 width = Math.max(width, ReportText.width(textCell.text(), fontOf(row)) + indentOf(row, columnIndex));
+            } else if (cell instanceof BarTextCell barTextCell) {
+                double textWidth = barTextCell.text() == null ? barTextCell.textWidth()
+                        : Math.max(barTextCell.textWidth(), ReportText.width(barTextCell.text(), fontOf(row)));
+                width = Math.max(width, MIN_BAR_WIDTH + BAR_GAP + textWidth);
             }
         }
         return width > 0 ? width + PADDING_X * 2 : 0;

@@ -2,6 +2,8 @@ package org.church.steward.ui.view.report.layout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.awt.Font;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -57,6 +59,67 @@ class ReportCanvasTest {
 
             // Then
             assertThat(document.getStyle()).isEqualTo(style);
+        }
+    }
+
+    @Nested
+    @DisplayName("shrinkingText 테스트")
+    class ShrinkingTextTest {
+
+        private ReportElement.Text findText(ReportDocument document, String text) {
+            return document.getElements(0)
+                    .stream()
+                    .filter(element -> element instanceof ReportElement.Text found && found.text()
+                            .equals(text))
+                    .map(ReportElement.Text.class::cast)
+                    .findFirst()
+                    .orElseThrow();
+        }
+
+        @Test
+        @DisplayName("폭을 넘는 글자는 말줄임표 없이 폭에 맞게 글자 크기를 줄인다")
+        void shrinkingText_TooWide_ShrinksFontToFit() {
+            // Given
+            ReportCanvas canvas = new ReportCanvas("시험", ReportStyle.DEFAULT);
+            Font font = ReportStyle.DEFAULT.regular(10f);
+            double maxWidth = ReportText.width("담임목사", font) / 2;
+
+            // When
+            canvas.shrinkingText("담임목사", font, ReportAlign.CENTER, 100, 100, maxWidth);
+
+            // Then
+            ReportElement.Text text = findText(canvas.finish(), "담임목사");
+            assertThat(ReportText.width(text.text(), text.font())).isLessThanOrEqualTo(maxWidth + 0.01);
+        }
+
+        @Test
+        @DisplayName("폭에 들어가는 글자는 크기를 바꾸지 않는다")
+        void shrinkingText_Fits_KeepsFont() {
+            // Given
+            ReportCanvas canvas = new ReportCanvas("시험", ReportStyle.DEFAULT);
+            Font font = ReportStyle.DEFAULT.regular(10f);
+
+            // When
+            canvas.shrinkingText("담당", font, ReportAlign.CENTER, 100, 100, 200);
+
+            // Then
+            assertThat(findText(canvas.finish(), "담당").font()
+                    .getSize2D()).isEqualTo(10f);
+        }
+
+        @Test
+        @DisplayName("가장 작은 글자를 셀 때는 줄이기 전의 크기로 센다")
+        void shrinkingText_TooWide_CountsOriginalSizeAsSmallest() {
+            // Given
+            ReportCanvas canvas = new ReportCanvas("시험", ReportStyle.DEFAULT);
+            Font font = ReportStyle.DEFAULT.regular(10f);
+            canvas.shrinkingText("담임목사", font, ReportAlign.CENTER, 100, 100, ReportText.width("담임목사", font) / 2);
+
+            // When
+            ReportDocument document = canvas.finish();
+
+            // Then
+            assertThat(document.getSmallestFontSize()).isEqualTo(10f);
         }
     }
 }
