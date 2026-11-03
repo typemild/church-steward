@@ -33,8 +33,8 @@ import org.church.steward.ui.view.login.DatabaseRestoreView.RestoreOutcome;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 백업 파일과 관리자 비밀번호를 입력받아 복원하는 입력부. 예약된 복원을 수행하는 {@link DatabaseRestoreView}와 최초 실행 화면의
- * "백업에서 복원"({@link InitialSetupView})이 함께 쓴다. 버튼과 창의 닫기 처리는 담는 쪽이 맡는다.
+ * 백업 파일과 관리자 비밀번호를 입력받아 복원하는 입력부. 예약된 복원을 수행하는 {@link DatabaseRestoreView}와 최초
+ * 실행 화면의 "백업에서 복원"({@link InitialSetupView})이 함께 쓴다. 버튼과 창의 닫기 처리는 담는 쪽이 맡는다.
  */
 @Slf4j
 class RestoreFormPanel extends JPanel {

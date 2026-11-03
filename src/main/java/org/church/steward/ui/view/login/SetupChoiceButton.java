@@ -32,12 +32,12 @@ import org.kordamp.ikonli.swing.FontIcon;
  * 초기 설정 화면의 시작 방법 선택에 쓰는 카드 모양 버튼. 왼쪽에 아이콘, 가운데에 굵은 제목과 그 아래의 회색 설명, 오른쪽에 누르면
  * 넘어간다는 꺾쇠를 둔다.
  * <p>
- * 모양은 {@link org.church.steward.ui.component.panel.CardPanel}과 같은 흰 카드에 1px 회색 테두리다. 테두리는 픽셀에
- * 맞춰 1px로 그린다(두께가 픽셀에 맞지 않으면 변마다 진하기가 달라 카드가 눌려 들어간 것처럼 보인다).
+ * 모양은 {@link org.church.steward.ui.component.panel.CardPanel}과 같은 흰 카드에 1px 회색
+ * 테두리다. 테두리는 픽셀에 맞춰 1px로 그린다(두께가 픽셀에 맞지 않으면 변마다 진하기가 달라 카드가 눌려 들어간 것처럼 보인다).
  * <p>
  * 선택은 포커스로 나타낸다. 포커스를 받은 버튼이 선택된 것이고, 테두리와 꺾쇠가 Primary 색이 된다. 마우스를 올리면 그 버튼이
- * 포커스를 가져가므로, 여러 버튼 중 선택된 것은 늘 하나다. 다른 창이 떠서 잠시 포커스를 잃어도(일시적인 포커스 이동) 선택된
- * 모양은 그대로 둔다.
+ * 포커스를 가져가므로, 여러 버튼 중 선택된 것은 늘 하나다. 다른 창이 떠서 잠시 포커스를 잃어도(일시적인 포커스 이동) 선택된 모양은
+ * 그대로 둔다.
  */
 class SetupChoiceButton extends JButton {
 
@@ -151,9 +151,10 @@ class SetupChoiceButton extends JButton {
     }
 
     /**
-     * 놓인 칸의 폭에 맞춰 줄바꿈하는 레이블. {@link org.church.steward.ui.component.label.WrappingDescriptionLabel}과
-     * 같이 선호 폭을 0으로 알려 버튼이 화면보다 넓어지지 않게 하고, 높이는 지금 폭에서 줄바꿈한 높이로 알린다. 그 레이블은
-     * JTextArea라서 누름을 가로채므로, 누름이 버튼으로 가도록 HTML을 쓰는 JLabel로 만든다.
+     * 놓인 칸의 폭에 맞춰 줄바꿈하는 레이블.
+     * {@link org.church.steward.ui.component.label.WrappingDescriptionLabel}과 같이 선호
+     * 폭을 0으로 알려 버튼이 화면보다 넓어지지 않게 하고, 높이는 지금 폭에서 줄바꿈한 높이로 알린다. 그 레이블은 JTextArea라서
+     * 누름을 가로채므로, 누름이 버튼으로 가도록 HTML을 쓰는 JLabel로 만든다.
      */
     private static class WrappingLabel extends JLabel {
         private static final long serialVersionUID = 1L;

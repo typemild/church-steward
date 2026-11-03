@@ -27,7 +27,8 @@ import org.church.steward.ui.util.UIColors;
 
 /**
  * 데이터 관리 화면에서 예약한 복원을 다음 실행 때 수행하는 화면이다. 복원은 데이터베이스 파일을 교체하므로 로그인하기 전(Spring
- * 컨텍스트를 띄우기 전)에만 띄운다. 입력부와 복원 실행은 최초 실행 화면과 함께 쓰는 {@link RestoreFormPanel}이 맡는다.
+ * 컨텍스트를 띄우기 전)에만 띄운다. 입력부와 복원 실행은 최초 실행 화면과 함께 쓰는 {@link RestoreFormPanel}이
+ * 맡는다.
  */
 public class DatabaseRestoreView extends JDialog {
 

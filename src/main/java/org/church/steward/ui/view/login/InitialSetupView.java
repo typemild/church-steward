@@ -62,15 +62,15 @@ import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 최초 실행 때 프로그램의 초기 설정을 받는 화면이다. 먼저 새로 시작할지 백업에서 복원할지 고르고, 새로 시작하면 관리자 계정, 주간
- * 결산 요일, 첫 회계 연도를 차례로 입력받는다.
+ * 최초 실행 때 프로그램의 초기 설정을 받는 화면이다. 먼저 새로 시작할지 백업에서 복원할지 고르고, 새로 시작하면 관리자 계정, 주간 결산
+ * 요일, 첫 회계 연도를 차례로 입력받는다.
  * <p>
  * 시작 방법 선택은 세 단계 앞의 갈림길이므로 단계 표시에 넣지 않고, 그 화면에서는 단계 표시를 숨긴다. 1단계의 "이전"으로 돌아올 수
  * 있다. "백업에서 복원"도 새 창을 띄우지 않고 이 창 안의 화면으로 바꾸며(입력부는 예약 복원 창과 함께 쓰는
  * {@link RestoreFormPanel}), "이전"으로 선택 화면에 돌아온다.
  * <p>
- * 세 단계는 맨 위에 단계 표시({@link SetupStepIndicator})를 두고, 단계마다 제목, 할 일을 알리는 안내 글, 입력란을 담은 카드를 차례로
- * 쌓는다. 단계 사이를 오가도 입력란을 그대로 두므로 입력값이 유지된다.
+ * 세 단계는 맨 위에 단계 표시({@link SetupStepIndicator})를 두고, 단계마다 제목, 할 일을 알리는 안내 글,
+ * 입력란을 담은 카드를 차례로 쌓는다. 단계 사이를 오가도 입력란을 그대로 두므로 입력값이 유지된다.
  * <p>
  * 초기화는 마지막 단계에서 "완료"를 누를 때 한 번에 실행한다. 데이터베이스 파일을 만든 뒤에 실패하면 되돌릴 수 없으므로, 각 단계의
  * 입력값은 다음 단계로 넘어가기 전에 화면에서 검증한다. 중간에 창을 닫으면 아무것도 만들지 않고 취소한 것으로 반환한다.
@@ -171,7 +171,9 @@ public class InitialSetupView extends JDialog {
     private final PrimaryButton nextButton = new PrimaryButton("다음", ComponentSize.LARGE);
     private Consumer<SetupInput> doSetup;
 
-    /** 지금 보이는 단계(0부터). 시작 방법 선택이면 {@link #CHOICE_STEP}, 복원이면 {@link #RESTORE_STEP} */
+    /**
+     * 지금 보이는 단계(0부터). 시작 방법 선택이면 {@link #CHOICE_STEP}, 복원이면 {@link #RESTORE_STEP}
+     */
     private int step = CHOICE_STEP;
     private boolean isInitializedSuccessfully = false;
     /** 초기화나 복원을 하는 중인지 여부. 그동안은 창을 닫을 수 없다. */
@@ -331,12 +333,12 @@ public class InitialSetupView extends JDialog {
     }
 
     /**
-     * 창의 폭은 고정하고, 높이는 시작 방법 선택, 복원, 세 단계로 나눠 각각의 내용에 맞춘다. 내용의 양이 크게 달라 한 높이로 두면
-     * 작은 화면에 빈 곳이 크게 남기 때문이다. 세 단계는 단계를 오갈 때 창이 들썩이지 않도록 셋 중 가장 큰 높이를 함께 쓴다.
+     * 창의 폭은 고정하고, 높이는 시작 방법 선택, 복원, 세 단계로 나눠 각각의 내용에 맞춘다. 내용의 양이 크게 달라 한 높이로 두면 작은
+     * 화면에 빈 곳이 크게 남기 때문이다. 세 단계는 단계를 오갈 때 창이 들썩이지 않도록 셋 중 가장 큰 높이를 함께 쓴다.
      * <p>
-     * 줄바꿈하는 글({@link WrappingDescriptionLabel})은 폭이 정해져야 높이를 알 수 있으므로, 먼저 정한 폭으로 한 번 배치한 뒤
-     * 선호 높이를 잰다. 화면들은 {@link CardLayout}에 있어 숨은 화면도 함께 배치된다. 창 높이는 "화면마다 다른 둘레(단계 표시와
-     * 버튼 줄이 보이는지에 따라 다르다) + 그 화면 내용의 높이"이므로, 화면마다 그 상태로 바꿔 둘레를 잰다.
+     * 줄바꿈하는 글({@link WrappingDescriptionLabel})은 폭이 정해져야 높이를 알 수 있으므로, 먼저 정한 폭으로 한
+     * 번 배치한 뒤 선호 높이를 잰다. 화면들은 {@link CardLayout}에 있어 숨은 화면도 함께 배치된다. 창 높이는 "화면마다 다른
+     * 둘레(단계 표시와 버튼 줄이 보이는지에 따라 다르다) + 그 화면 내용의 높이"이므로, 화면마다 그 상태로 바꿔 둘레를 잰다.
      */
     private void measureWindowHeights() {
         // 창이 화면에 표시될 준비가 되어야 제목 표시줄을 포함한 창 테두리의 크기를 알 수 있다.
@@ -495,8 +497,8 @@ public class InitialSetupView extends JDialog {
     }
 
     /**
-     * 카드에 레이블을 왼쪽, 입력란을 오른쪽에 둔 항목을 한 줄 더한다. 설명은 입력란 아래(오른쪽 칸)에 둔다. 레이블 칸의 폭은 가장
-     * 긴 레이블에 맞춰진다.
+     * 카드에 레이블을 왼쪽, 입력란을 오른쪽에 둔 항목을 한 줄 더한다. 설명은 입력란 아래(오른쪽 칸)에 둔다. 레이블 칸의 폭은 가장 긴
+     * 레이블에 맞춰진다.
      *
      * @param descriptions 입력란 아래의 회색 설명. 단락마다 하나씩 넘긴다.
      */
@@ -674,7 +676,8 @@ public class InitialSetupView extends JDialog {
     }
 
     /**
-     * @param newStep 보일 단계(0부터). 시작 방법 선택이면 {@link #CHOICE_STEP}, 복원이면 {@link #RESTORE_STEP}
+     * @param newStep 보일 단계(0부터). 시작 방법 선택이면 {@link #CHOICE_STEP}, 복원이면
+     *                {@link #RESTORE_STEP}
      */
     private void showStep(int newStep) {
         step = newStep;
