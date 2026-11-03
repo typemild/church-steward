@@ -302,6 +302,7 @@ class FiscalYearServiceImplTest {
                     .id(1L)
                     .name("Root")
                     .amount(1000L)
+                    .remarks("Root 비고")
                     .type(BudgetType.INCOME)
                     .sortOrder(1)
                     .build();
@@ -355,7 +356,7 @@ class FiscalYearServiceImplTest {
         }
 
         @Test
-        @DisplayName("복사한 예산은 새 회계 연도에 속하고 원본 예산의 이름, 금액, 유형, 순서를 그대로 가진다")
+        @DisplayName("복사한 예산은 새 회계 연도에 속하고 원본 예산의 이름, 금액, 비고, 유형, 순서를 그대로 가진다")
         void createFiscalYearWithCopy_CopiedBudgetBelongsToNewFiscalYear() {
             // Given
             FiscalYear newFiscalYear = createFiscalYear(ID, NAME, START_DATE, END_DATE);
@@ -374,6 +375,7 @@ class FiscalYearServiceImplTest {
             assertThat(copied.getFiscalYear()).isSameAs(newFiscalYear);
             assertThat(copied.getName()).isEqualTo("Root");
             assertThat(copied.getAmount()).isEqualTo(1000L);
+            assertThat(copied.getRemarks()).isEqualTo("Root 비고");
             assertThat(copied.getType()).isEqualTo(BudgetType.INCOME);
             assertThat(copied.getSortOrder()).isEqualTo(1);
         }

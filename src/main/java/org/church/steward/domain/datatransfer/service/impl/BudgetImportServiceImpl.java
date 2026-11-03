@@ -96,7 +96,8 @@ public class BudgetImportServiceImpl implements BudgetImportService {
                     }
                 }
                 Budget created = budgetService.createBudgetWithoutLog(fiscalYearId, parentId,
-                        item.getLevelNames().getLast(), item.isLeaf() ? item.getAmount() : 0L, item.getType());
+                        item.getLevelNames().getLast(), item.isLeaf() ? item.getAmount() : 0L, item.getRemarks(),
+                        item.getType());
                 budgetIds.put(item.getKey(), created.getId());
                 logItems.add(() -> activityLogService.describeCreation(created));
                 createdCount++;
@@ -104,8 +105,12 @@ public class BudgetImportServiceImpl implements BudgetImportService {
                 Budget existing = budgetRepository.findById(item.getExistingBudgetId())
                         .orElseThrow(() -> new IllegalArgumentException("예산 항목을 찾을 수 없습니다."));
                 EntitySnapshot<Budget> oldSnapshot = snapshotCapturer.capture(existing);
-                Budget updated = budgetService.updateBudgetWithoutLog(existing.getId(), existing.getName(),
-                        item.getAmount());
+                // 파일과 기존 예산이 모두 말단일 때만 금액을 바꾼다. 그 밖에는 비고만 바꾸므로 금액을 그대로 넘긴다.
+                long amount = item.isLeaf() && !existing.hasChildren() ? item.getAmount() : existing.getTotalAmount();
+                // 비고 열을 지정하지 않았으면 파일에 비고가 없으므로 기존 비고를 그대로 둔다.
+                String remarks = request.getRemarksColumn() != null ? item.getRemarks() : existing.getRemarks();
+                Budget updated = budgetService.updateBudgetWithoutLog(existing.getId(), existing.getName(), amount,
+                        remarks);
                 List<ActivityLogFieldDto> fields = activityLogService.describeUpdate(oldSnapshot, updated);
                 logItems.add(() -> fields);
                 updatedCount++;
@@ -113,7 +118,7 @@ public class BudgetImportServiceImpl implements BudgetImportService {
         }
 
         activityLogService.logImport(TARGET_NAME, fiscalYear.getName(), fileName,
-                String.format("추가 %,d건, 금액 갱신 %,d건", createdCount, updatedCount),
+                String.format("추가 %,d건, 갱신 %,d건", createdCount, updatedCount),
                 logItems.stream()
                         .map(Supplier::get)
                         .toList());

@@ -72,7 +72,7 @@ class DataExportServiceImplTest {
             .build();
 
     private BudgetDto createBudgetDto(Long id, Long parentId, BudgetType type, String name, int sortOrder,
-            long totalAmount, long actualAmount) {
+            long totalAmount, long actualAmount, String remarks) {
         return BudgetDto.builder()
                 .id(id)
                 .parentId(parentId)
@@ -81,6 +81,7 @@ class DataExportServiceImplTest {
                 .sortOrder(sortOrder)
                 .totalAmount(totalAmount)
                 .actualAmount(actualAmount)
+                .remarks(remarks)
                 .build();
     }
 
@@ -89,16 +90,16 @@ class DataExportServiceImplTest {
      */
     private List<BudgetDto> createIncomeBudgetDtos() {
         return List.of(
-                createBudgetDto(3L, 1L, BudgetType.INCOME, "감사헌금", 1, 300L, 30L),
-                createBudgetDto(1L, null, BudgetType.INCOME, "헌금", 0, 1300L, 130L),
-                createBudgetDto(2L, 1L, BudgetType.INCOME, "십일조", 0, 1000L, 100L));
+                createBudgetDto(3L, 1L, BudgetType.INCOME, "감사헌금", 1, 300L, 30L, null),
+                createBudgetDto(1L, null, BudgetType.INCOME, "헌금", 0, 1300L, 130L, null),
+                createBudgetDto(2L, 1L, BudgetType.INCOME, "십일조", 0, 1000L, 100L, "매주 드리는 헌금"));
     }
 
     /**
      * 지출 예산: 운영비.
      */
     private List<BudgetDto> createExpenseBudgetDtos() {
-        return List.of(createBudgetDto(4L, null, BudgetType.EXPENSE, "운영비", 0, 500L, 50L));
+        return List.of(createBudgetDto(4L, null, BudgetType.EXPENSE, "운영비", 0, 500L, 50L, null));
     }
 
     private Budget createBudget(Long id, String name, Budget parent) {
@@ -143,7 +144,7 @@ class DataExportServiceImplTest {
     class ExportBudgetsTest {
 
         @Test
-        @DisplayName("머리글은 구분, 가장 깊은 단계까지의 예산명, 예산액, 수입액/집행액이다")
+        @DisplayName("머리글은 구분, 가장 깊은 단계까지의 예산명, 예산액, 수입액/집행액, 비고다")
         void exportBudgets_TwoLevels_WritesHeadersForDeepestLevel() {
             // Given
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
@@ -158,7 +159,7 @@ class DataExportServiceImplTest {
             // Then
             verify(spreadsheetWriter).write(eq(TARGET), eq(SpreadsheetFormat.XLSX), tableCaptor.capture(), isNull());
             assertThat(tableCaptor.getValue().headers())
-                    .containsExactly("구분", "예산 1단계", "예산 2단계", "예산액", "수입액/집행액");
+                    .containsExactly("구분", "예산 1단계", "예산 2단계", "예산액", "수입액/집행액", "비고");
         }
 
         @Test
@@ -177,10 +178,10 @@ class DataExportServiceImplTest {
             // Then
             verify(spreadsheetWriter).write(any(), any(), tableCaptor.capture(), any());
             assertThat(tableCaptor.getValue().rows()).containsExactly(
-                    Arrays.asList("수입", "헌금", null, 1300L, 130L),
-                    Arrays.asList("수입", "헌금", "십일조", 1000L, 100L),
-                    Arrays.asList("수입", "헌금", "감사헌금", 300L, 30L),
-                    Arrays.asList("지출", "운영비", null, 500L, 50L));
+                    Arrays.asList("수입", "헌금", null, 1300L, 130L, null),
+                    Arrays.asList("수입", "헌금", "십일조", 1000L, 100L, "매주 드리는 헌금"),
+                    Arrays.asList("수입", "헌금", "감사헌금", 300L, 30L, null),
+                    Arrays.asList("지출", "운영비", null, 500L, 50L, null));
         }
 
         @Test
@@ -446,7 +447,7 @@ class DataExportServiceImplTest {
             verify(spreadsheetWriter).write(eq(TARGET), eq(SpreadsheetFormat.CSV), tableCaptor.capture(), isNull());
             assertThat(tableCaptor.getValue())
                     .extracting(SpreadsheetTable::headers, SpreadsheetTable::rows)
-                    .containsExactly(List.of("구분", "예산 1단계", "예산 2단계", "예산 3단계", "예산액", "수입액/집행액"), List.of());
+                    .containsExactly(List.of("구분", "예산 1단계", "예산 2단계", "예산 3단계", "예산액", "수입액/집행액", "비고"), List.of());
         }
     }
 

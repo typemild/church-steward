@@ -286,6 +286,7 @@ public class BudgetTreePanel extends JPanel {
                 "새 예산 추가",
                 "",
                 0,
+                "",
                 parentPath,
                 true);
         dialog.setVisible(true);
@@ -296,10 +297,11 @@ public class BudgetTreePanel extends JPanel {
 
         final String name = dialog.getName();
         final long amount = dialog.getAmount();
+        final String remarks = dialog.getRemarks();
 
         AsyncTask.run(this,
                 () -> {
-                    budgetController.createBudget(currentFiscalYearId, parentId, name, amount, type);
+                    budgetController.createBudget(currentFiscalYearId, parentId, name, amount, remarks, type);
                     return null;
                 },
                 _ -> loadData(currentFiscalYearId),
@@ -323,10 +325,11 @@ public class BudgetTreePanel extends JPanel {
 
         final String newName = dialog.getName();
         final long newAmount = dialog.getAmount();
+        final String newRemarks = dialog.getRemarks();
 
         AsyncTask.run(this,
                 () -> {
-                    budgetController.updateBudget(selectedDto.getId(), newName, newAmount);
+                    budgetController.updateBudget(selectedDto.getId(), newName, newAmount, newRemarks);
                     return null;
                 },
                 _ -> {
@@ -364,6 +367,7 @@ public class BudgetTreePanel extends JPanel {
                 title,
                 dto.getName(),
                 amountToShow,
+                dto.getRemarks(),
                 parentPath,
                 isLeaf);
     }

@@ -76,18 +76,20 @@ public class BudgetServiceImpl implements BudgetService {
     }
 
     @Override
-    public void createBudget(Long fiscalYearId, Long parentId, String name, long amount, BudgetType type) {
-        Budget newBudget = createBudgetWithoutLog(fiscalYearId, parentId, name, amount, type);
+    public void createBudget(Long fiscalYearId, Long parentId, String name, long amount, String remarks,
+            BudgetType type) {
+        Budget newBudget = createBudgetWithoutLog(fiscalYearId, parentId, name, amount, remarks, type);
         activityLogService.logCreation(newBudget);
     }
 
     @Override
-    public Budget createBudgetWithoutLog(Long fiscalYearId, Long parentId, String name, long amount,
+    public Budget createBudgetWithoutLog(Long fiscalYearId, Long parentId, String name, long amount, String remarks,
             BudgetType type) {
         FiscalYear fiscalYear = fiscalYearRepository.findById(fiscalYearId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회계 연도입니다."));
         validateNotClosed(fiscalYear);
         validateName(name);
+        validateRemarks(remarks);
 
         Budget parent = null;
         if (parentId != null) {
@@ -122,38 +124,42 @@ public class BudgetServiceImpl implements BudgetService {
                 .name(name)
                 .parent(parent)
                 .amount(amount)
+                .remarks(normalizeRemarks(remarks))
                 .type(type)
                 .sortOrder(nextSortOrder)
                 .build());
     }
 
     @Override
-    public void updateBudget(Long id, String newName, long newAmount) {
+    public void updateBudget(Long id, String newName, long newAmount, String newRemarks) {
         Budget budget = budgetRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("예산 항목을 찾을 수 없습니다."));
         validateNotClosed(budget.getFiscalYear());
         validateName(newName);
+        validateRemarks(newRemarks);
 
         // 변경 전 상태를 스냅샷으로 캡처
         EntitySnapshot<Budget> oldSnapshot = snapshotCapturer.capture(budget);
 
-        applyUpdate(budget, newName, newAmount);
+        applyUpdate(budget, newName, newAmount, newRemarks);
         activityLogService.logUpdate(oldSnapshot, budget);
     }
 
     @Override
-    public Budget updateBudgetWithoutLog(Long id, String newName, long newAmount) {
+    public Budget updateBudgetWithoutLog(Long id, String newName, long newAmount, String newRemarks) {
         Budget budget = budgetRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("예산 항목을 찾을 수 없습니다."));
         validateNotClosed(budget.getFiscalYear());
         validateName(newName);
+        validateRemarks(newRemarks);
 
-        applyUpdate(budget, newName, newAmount);
+        applyUpdate(budget, newName, newAmount, newRemarks);
         return budget;
     }
 
-    private void applyUpdate(Budget budget, String newName, long newAmount) {
+    private void applyUpdate(Budget budget, String newName, long newAmount, String newRemarks) {
         budget.setName(newName);
+        budget.setRemarks(normalizeRemarks(newRemarks));
 
         if (budget.hasChildren()) {
             // 부모 항목은 하위 항목들의 합으로 금액이 결정되므로, 금액을 직접 수정할 수 없다.
@@ -290,6 +296,20 @@ public class BudgetServiceImpl implements BudgetService {
         if (name.contains("<") || name.contains(">")) {
             throw new IllegalArgumentException("예산명에는 '<', '>' 문자를 사용할 수 없습니다.");
         }
+    }
+
+    private void validateRemarks(String remarks) {
+        if (remarks != null && remarks.length() > BudgetConstraints.REMARKS_MAX_LENGTH) {
+            throw new IllegalArgumentException("비고는 " + BudgetConstraints.REMARKS_MAX_LENGTH + "자 이내로 입력해주세요.");
+        }
+    }
+
+    /**
+     * 비고가 비어 있으면 null로 저장한다. 비고가 없던 기존 예산(null)과 빈 비고로 저장한 예산이 같은 값이어야, 가져오기에서 빈 칸인
+     * 비고를 기존 예산의 비고와 다르다고 보지 않는다.
+     */
+    private static String normalizeRemarks(String remarks) {
+        return remarks == null || remarks.isBlank() ? null : remarks;
     }
 
     private int findIndexInSiblings(List<Budget> siblings, Long id) {

@@ -7,8 +7,8 @@ public enum BudgetImportAction {
 
     /** 예산을 새로 추가함 */
     CREATE("추가"),
-    /** 이미 있는 예산의 금액을 파일의 값으로 바꿈 */
-    UPDATE_AMOUNT("금액 갱신"),
+    /** 이미 있는 예산의 금액이나 비고를 파일의 값으로 바꿈 */
+    UPDATE("갱신"),
     /** 반영할 것이 없음 */
     NONE("");
 

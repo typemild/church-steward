@@ -40,10 +40,13 @@ public class BudgetImportRequestDto {
     /** 금액이 적힌 열 */
     private Integer amountColumn;
 
+    /** 비고가 적힌 열. 지정하지 않으면 null이며, 이때 이미 있는 예산의 비고는 바꾸지 않는다. */
+    private Integer remarksColumn;
+
     /** 단계별 열에서 빈 칸(병합된 셀 포함)이 윗 행의 값을 이어받게 할지 여부 */
     private boolean fillDown;
 
-    /** 이미 있는 예산의 금액이 파일과 다를 때 파일의 값으로 갱신할지 여부 */
-    private boolean updateExistingAmounts;
+    /** 이미 있는 예산의 금액이나 비고가 파일과 다를 때 파일의 값으로 갱신할지 여부 */
+    private boolean updateExistingBudgets;
 
 }

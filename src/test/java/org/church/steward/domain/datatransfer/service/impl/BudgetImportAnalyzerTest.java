@@ -57,6 +57,20 @@ class BudgetImportAnalyzerTest {
         return budget;
     }
 
+    /**
+     * 하위 예산이 없는 최상위 수입 예산을 비고와 함께 만든다.
+     */
+    private Budget existingBudgetWithRemarks(Long id, String name, Long amount, String remarks) {
+        return Budget.builder()
+                .id(id)
+                .type(BudgetType.INCOME)
+                .name(name)
+                .amount(amount)
+                .remarks(remarks)
+                .children(new ArrayList<>())
+                .build();
+    }
+
     private BudgetImportItemDto find(BudgetImportAnalysisDto analysis, String... levelNames) {
         return analysis.getItems()
                 .stream()
@@ -418,12 +432,12 @@ class BudgetImportAnalyzerTest {
         }
 
         @Test
-        @DisplayName("금액을 갱신하도록 하면 금액이 다른 기존 예산은 금액 갱신 대상이 된다")
-        void analyze_ExistingBudgetWithUpdateOption_UpdateAmount() {
+        @DisplayName("기존 예산을 갱신하도록 하면 금액이 다른 기존 예산은 갱신 대상이 된다")
+        void analyze_ExistingBudgetWithUpdateOption_Update() {
             // Given
             Budget tithe = existingBudget(1L, BudgetType.INCOME, "십일조", 1000L, null);
             BudgetImportRequestDto request = levelRequest(List.of(row("수입", "십일조", null, 3000L)))
-                    .updateExistingAmounts(true)
+                    .updateExistingBudgets(true)
                     .build();
 
             // When
@@ -433,7 +447,234 @@ class BudgetImportAnalyzerTest {
             assertThat(find(analysis, "십일조"))
                     .extracting(BudgetImportItemDto::getStatus, BudgetImportItemDto::getAction,
                             BudgetImportItemDto::getAmount, BudgetImportItemDto::isSelectable)
-                    .containsExactly(ImportItemStatus.OK, BudgetImportAction.UPDATE_AMOUNT, 3000L, true);
+                    .containsExactly(ImportItemStatus.OK, BudgetImportAction.UPDATE, 3000L, true);
+        }
+
+        @Test
+        @DisplayName("비고 열의 값을 새 예산의 비고로 읽고, 빈 칸은 비고가 없는 것으로 본다")
+        void analyze_RemarksColumn_ReadsRemarksOfNewBudgets() {
+            // Given
+            BudgetImportRequestDto request = levelRequest(List.of(
+                    row("수입", "십일조", null, 1000L, "매주 드리는 헌금"),
+                    row("수입", "감사헌금", null, 300L, " ")))
+                    .remarksColumn(4)
+                    .build();
+
+            // When
+            BudgetImportAnalysisDto analysis = analyze(request);
+
+            // Then
+            assertThat(analysis.getItems())
+                    .extracting(BudgetImportItemDto::getRemarks)
+                    .containsExactly("매주 드리는 헌금", null);
+        }
+
+        @Test
+        @DisplayName("비고가 100자를 넘으면 잘라서 가져오고 경고한다")
+        void analyze_RemarksTooLong_TruncatesWithWarning() {
+            // Given
+            BudgetImportRequestDto request = levelRequest(List.of(row("수입", "십일조", null, 1000L, "가".repeat(101))))
+                    .remarksColumn(4)
+                    .build();
+
+            // When
+            BudgetImportAnalysisDto analysis = analyze(request);
+
+            // Then
+            assertThat(find(analysis, "십일조"))
+                    .extracting(BudgetImportItemDto::getStatus, BudgetImportItemDto::getAction,
+                            BudgetImportItemDto::getRemarks, BudgetImportItemDto::getMessage)
+                    .containsExactly(ImportItemStatus.WARNING, BudgetImportAction.CREATE, "가".repeat(100),
+                            "비고가 100자를 넘어 잘립니다.");
+        }
+
+        @Test
+        @DisplayName("이미 있는 예산과 비고만 달라도 기본으로는 건너뛰고 비고가 다르다고 알려준다")
+        void analyze_ExistingBudgetWithDifferentRemarks_SkippedByDefault() {
+            // Given
+            Budget tithe = existingBudgetWithRemarks(1L, "십일조", 1000L, "작년 기준");
+            BudgetImportRequestDto request = levelRequest(List.of(row("수입", "십일조", null, 1000L, "새 비고")))
+                    .remarksColumn(4)
+                    .build();
+
+            // When
+            BudgetImportAnalysisDto analysis = BudgetImportAnalyzer.analyze(request, List.of(tithe), _ -> false);
+
+            // Then
+            assertThat(find(analysis, "십일조"))
+                    .extracting(BudgetImportItemDto::getStatus, BudgetImportItemDto::getAction,
+                            BudgetImportItemDto::getMessage)
+                    .containsExactly(ImportItemStatus.SKIPPED, BudgetImportAction.NONE,
+                            "이미 있는 예산입니다. 비고가 파일과 다릅니다. (기존 비고: 작년 기준)");
+        }
+
+        @Test
+        @DisplayName("기존 예산을 갱신하도록 하면 비고만 다른 기존 예산도 갱신 대상이 된다")
+        void analyze_ExistingBudgetWithDifferentRemarksAndUpdateOption_Update() {
+            // Given
+            Budget tithe = existingBudgetWithRemarks(1L, "십일조", 1000L, null);
+            BudgetImportRequestDto request = levelRequest(List.of(row("수입", "십일조", null, 1000L, "새 비고")))
+                    .remarksColumn(4)
+                    .updateExistingBudgets(true)
+                    .build();
+
+            // When
+            BudgetImportAnalysisDto analysis = BudgetImportAnalyzer.analyze(request, List.of(tithe), _ -> false);
+
+            // Then
+            assertThat(find(analysis, "십일조"))
+                    .extracting(BudgetImportItemDto::getStatus, BudgetImportItemDto::getAction,
+                            BudgetImportItemDto::getRemarks, BudgetImportItemDto::getMessage)
+                    .containsExactly(ImportItemStatus.OK, BudgetImportAction.UPDATE, "새 비고",
+                            "이미 있는 예산의 비고를 갱신합니다.");
+        }
+
+        @Test
+        @DisplayName("금액과 비고가 모두 다르면 둘 다 갱신한다고 알리고 기존 금액과 기존 비고를 적는다")
+        void analyze_ExistingBudgetWithDifferentAmountAndRemarks_UpdatesBoth() {
+            // Given
+            Budget tithe = existingBudgetWithRemarks(1L, "십일조", 1000L, "작년 기준");
+            BudgetImportRequestDto request = levelRequest(List.of(row("수입", "십일조", null, 3000L, "새 비고")))
+                    .remarksColumn(4)
+                    .updateExistingBudgets(true)
+                    .build();
+
+            // When
+            BudgetImportAnalysisDto analysis = BudgetImportAnalyzer.analyze(request, List.of(tithe), _ -> false);
+
+            // Then
+            assertThat(find(analysis, "십일조").getMessage())
+                    .isEqualTo("이미 있는 예산의 금액과 비고를 갱신합니다. (기존 1,000원, 기존 비고: 작년 기준)");
+        }
+
+        @Test
+        @DisplayName("파일의 비고가 빈 칸이면 기존 비고를 지운다고 알리고 기존 비고를 적는다")
+        void analyze_ExistingBudgetWithBlankFileRemarks_ClearsRemarks() {
+            // Given
+            Budget tithe = existingBudgetWithRemarks(1L, "십일조", 1000L, "작년 기준");
+            BudgetImportRequestDto request = levelRequest(List.of(row("수입", "십일조", null, 1000L, null)))
+                    .remarksColumn(4)
+                    .updateExistingBudgets(true)
+                    .build();
+
+            // When
+            BudgetImportAnalysisDto analysis = BudgetImportAnalyzer.analyze(request, List.of(tithe), _ -> false);
+
+            // Then
+            assertThat(find(analysis, "십일조"))
+                    .extracting(BudgetImportItemDto::getAction, BudgetImportItemDto::getMessage)
+                    .containsExactly(BudgetImportAction.UPDATE, "이미 있는 예산의 비고를 지웁니다. (기존 비고: 작년 기준)");
+        }
+
+        @Test
+        @DisplayName("금액이 다르고 파일의 비고가 빈 칸이면 금액을 갱신하고 비고를 지운다고 알린다")
+        void analyze_ExistingBudgetWithDifferentAmountAndBlankFileRemarks_UpdatesAmountAndClearsRemarks() {
+            // Given
+            Budget tithe = existingBudgetWithRemarks(1L, "십일조", 1000L, "작년 기준");
+            BudgetImportRequestDto request = levelRequest(List.of(row("수입", "십일조", null, 3000L, null)))
+                    .remarksColumn(4)
+                    .updateExistingBudgets(true)
+                    .build();
+
+            // When
+            BudgetImportAnalysisDto analysis = BudgetImportAnalyzer.analyze(request, List.of(tithe), _ -> false);
+
+            // Then
+            assertThat(find(analysis, "십일조").getMessage())
+                    .isEqualTo("이미 있는 예산의 금액을 갱신하고 비고를 지웁니다. (기존 1,000원, 기존 비고: 작년 기준)");
+        }
+
+        @Test
+        @DisplayName("비고가 같으면(비고가 없는 예산과 빈 칸 포함) 갱신하도록 해도 건너뛴다")
+        void analyze_ExistingBudgetsWithSameRemarks_Skipped() {
+            // Given
+            Budget tithe = existingBudgetWithRemarks(1L, "십일조", 1000L, "매주 드리는 헌금");
+            Budget thanks = existingBudgetWithRemarks(2L, "감사헌금", 300L, null);
+            BudgetImportRequestDto request = levelRequest(List.of(
+                    row("수입", "십일조", null, 1000L, "매주 드리는 헌금"),
+                    row("수입", "감사헌금", null, 300L, null)))
+                    .remarksColumn(4)
+                    .updateExistingBudgets(true)
+                    .build();
+
+            // When
+            BudgetImportAnalysisDto analysis = BudgetImportAnalyzer.analyze(request, List.of(tithe, thanks),
+                    _ -> false);
+
+            // Then
+            assertThat(analysis.getItems())
+                    .extracting(BudgetImportItemDto::getStatus, BudgetImportItemDto::getAction)
+                    .containsOnly(tuple(ImportItemStatus.SKIPPED, BudgetImportAction.NONE));
+        }
+
+        @Test
+        @DisplayName("비고 열을 지정하지 않으면 기존 예산의 비고와 견주지 않고, 건의 비고는 비어 있다")
+        void analyze_NoRemarksColumn_IgnoresExistingRemarks() {
+            // Given
+            Budget tithe = existingBudgetWithRemarks(1L, "십일조", 1000L, "기존 비고");
+            BudgetImportRequestDto request = levelRequest(List.of(row("수입", "십일조", null, 1000L)))
+                    .updateExistingBudgets(true)
+                    .build();
+
+            // When
+            BudgetImportAnalysisDto analysis = BudgetImportAnalyzer.analyze(request, List.of(tithe), _ -> false);
+
+            // Then
+            assertThat(find(analysis, "십일조"))
+                    .extracting(BudgetImportItemDto::getStatus, BudgetImportItemDto::getAction,
+                            BudgetImportItemDto::getRemarks)
+                    .containsExactly(ImportItemStatus.SKIPPED, BudgetImportAction.NONE, null);
+        }
+
+        @Test
+        @DisplayName("행 없이 경로에만 나오는 기존 상위 예산은 비고를 견주지 않아 기존 비고를 지우지 않는다")
+        void analyze_ExistingParentWithoutRow_DoesNotCompareRemarks() {
+            // Given
+            Budget offering = Budget.builder()
+                    .id(1L)
+                    .type(BudgetType.INCOME)
+                    .name("헌금")
+                    .remarks("주일 헌금")
+                    .children(new ArrayList<>())
+                    .build();
+            Budget tithe = existingBudget(2L, BudgetType.INCOME, "십일조", 1000L, offering);
+            BudgetImportRequestDto request = levelRequest(List.of(row("수입", "헌금", "십일조", 1000L, null)))
+                    .remarksColumn(4)
+                    .updateExistingBudgets(true)
+                    .build();
+
+            // When
+            BudgetImportAnalysisDto analysis = BudgetImportAnalyzer.analyze(request, List.of(offering, tithe),
+                    _ -> false);
+
+            // Then
+            assertThat(find(analysis, "헌금"))
+                    .extracting(BudgetImportItemDto::getStatus, BudgetImportItemDto::getAction)
+                    .containsExactly(ImportItemStatus.SKIPPED, BudgetImportAction.NONE);
+        }
+
+        @Test
+        @DisplayName("하위 예산이 있는 기존 예산도 비고가 다르면 갱신 대상이 된다")
+        void analyze_ExistingParentWithDifferentRemarks_Update() {
+            // Given
+            Budget offering = existingBudget(1L, BudgetType.INCOME, "헌금", null, null);
+            Budget tithe = existingBudget(2L, BudgetType.INCOME, "십일조", 1000L, offering);
+            BudgetImportRequestDto request = levelRequest(List.of(
+                    row("수입", "헌금", null, null, "주일 헌금"),
+                    row("수입", "헌금", "십일조", 1000L, null)))
+                    .remarksColumn(4)
+                    .updateExistingBudgets(true)
+                    .build();
+
+            // When
+            BudgetImportAnalysisDto analysis = BudgetImportAnalyzer.analyze(request, List.of(offering, tithe),
+                    _ -> false);
+
+            // Then
+            assertThat(find(analysis, "헌금"))
+                    .extracting(BudgetImportItemDto::getStatus, BudgetImportItemDto::getAction,
+                            BudgetImportItemDto::getRemarks)
+                    .containsExactly(ImportItemStatus.OK, BudgetImportAction.UPDATE, "주일 헌금");
         }
 
         @Test

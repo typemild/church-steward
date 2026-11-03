@@ -17,9 +17,15 @@ public interface BudgetService {
      */
     List<BudgetDto> getBudgetsWithActualAmount(Long fiscalYearId, BudgetType type);
 
-    void createBudget(Long fiscalYearId, Long parentId, String name, long amount, BudgetType type);
+    /**
+     * @param remarks 비고. 비어 있으면 null로 저장한다.
+     */
+    void createBudget(Long fiscalYearId, Long parentId, String name, long amount, String remarks, BudgetType type);
 
-    void updateBudget(Long id, String newName, long newAmount);
+    /**
+     * @param newRemarks 비고. 비어 있으면 null로 저장한다.
+     */
+    void updateBudget(Long id, String newName, long newAmount, String newRemarks);
 
     /**
      * 활동 기록을 남기지 않고 예산을 추가한다. 검증은 {@link #createBudget}과 같다. 여러 예산을 한꺼번에 처리하고 활동
@@ -27,7 +33,8 @@ public interface BudgetService {
      *
      * @return 추가된 예산
      */
-    Budget createBudgetWithoutLog(Long fiscalYearId, Long parentId, String name, long amount, BudgetType type);
+    Budget createBudgetWithoutLog(Long fiscalYearId, Long parentId, String name, long amount, String remarks,
+            BudgetType type);
 
     /**
      * 활동 기록을 남기지 않고 예산을 수정한다. 검증은 {@link #updateBudget}과 같다. 여러 예산을 한꺼번에 처리하고 활동
@@ -35,7 +42,7 @@ public interface BudgetService {
      *
      * @return 수정된 예산
      */
-    Budget updateBudgetWithoutLog(Long id, String newName, long newAmount);
+    Budget updateBudgetWithoutLog(Long id, String newName, long newAmount, String newRemarks);
 
     void deleteBudget(Long id);
 

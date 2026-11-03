@@ -101,7 +101,7 @@ public interface ActivityLogService {
      * @param fiscalYearName 회계 연도의 이름. 관계자처럼 회계 연도에 속하지 않는 대상이면 null이며, 이때는 회계 연도
      *                       항목을 남기지 않는다.
      * @param fileName       가져온 파일의 이름
-     * @param result         처리 결과의 요약 (예시: 추가 12건, 금액 갱신 3건)
+     * @param result         처리 결과의 요약 (예시: 추가 12건, 갱신 3건)
      * @param items          건별 항목 목록. {@link #describeCreation}과
      *                       {@link #describeUpdate}로 만든다.
      */

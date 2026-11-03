@@ -85,6 +85,7 @@ public class FiscalYearServiceImpl implements FiscalYearService {
                 .fiscalYear(newFiscalYear)
                 .name(source.getName())
                 .amount(source.getAmount())
+                .remarks(source.getRemarks())
                 .type(source.getType())
                 .sortOrder(source.getSortOrder())
                 .parent(newParent)

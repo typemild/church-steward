@@ -27,9 +27,9 @@ import org.church.steward.domain.datatransfer.dto.ImportItemStatus;
  * <p>
  * 분석은 세 단계다.
  * <ol>
- * <li>행 읽기: 행마다 예산명(단계별 열 또는 전체 경로 열), 구분, 금액을 읽는다. 읽지 못한 행은 오류인 건이 된다.</li>
+ * <li>행 읽기: 행마다 예산명(단계별 열 또는 전체 경로 열), 구분, 금액, 비고를 읽는다. 읽지 못한 행은 오류인 건이 된다.</li>
  * <li>계층 만들기: 구분과 전체 경로가 같으면 같은 예산이다. 하위 예산의 경로에만 나오는 상위 예산은 행이 없어도 만든다.</li>
- * <li>이미 있는 예산과 견주기: 없는 예산은 추가, 있는 예산은 건너뛰거나 금액을 갱신한다. 오류는 하위 예산으로 번진다.</li>
+ * <li>이미 있는 예산과 견주기: 없는 예산은 추가, 있는 예산은 건너뛰거나 금액과 비고를 갱신한다. 오류는 하위 예산으로 번진다.</li>
  * </ol>
  */
 final class BudgetImportAnalyzer {
@@ -58,6 +58,10 @@ final class BudgetImportAnalyzer {
         private final List<Node> children = new ArrayList<>();
         private Integer rowNumber;
         private Long fileAmount;
+        /** 파일의 비고. 비어 있으면 null이다. */
+        private String fileRemarks;
+        /** 비고가 길어 잘렸는지 여부 */
+        private boolean remarksTruncated;
         private Budget existing;
         private ImportItemStatus status;
         private BudgetImportAction action = BudgetImportAction.NONE;
@@ -89,6 +93,14 @@ final class BudgetImportAnalyzer {
             }
             return total;
         }
+    }
+
+    /**
+     * 건의 비고를 파일에서 읽었는지 여부. 비고 열을 지정했고 그 예산의 행이 파일에 있어야 한다. 행 없이 만들어진 상위 예산은 비고를
+     * 읽은 적이 없으므로, 이미 있는 예산이어도 비고를 견주지 않는다. 견주면 파일에 적지도 않은 비고를 지우는 것으로 보게 된다.
+     */
+    private boolean hasFileRemarks(Node node) {
+        return request.getRemarksColumn() != null && node.rowNumber != null;
     }
 
     /**
@@ -132,7 +144,7 @@ final class BudgetImportAnalyzer {
         }
 
         List<BudgetImportItemDto> items = analyzer.nodes.stream()
-                .map(BudgetImportAnalyzer::toDto)
+                .map(analyzer::toDto)
                 .toList();
         return BudgetImportAnalysisDto.builder()
                 .items(items)
@@ -177,7 +189,8 @@ final class BudgetImportAnalyzer {
                 type = readType(row, previousType);
                 previousType = type;
                 validateNames(levelNames);
-                place(rowNumber, type, levelNames, readAmount(row));
+                Node node = place(rowNumber, type, levelNames, readAmount(row));
+                readRemarks(row, node);
             } catch (UnreadableRowException e) {
                 Node node = new Node("row:" + rowNumber, null, type, levelNames == null ? List.of() : levelNames);
                 node.rowNumber = rowNumber;
@@ -289,6 +302,18 @@ final class BudgetImportAnalyzer {
         }
     }
 
+    /**
+     * 비고를 읽는다. 빈 칸은 비고가 없는 것이고, {@value BudgetConstraints#REMARKS_MAX_LENGTH}자를 넘으면 잘라서 경고한다.
+     */
+    private void readRemarks(List<Object> row, Node node) {
+        String remarks = text(row, request.getRemarksColumn());
+        if (remarks.length() > BudgetConstraints.REMARKS_MAX_LENGTH) {
+            remarks = remarks.substring(0, BudgetConstraints.REMARKS_MAX_LENGTH);
+            node.remarksTruncated = true;
+        }
+        node.fileRemarks = remarks.isEmpty() ? null : remarks;
+    }
+
     private String text(List<Object> row, Integer column) {
         return ImportCells.text(row, column);
     }
@@ -298,8 +323,10 @@ final class BudgetImportAnalyzer {
 
     /**
      * 행을 계층에 놓는다. 경로에 나오는 상위 예산이 아직 없으면 행 없이 만든다.
+     *
+     * @return 이 행의 예산인 건
      */
-    private void place(int rowNumber, BudgetType type, List<String> levelNames, Long amount) {
+    private Node place(int rowNumber, BudgetType type, List<String> levelNames, Long amount) {
         Node parent = null;
         for (int depth = 1; depth <= levelNames.size(); depth++) {
             List<String> path = List.copyOf(levelNames.subList(0, depth));
@@ -323,6 +350,7 @@ final class BudgetImportAnalyzer {
             }
             parent = node;
         }
+        return parent;
     }
 
     private static String key(BudgetType type, List<String> levelNames) {
@@ -356,6 +384,13 @@ final class BudgetImportAnalyzer {
         } else {
             evaluateExisting(node);
         }
+
+        // 잘린 비고는 저장될 때만 알린다.
+        if (node.remarksTruncated && node.action != BudgetImportAction.NONE) {
+            String warning = "비고가 " + BudgetConstraints.REMARKS_MAX_LENGTH + "자를 넘어 잘립니다.";
+            setState(node, ImportItemStatus.WARNING, node.action,
+                    node.message.isEmpty() ? warning : node.message + " " + warning);
+        }
     }
 
     private void evaluateNew(Node node) {
@@ -368,32 +403,68 @@ final class BudgetImportAnalyzer {
         }
     }
 
+    /**
+     * 이미 있는 예산과 파일을 견준다. 금액이나 비고가 다르면, 갱신하도록 했을 때만 갱신하고 아니면 다르다고 알리며 건너뛴다.
+     */
     private void evaluateExisting(Node node) {
         boolean existingIsLeaf = !node.existing.hasChildren();
         long existingAmount = node.existing.getAmount() == null ? 0L : node.existing.getAmount();
+        boolean addsChildren = !node.isLeaf() && existingIsLeaf;
 
-        if (node.isLeaf() && existingIsLeaf) {
-            if (node.amount() == existingAmount) {
-                setState(node, ImportItemStatus.SKIPPED, BudgetImportAction.NONE, "이미 있는 예산입니다.");
-            } else if (request.isUpdateExistingAmounts()) {
-                setState(node, ImportItemStatus.OK, BudgetImportAction.UPDATE_AMOUNT,
-                        "이미 있는 예산의 금액을 갱신합니다. (기존 " + won(existingAmount) + ")");
-            } else {
-                setState(node, ImportItemStatus.SKIPPED, BudgetImportAction.NONE,
-                        "이미 있는 예산입니다. 금액이 파일과 다릅니다. (기존 " + won(existingAmount) + ")");
-            }
-        } else if (node.isLeaf()) {
-            setState(node, ImportItemStatus.SKIPPED, BudgetImportAction.NONE,
-                    "이미 있는 예산입니다. 하위 예산이 있어 금액은 바꾸지 않습니다.");
-        } else if (!existingIsLeaf) {
-            setState(node, ImportItemStatus.SKIPPED, BudgetImportAction.NONE, "이미 있는 예산입니다.");
-        } else if (hasRecords.test(node.existing.getId())) {
+        if (addsChildren && hasRecords.test(node.existing.getId())) {
             setState(node, ImportItemStatus.ERROR, BudgetImportAction.NONE,
                     "수입/지출 내역이 있는 예산이라 하위 예산을 추가할 수 없습니다.");
-        } else {
-            setState(node, ImportItemStatus.WARNING, BudgetImportAction.NONE,
-                    "이미 있는 예산입니다. 하위 예산을 추가하면 이 예산의 금액(" + won(existingAmount) + ")은 하위 예산의 합계로 바뀝니다.");
+            return;
         }
+
+        // 금액은 파일과 기존 예산이 모두 말단일 때만 견준다. 상위 예산의 금액은 하위 예산의 합계라 직접 바꾸지 않는다.
+        boolean amountDiffers = node.isLeaf() && existingIsLeaf && node.amount() != existingAmount;
+        boolean remarksDiffer = hasFileRemarks(node)
+                && !Objects.equals(node.fileRemarks, node.existing.getRemarks());
+        // 검토 표에는 파일의 값이 보이므로, 무엇이 무엇으로 바뀌는지 알 수 있도록 다른 항목의 기존 값을 적는다.
+        List<String> previousValues = new ArrayList<>();
+        if (amountDiffers) {
+            previousValues.add("기존 " + won(existingAmount));
+        }
+        if (remarksDiffer && node.existing.getRemarks() != null) {
+            previousValues.add("기존 비고: " + node.existing.getRemarks());
+        }
+        String note = previousValues.isEmpty() ? "" : " (" + String.join(", ", previousValues) + ")";
+
+        String suffix = "";
+        if (node.isLeaf() && !existingIsLeaf) {
+            suffix = " 하위 예산이 있어 금액은 바꾸지 않습니다.";
+        } else if (addsChildren) {
+            suffix = " 하위 예산을 추가하면 이 예산의 금액(" + won(existingAmount) + ")은 하위 예산의 합계로 바뀝니다.";
+        }
+
+        if (!amountDiffers && !remarksDiffer) {
+            setState(node, addsChildren ? ImportItemStatus.WARNING : ImportItemStatus.SKIPPED,
+                    BudgetImportAction.NONE, "이미 있는 예산입니다." + suffix);
+        } else if (request.isUpdateExistingBudgets()) {
+            setState(node, addsChildren ? ImportItemStatus.WARNING : ImportItemStatus.OK, BudgetImportAction.UPDATE,
+                    "이미 있는 예산의 " + describeUpdate(amountDiffers, remarksDiffer, node.fileRemarks == null)
+                            + note + suffix);
+        } else {
+            String target = amountDiffers && remarksDiffer ? "금액과 비고가" : amountDiffers ? "금액이" : "비고가";
+            setState(node, addsChildren ? ImportItemStatus.WARNING : ImportItemStatus.SKIPPED,
+                    BudgetImportAction.NONE, "이미 있는 예산입니다. " + target + " 파일과 다릅니다." + note + suffix);
+        }
+    }
+
+    /**
+     * 기존 예산을 갱신할 때 무엇을 하는지 적는다. 파일의 비고가 빈 칸이면 기존 비고가 지워지므로 갱신이 아니라 지운다고 적는다.
+     *
+     * @param remarksCleared 파일의 비고가 빈 칸인지 여부
+     */
+    private static String describeUpdate(boolean amountDiffers, boolean remarksDiffer, boolean remarksCleared) {
+        if (remarksDiffer && remarksCleared) {
+            return amountDiffers ? "금액을 갱신하고 비고를 지웁니다." : "비고를 지웁니다.";
+        }
+        if (amountDiffers && remarksDiffer) {
+            return "금액과 비고를 갱신합니다.";
+        }
+        return amountDiffers ? "금액을 갱신합니다." : "비고를 갱신합니다.";
     }
 
     private void setState(Node node, ImportItemStatus status, BudgetImportAction action, String message) {
@@ -409,7 +480,7 @@ final class BudgetImportAnalyzer {
     // ------------------------------------------------------------------
     // 결과
 
-    private static BudgetImportItemDto toDto(Node node) {
+    private BudgetImportItemDto toDto(Node node) {
         return BudgetImportItemDto.builder()
                 .key(node.key)
                 .parentKey(node.parent == null ? null : node.parent.key)
@@ -417,6 +488,7 @@ final class BudgetImportAnalyzer {
                 .type(node.type)
                 .levelNames(node.levelNames)
                 .amount(node.unreadable ? null : node.amount())
+                .remarks(node.unreadable ? null : node.fileRemarks)
                 .leaf(node.isLeaf())
                 .existingBudgetId(node.existing == null ? null : node.existing.getId())
                 .status(node.status)
@@ -426,7 +498,7 @@ final class BudgetImportAnalyzer {
     }
 
     /**
-     * 분석 결과 전체를 요약한다. 건의 순서, 상태, 할 일, 금액, 설명 중 하나라도 다르면 값이 달라진다.
+     * 분석 결과 전체를 요약한다. 건의 순서, 상태, 할 일, 금액, 비고, 설명 중 하나라도 다르면 값이 달라진다.
      */
     private static String sign(List<BudgetImportItemDto> items) {
         StringBuilder text = new StringBuilder();
@@ -438,6 +510,8 @@ final class BudgetImportAnalyzer {
                     .append(item.getAction())
                     .append('|')
                     .append(Objects.toString(item.getAmount(), ""))
+                    .append('|')
+                    .append(Objects.toString(item.getRemarks(), ""))
                     .append('|')
                     .append(item.getMessage())
                     .append('\n');

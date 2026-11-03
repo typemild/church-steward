@@ -36,6 +36,7 @@ public class BudgetEntryDialog extends JDialog {
     private final StyledTextField parentPathField;
     private final StyledTextField nameField;
     private final AmountField amountField;
+    private final StyledTextField remarksField;
     private final PrimaryButton btnOK;
     private final SecondaryButton btnCancel;
     private final JPanel mainPanel;
@@ -48,8 +49,8 @@ public class BudgetEntryDialog extends JDialog {
      * @param owner 이 다이얼로그를 띄운 창. 예산 관리 화면의 메인 창일 수도 있고, 수입/지출 가져오기의 예산 매핑 다이얼로그처럼
      *              다른 다이얼로그일 수도 있다.
      */
-    public BudgetEntryDialog(Window owner, String title, String currentName, long currentAmount, String parentPath,
-            boolean amountEditable) {
+    public BudgetEntryDialog(Window owner, String title, String currentName, long currentAmount,
+            String currentRemarks, String parentPath, boolean amountEditable) {
         super(owner, title, ModalityType.APPLICATION_MODAL);
 
         setLayout(new BorderLayout());
@@ -111,6 +112,21 @@ public class BudgetEntryDialog extends JDialog {
         gbc.gridwidth = 2;
         mainPanel.add(amountField, gbc);
 
+        // 비고 레이블 및 필드
+        FieldLabel lblRemarks = new FieldLabel("비고", ComponentSize.MEDIUM, true);
+        gbc.insets = new Insets(10, 0, 0, 10);
+        gbc.gridy = 6;
+        gbc.gridwidth = 2;
+        mainPanel.add(lblRemarks, gbc);
+
+        remarksField = new StyledTextField(ComponentSize.MEDIUM);
+        remarksField.setMaxLength(BudgetConstraints.REMARKS_MAX_LENGTH);
+        remarksField.setText(currentRemarks);
+        gbc.insets = new Insets(10, 0, 10, 10);
+        gbc.gridy = 7;
+        gbc.gridwidth = 2;
+        mainPanel.add(remarksField, gbc);
+
         add(mainPanel, BorderLayout.CENTER);
 
         // 버튼 패널 (Background: #F8F9FA)
@@ -155,12 +171,13 @@ public class BudgetEntryDialog extends JDialog {
             dispose();
         });
 
-        // 상위 예산은 수정할 수 없으므로 입력란으로 등록하지 않는다. 금액을 수정할 수 없으면 예산명이 마지막 입력란이 된다.
+        // 상위 예산은 수정할 수 없으므로 입력란으로 등록하지 않는다. 금액을 수정할 수 없으면 Enter가 예산명에서 비고로 건너뛴다.
         keyHandler = DialogKeyHandler.install(this)
                 .setButtons(btnCancel, btnOK)
                 .addField(nameField)
                 .addField(amountField)
-                .trackChanges(() -> List.of(getName(), getAmount()));
+                .addField(remarksField)
+                .trackChanges(() -> List.of(getName(), getAmount(), getRemarks()));
     }
 
     /**
@@ -176,6 +193,7 @@ public class BudgetEntryDialog extends JDialog {
         // 상위 예산의 금액(하위 예산의 합계)은 수정할 때 꺼 두지만, 상세 보기에서는 어차피 바꿀 수 없으므로 말단 예산과 같은 모양으로 보인다.
         amountField.setEnabled(true);
         amountField.setEditable(false);
+        remarksField.setEditable(false);
 
         buttonPanel.removeAll();
         PrimaryButton btnClose = new PrimaryButton("닫기", ComponentSize.MEDIUM);
@@ -197,5 +215,10 @@ public class BudgetEntryDialog extends JDialog {
 
     public long getAmount() {
         return amountField.getAmount();
+    }
+
+    public String getRemarks() {
+        return remarksField.getText()
+                .trim();
     }
 }
