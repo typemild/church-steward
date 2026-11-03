@@ -156,6 +156,7 @@ DB 비밀번호는 로그인한 뒤에야 알 수 있으므로, `ChurchStewardAp
 - 예산은 계층형이며, 수입/지출은 말단(leaf) 예산에만 등록할 수 있다. 예산 필터는 `BudgetRepository.findAllDescendantIds`(네이티브 재귀 CTE)로 하위 예산까지 넓힌다.
 - **예산명**은 50자 이내이고 `<`, `>`를 쓸 수 없다(`BudgetServiceImpl#validateName`). 전체 예산명 "예산A > 예산B"의 구분 문자와 섞이지 않게 해서, 가져오기에서 전체 경로가 적힌 칸을 `>`로 나눌 수 있게 하기 위함이다.
 - **진행 현황**: `BudgetService#getBudgetsWithActualAmount`는 예산마다 그 예산과 하위 예산에 등록된 내역의 금액 합계를 `BudgetDto.actualAmount`에 담는다. 예산 관리 화면만 이 조회를 쓰고, 예산 선택 다이얼로그 등은 `actualAmount`가 null인 `getBudgetsByFiscalYearAndType`을 쓴다.
+- **준비 안내**: 오늘이 속한 회계 연도가 없거나 회계 연도에 수입/지출 예산이 없으면 수입/지출을 입력할 수 없으므로, 수입/지출 관리에 들어올 때 안내 팝업을 띄우고 회계 연도 관리나 예산 관리로 바로 이동하게 한다(`ui/view/main`의 `SetupReminder`). 회계 연도는 사이드바가 불러 둔 목록(`FiscalYearSelector#getFiscalYears`)으로 판단하고, 예산은 `BudgetController#getMissingBudgetTypes`(예산이 하나도 없는 구분)로 조회한다. 같은 안내는 다시 시작하기 전까지 한 번만 띄우며(회계 연도 없음은 한 번, 예산 없음은 회계 연도마다 한 번), 그 기록은 `SetupReminder`가 메모리에만 둔다.
 
 ### 수입/지출과 관계자
 

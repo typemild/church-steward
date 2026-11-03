@@ -38,6 +38,7 @@ import org.church.steward.ui.component.field.StyledComboBox;
 import org.church.steward.ui.component.field.StyledDatePicker;
 import org.church.steward.ui.component.field.StyledTextField;
 import org.church.steward.ui.component.label.FieldLabel;
+import org.church.steward.ui.component.label.WrappingDescriptionLabel;
 import org.church.steward.ui.util.AsyncTask;
 import org.church.steward.ui.util.DialogKeyHandler;
 import org.church.steward.ui.util.UIColors;
@@ -63,6 +64,11 @@ public class FinancialRecordEntryDialog extends JDialog {
     private final StyledComboBox<FinancialRecordType> typeCombo = new StyledComboBox<>(FinancialRecordType.values(),
             ComponentSize.MEDIUM);
     private final StyledDatePicker datePicker = new StyledDatePicker(ComponentSize.MEDIUM);
+    /**
+     * 오늘이 회계 연도의 기간 밖이라 날짜를 다른 날로 정했음을 알리는 안내. {@link #showDefaultDateNotice()}로
+     * 보인다.
+     */
+    private final WrappingDescriptionLabel dateNoticeLabel = new WrappingDescriptionLabel("", ComponentSize.SMALL);
     private final BudgetSelectBox budgetSelectBox;
     private final FieldLabel contactLabel = new FieldLabel("", ComponentSize.MEDIUM, true);
     private final ContactChipField contactField = new ContactChipField();
@@ -140,6 +146,10 @@ public class FinancialRecordEntryDialog extends JDialog {
         datePicker.getComponentDateTextField()
                 .setToolTipText(periodText());
         datePicker.setDate(defaultDate());
+        // 초기값을 넣은 뒤에 등록해야 사용자가 날짜를 바꿀 때만 안내가 사라진다.
+        datePicker.addDateChangeListener(_ -> hideDateNotice());
+        dateNoticeLabel.setForeground(UIColors.ERROR_WARNING);
+        dateNoticeLabel.setVisible(false);
 
         descriptionField.setMaxLength(FinancialRecordConstraints.DESCRIPTION_MAX_LENGTH);
         remarksField.setMaxLength(FinancialRecordConstraints.REMARKS_MAX_LENGTH);
@@ -173,6 +183,7 @@ public class FinancialRecordEntryDialog extends JDialog {
         int row = 0;
         row = addRow(formPanel, new FieldLabel("구분", ComponentSize.MEDIUM, true), typeCombo, row);
         row = addRow(formPanel, new FieldLabel("날짜", ComponentSize.MEDIUM, true), datePicker, row);
+        row = addNotice(formPanel, dateNoticeLabel, row);
         row = addRow(formPanel, new FieldLabel("예산", ComponentSize.MEDIUM, true), budgetSelectBox, row);
         row = addRow(formPanel, contactLabel, contactField, row);
         row = addRow(formPanel, new FieldLabel("내용", ComponentSize.MEDIUM, true), descriptionField, row);
@@ -202,6 +213,23 @@ public class FinancialRecordEntryDialog extends JDialog {
         formPanel.add(field, gbc);
 
         return row + 2;
+    }
+
+    /**
+     * 바로 위 입력란에 대한 안내를 그 아래에 배치한다. 숨겨 둔 동안은 GridBagLayout이 자리를 비워 두지 않는다.
+     *
+     * @return 다음에 사용할 행 번호
+     */
+    private int addNotice(JPanel formPanel, WrappingDescriptionLabel notice, int row) {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.insets = new Insets(0, 0, 8, 0);
+        formPanel.add(notice, gbc);
+
+        return row + 1;
     }
 
     /**
@@ -265,6 +293,46 @@ public class FinancialRecordEntryDialog extends JDialog {
         layoutButtons(true);
         pack();
         setLocationRelativeTo(getOwner());
+    }
+
+    /**
+     * 날짜의 초기값이 오늘이 아니면(오늘이 회계 연도의 기간 밖이면) 날짜 입력란 아래에 회계 연도를 확인하라는 안내를 보인다. 지난 회계
+     * 연도에 일부러 입력하는 경우도 있으므로 안내만 하고 저장을 막지 않으며, 사용자가 날짜를 바꾸면 사라진다.
+     * <p>
+     * 날짜를 이어 쓰지 않는 추가 다이얼로그에서만 쓴다. 다이얼로그의 크기를 다시 맞추므로 버튼 배치 등을 마친 뒤 띄우기 직전에 호출한다.
+     */
+    public void showDefaultDateNotice() {
+        LocalDate today = LocalDate.now();
+        String chosenDay;
+        if (today.isBefore(fiscalYear.getStartDate())) {
+            chosenDay = "시작일";
+        } else if (today.isAfter(fiscalYear.getEndDate())) {
+            chosenDay = "종료일";
+        } else {
+            return;
+        }
+        dateNoticeLabel.setText(String.format("오늘(%s)이 %s 회계 연도의 기간(%s ~ %s) 밖이라 %s로 정했습니다. 회계 연도를 확인해주세요.",
+                today, fiscalYear.getName(), fiscalYear.getStartDate(), fiscalYear.getEndDate(), chosenDay));
+        dateNoticeLabel.setVisible(true);
+
+        // 안내는 폭이 정해진 뒤에야 줄바꿈된 높이를 알 수 있으므로, 폭을 정해 배치한 뒤 높이를 다시 맞춘다.
+        pack();
+        dateNoticeLabel.invalidate();
+        setSize(getWidth(), getPreferredSize().height);
+        validate();
+        setLocationRelativeTo(getOwner());
+    }
+
+    /**
+     * 날짜 안내를 숨기고 그만큼 다이얼로그의 높이를 줄인다.
+     */
+    private void hideDateNotice() {
+        if (!dateNoticeLabel.isVisible()) {
+            return;
+        }
+        dateNoticeLabel.setVisible(false);
+        setSize(getWidth(), getPreferredSize().height);
+        validate();
     }
 
     /**

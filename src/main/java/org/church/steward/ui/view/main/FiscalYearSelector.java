@@ -144,6 +144,24 @@ public class FiscalYearSelector extends JPanel {
     }
 
     /**
+     * 마지막으로 불러온 회계 연도 목록을 반환한다. 아직 불러오지 않았으면 빈 목록이다.
+     */
+    public List<FiscalYearDto> getFiscalYears() {
+        return fiscalYears;
+    }
+
+    /**
+     * 회계 연도를 선택한다. 선택란에서 직접 고른 것과 같이 사용자 설정에 저장하고 변경 알림을 보낸다. 이미 선택되어 있거나 목록에 없는 회계
+     * 연도이면 아무것도 하지 않는다.
+     */
+    public void select(Long fiscalYearId) {
+        FiscalYearDto fiscalYear = getFiscalYear(fiscalYearId);
+        if (fiscalYear != null) {
+            fiscalYearCombo.setSelectedItem(fiscalYear);
+        }
+    }
+
+    /**
      * 선택된 회계 연도가 바뀌었을 때 실행할 동작을 등록한다. 목록을 다시 불러온 결과로 바뀐 경우에도 실행된다. 선택된 회계 연도는 그대로이고
      * 그 이름, 기간, 마감 여부만 바뀐 경우에는 실행되지 않으므로, 각 화면은 {@code onMenuSelected()}에서
      * {@link #getSelectedFiscalYear()}를 다시 읽어야 한다.

@@ -24,6 +24,10 @@ public class BudgetController {
         return budgetService.getBudgetsWithActualAmount(fiscalYearId, type);
     }
 
+    public List<BudgetType> getMissingBudgetTypes(Long fiscalYearId) {
+        return budgetService.getMissingBudgetTypes(fiscalYearId);
+    }
+
     public void createBudget(Long fiscalYearId, Long parentId, String name, long amount, String remarks,
             BudgetType type) {
         budgetService.createBudget(fiscalYearId, parentId, name, amount, remarks, type);

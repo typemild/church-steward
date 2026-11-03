@@ -278,6 +278,53 @@ class BudgetServiceImplTest {
     }
 
     @Nested
+    @DisplayName("getMissingBudgetTypes 테스트")
+    class GetMissingBudgetTypesTest {
+
+        @Test
+        @DisplayName("수입 예산과 지출 예산이 모두 있으면 빈 목록을 반환한다")
+        void getMissingBudgetTypes_whenBothTypesExist_returnsEmpty() {
+            // Given
+            when(budgetRepository.existsByFiscalYearIdAndType(FISCAL_YEAR_ID, BudgetType.INCOME)).thenReturn(true);
+            when(budgetRepository.existsByFiscalYearIdAndType(FISCAL_YEAR_ID, BudgetType.EXPENSE)).thenReturn(true);
+
+            // When
+            List<BudgetType> result = budgetService.getMissingBudgetTypes(FISCAL_YEAR_ID);
+
+            // Then
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("수입 예산만 있으면 지출만 반환한다")
+        void getMissingBudgetTypes_whenOnlyIncomeExists_returnsExpense() {
+            // Given
+            when(budgetRepository.existsByFiscalYearIdAndType(FISCAL_YEAR_ID, BudgetType.INCOME)).thenReturn(true);
+            when(budgetRepository.existsByFiscalYearIdAndType(FISCAL_YEAR_ID, BudgetType.EXPENSE)).thenReturn(false);
+
+            // When
+            List<BudgetType> result = budgetService.getMissingBudgetTypes(FISCAL_YEAR_ID);
+
+            // Then
+            assertThat(result).containsExactly(BudgetType.EXPENSE);
+        }
+
+        @Test
+        @DisplayName("예산이 하나도 없으면 수입, 지출 순으로 모두 반환한다")
+        void getMissingBudgetTypes_whenNoBudget_returnsAllTypesInOrder() {
+            // Given
+            when(budgetRepository.existsByFiscalYearIdAndType(FISCAL_YEAR_ID, BudgetType.INCOME)).thenReturn(false);
+            when(budgetRepository.existsByFiscalYearIdAndType(FISCAL_YEAR_ID, BudgetType.EXPENSE)).thenReturn(false);
+
+            // When
+            List<BudgetType> result = budgetService.getMissingBudgetTypes(FISCAL_YEAR_ID);
+
+            // Then
+            assertThat(result).containsExactly(BudgetType.INCOME, BudgetType.EXPENSE);
+        }
+    }
+
+    @Nested
     @DisplayName("createBudget 테스트")
     class CreateBudgetTest {
 

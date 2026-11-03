@@ -86,6 +86,26 @@ class BudgetControllerTest {
     }
 
     @Nested
+    @DisplayName("getMissingBudgetTypes 테스트")
+    class GetMissingBudgetTypesTest {
+
+        @Test
+        @DisplayName("서비스가 돌려준 구분 목록을 그대로 반환한다.")
+        void getMissingBudgetTypes_whenCalled_shouldReturnServiceResult() {
+            // Given
+            Long fiscalYearId = 7L;
+            List<BudgetType> missingTypes = List.of(BudgetType.EXPENSE);
+            when(budgetService.getMissingBudgetTypes(fiscalYearId)).thenReturn(missingTypes);
+
+            // When
+            List<BudgetType> result = budgetController.getMissingBudgetTypes(fiscalYearId);
+
+            // Then
+            assertThat(result).isSameAs(missingTypes);
+        }
+    }
+
+    @Nested
     @DisplayName("createBudget 테스트")
     class CreateBudgetTest {
 

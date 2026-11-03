@@ -1,5 +1,6 @@
 package org.church.steward.domain.budget.service.impl;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -60,6 +61,14 @@ public class BudgetServiceImpl implements BudgetService {
         return budgetRepository.findAllByFiscalYearIdAndType(fiscalYearId, type)
                 .stream()
                 .map(budget -> budgetMapper.toDto(budget, sumActualAmount(budget, amountByBudgetId)))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BudgetType> getMissingBudgetTypes(Long fiscalYearId) {
+        return Arrays.stream(BudgetType.values())
+                .filter(type -> !budgetRepository.existsByFiscalYearIdAndType(fiscalYearId, type))
                 .toList();
     }
 

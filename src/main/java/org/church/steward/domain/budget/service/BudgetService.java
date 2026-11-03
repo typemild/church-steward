@@ -18,6 +18,12 @@ public interface BudgetService {
     List<BudgetDto> getBudgetsWithActualAmount(Long fiscalYearId, BudgetType type);
 
     /**
+     * 회계 연도에 예산이 하나도 등록되지 않은 구분을 {@link BudgetType} 선언 순서(수입, 지출)대로 조회한다. 예산이 없는
+     * 구분은 수입/지출을 입력할 수 없으므로 화면이 예산 등록을 안내하는 데 쓴다.
+     */
+    List<BudgetType> getMissingBudgetTypes(Long fiscalYearId);
+
+    /**
      * @param remarks 비고. 비어 있으면 null로 저장한다.
      */
     void createBudget(Long fiscalYearId, Long parentId, String name, long amount, String remarks, BudgetType type);

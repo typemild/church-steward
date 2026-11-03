@@ -170,6 +170,54 @@ class BudgetRepositoryTest {
     }
 
     @Nested
+    @DisplayName("existsByFiscalYearIdAndType 테스트")
+    class ExistsByFiscalYearIdAndTypeTest {
+
+        @Test
+        @DisplayName("회계 연도에 그 구분의 예산이 있으면 true를 반환한다")
+        void existsByFiscalYearIdAndType_whenBudgetOfTypeExists_returnsTrue() {
+            // Given
+            FiscalYear fiscalYear = createFiscalYear(2024);
+            createBudget(fiscalYear, BudgetType.INCOME, "헌금", null, 1);
+
+            // When
+            boolean exists = budgetRepository.existsByFiscalYearIdAndType(fiscalYear.getId(), BudgetType.INCOME);
+
+            // Then
+            assertThat(exists).isTrue();
+        }
+
+        @Test
+        @DisplayName("회계 연도에 다른 구분의 예산만 있으면 false를 반환한다")
+        void existsByFiscalYearIdAndType_whenOnlyOtherTypeExists_returnsFalse() {
+            // Given
+            FiscalYear fiscalYear = createFiscalYear(2024);
+            createBudget(fiscalYear, BudgetType.INCOME, "헌금", null, 1);
+
+            // When
+            boolean exists = budgetRepository.existsByFiscalYearIdAndType(fiscalYear.getId(), BudgetType.EXPENSE);
+
+            // Then
+            assertThat(exists).isFalse();
+        }
+
+        @Test
+        @DisplayName("다른 회계 연도에만 그 구분의 예산이 있으면 false를 반환한다")
+        void existsByFiscalYearIdAndType_whenOnlyOtherFiscalYearHasType_returnsFalse() {
+            // Given
+            FiscalYear fiscalYear = createFiscalYear(2024);
+            FiscalYear otherFiscalYear = createFiscalYear(2025);
+            createBudget(otherFiscalYear, BudgetType.INCOME, "헌금", null, 1);
+
+            // When
+            boolean exists = budgetRepository.existsByFiscalYearIdAndType(fiscalYear.getId(), BudgetType.INCOME);
+
+            // Then
+            assertThat(exists).isFalse();
+        }
+    }
+
+    @Nested
     @DisplayName("findMaxSortOrder 테스트")
     class FindMaxSortOrderTest {
 

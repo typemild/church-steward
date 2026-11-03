@@ -249,6 +249,10 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
             dialog.setBudget(lastAddInput.budgetId(), lastAddInput.budgetPath());
         }
         dialog.enableContinuousEntry();
+        // 마지막 날짜를 이어 쓰지 않을 때만, 오늘이 회계 연도의 기간 밖이라 날짜를 다른 날로 정했으면 알린다.
+        if (lastAddInput == null) {
+            dialog.showDefaultDateNotice();
+        }
         dialog.setVisible(true);
 
         if (!dialog.isConfirmed()) {
