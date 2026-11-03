@@ -14,7 +14,6 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
 import org.church.steward.domain.datatransfer.dto.BudgetImportAction;
@@ -57,8 +56,6 @@ class ReviewStepPanel extends JPanel {
     // 표는 만들어질 때 모델을 읽고 모델은 세션을 읽으므로, 세션을 받은 뒤에 생성자에서 만든다.
     private final ItemTableModel tableModel;
     private final CheckableImportTable table;
-    /** 비고 칸. 비고 열을 지정하지 않으면 표에서 빼므로, 다시 넣을 수 있게 잡아 둔다. */
-    private final TableColumn remarksColumn;
 
     /**
      * @param onSelectionChanged 가져올 건의 선택이 바뀌었을 때 실행할 동작
@@ -103,7 +100,6 @@ class ReviewStepPanel extends JPanel {
         table.setGrowingColumnWidth(COLUMN_REMARKS, 100);
         table.setNonGrowingColumnWidth(COLUMN_STATE, 70);
         table.setGrowingColumnWidth(COLUMN_MESSAGE, 150);
-        remarksColumn = columns.getColumn(COLUMN_REMARKS);
 
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createLineBorder(UIColors.BORDER));
@@ -116,25 +112,11 @@ class ReviewStepPanel extends JPanel {
      * 세션의 분석 결과와 선택을 화면에 반영한다.
      */
     void refresh() {
-        updateRemarksColumn();
+        // 비고 열을 지정했을 때만 비고 칸을 보인다. 지정하지 않으면 파일에 비고가 없으므로 칸이 비어 있기만 하고, 이미 있는 예산의
+        // 비고는 그대로 두는데도 지우는 것처럼 보이기 때문이다.
+        table.setColumnShown(COLUMN_REMARKS, session.getRemarksColumn() != null);
         tableModel.fireTableDataChanged();
         updateSummary();
-    }
-
-    /**
-     * 비고 열을 지정했을 때만 비고 칸을 보인다. 지정하지 않으면 파일에 비고가 없으므로 칸이 비어 있기만 하고, 이미 있는 예산의 비고는
-     * 그대로 두는데도 지우는 것처럼 보이기 때문이다. 칸의 순서를 바꿀 수 없으므로 앞의 칸은 늘 모델과 같은 자리에 있다.
-     */
-    private void updateRemarksColumn() {
-        TableColumnModel columns = table.getColumnModel();
-        boolean shown = table.convertColumnIndexToView(COLUMN_REMARKS) >= 0;
-        boolean show = session.getRemarksColumn() != null;
-        if (show && !shown) {
-            columns.addColumn(remarksColumn);
-            columns.moveColumn(columns.getColumnCount() - 1, COLUMN_REMARKS);
-        } else if (!show && shown) {
-            columns.removeColumn(remarksColumn);
-        }
     }
 
     private void resetSelection() {
