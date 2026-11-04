@@ -95,6 +95,8 @@ public class ReportingView extends JPanel implements MenuActivatable {
             ComponentSize.MEDIUM);
     /** 주간 보고서의 대상 주간. 주간 보고서에서만 보여준다. */
     private final WeekSelectorPanel weekSelector = new WeekSelectorPanel(this::load);
+    /** 양식 설정 버튼과 주간 사이의 간격. 주간을 숨기면 함께 숨긴다. */
+    private final Component weekGap = Box.createHorizontalStrut(GAP);
     private final PrimaryButton searchButton = new PrimaryButton("조회", ComponentSize.MEDIUM);
     private final IconButton templateButton = new IconButton(FontAwesomeSolid.COG, ComponentSize.MEDIUM);
     private final SecondaryButton pdfButton = new SecondaryButton("PDF 저장", ComponentSize.MEDIUM);
@@ -202,35 +204,42 @@ public class ReportingView extends JPanel implements MenuActivatable {
             }
         });
 
+        // 레이블의 글자는 두지 않고 아이콘만 둔다. 이름은 툴팁으로 알린다.
+        FieldLabel typeIcon = new FieldLabel("", FontAwesomeSolid.FILE_ALT, SwingConstants.LEFT,
+                ComponentSize.MEDIUM);
+        typeIcon.setToolTipText("보고서");
+
+        // 주간은 주간 보고서에서만 보이며, 숨겨져 있는 동안에는 앞의 간격도 함께 사라진다.
         JPanel conditionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         conditionPanel.setOpaque(false);
-        conditionPanel.add(new FieldLabel("보고서", FontAwesomeSolid.FILE_ALT, SwingConstants.LEFT,
-                ComponentSize.MEDIUM));
+        conditionPanel.add(typeIcon);
         conditionPanel.add(Box.createHorizontalStrut(GAP));
         conditionPanel.add(typeCombo);
         conditionPanel.add(Box.createHorizontalStrut(GAP));
         conditionPanel.add(searchButton);
         conditionPanel.add(Box.createHorizontalStrut(GAP));
         conditionPanel.add(templateButton);
+        conditionPanel.add(weekGap);
+        conditionPanel.add(weekSelector);
 
+        // 출력 버튼은 서식 줄의 오른쪽 끝, 곧 뷰어의 오른쪽 위에 둔다. 서식 줄 아래에 안내가 나타나도 위에 붙어 있도록
+        // FlowLayout으로 감싼다.
         JPanel outputPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         outputPanel.setOpaque(false);
         outputPanel.add(pdfButton);
         outputPanel.add(Box.createHorizontalStrut(GAP));
         outputPanel.add(printButton);
 
-        JPanel buttonRow = new JPanel(new BorderLayout(GAP, 0));
-        buttonRow.setOpaque(false);
-        buttonRow.add(conditionPanel, BorderLayout.WEST);
-        buttonRow.add(outputPanel, BorderLayout.EAST);
+        JPanel formatRow = new JPanel(new BorderLayout(GAP, 0));
+        formatRow.setOpaque(false);
+        formatRow.add(formatBar, BorderLayout.CENTER);
+        formatRow.add(outputPanel, BorderLayout.EAST);
 
-        // 주간은 한 줄에 다 들어가지 않으므로 아랫줄에 따로 둔다. 숨겨져 있는 동안에는 줄과 간격이 함께 사라진다.
-        // 서식은 그 아래 줄이다.
+        // 서식은 아랫줄이다.
         JPanel toolbar = new JPanel(new BorderLayout(0, 10));
         toolbar.setOpaque(false);
-        toolbar.add(buttonRow, BorderLayout.NORTH);
-        toolbar.add(weekSelector, BorderLayout.CENTER);
-        toolbar.add(formatBar, BorderLayout.SOUTH);
+        toolbar.add(conditionPanel, BorderLayout.NORTH);
+        toolbar.add(formatRow, BorderLayout.SOUTH);
         updateWeekVisibility();
         return toolbar;
     }
@@ -529,7 +538,9 @@ public class ReportingView extends JPanel implements MenuActivatable {
      */
     private void updateWeekVisibility() {
         ReportType type = (ReportType) typeCombo.getSelectedItem();
-        weekSelector.setVisible(type != null && type.isWeekly());
+        boolean weekly = type != null && type.isWeekly();
+        weekSelector.setVisible(weekly);
+        weekGap.setVisible(weekly);
         updateTemplateButton();
         revalidate();
     }

@@ -84,8 +84,6 @@ class WeekSelectorPanel extends JPanel {
         todayButton.setToolTipText("오늘이 속한 주간으로 이동합니다.");
         initCalendarPicker();
 
-        add(new FieldLabel("주간", FontAwesomeSolid.CALENDAR_WEEK, SwingConstants.LEFT, ComponentSize.MEDIUM));
-        add(Box.createHorizontalStrut(GAP));
         add(previousButton);
         add(Box.createHorizontalStrut(NARROW_GAP));
         add(weekLabel);
