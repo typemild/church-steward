@@ -41,6 +41,8 @@ class BackupManagerTest {
     private static final String BROKEN_MIGRATION_LOCATION = "classpath:db/test-migration/broken";
     /** 1.0.0과 1.1.0이 쓰던 스키마의 버전 */
     private static final String FIRST_RELEASED_SCHEMA_VERSION = "1";
+    /** 1.2.0이 쓰던 스키마의 버전 */
+    private static final String SECOND_RELEASED_SCHEMA_VERSION = "3";
     /** 스키마 비교에 쓰는 질의. 칼럼의 자료형, 제약 조건, 인덱스, 적용된 마이그레이션의 버전을 읽는다. */
     private static final List<String> SCHEMA_QUERIES = List.of(
             "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, DATETIME_PRECISION, IS_NULLABLE,"
@@ -134,6 +136,41 @@ class BackupManagerTest {
                         + " VALUES ('INCOME', 1, DATE '2025-03-02', 2, '주일 헌금', 50000, NULL)");
                 statement.execute("INSERT INTO FINANCIAL_RECORD_CONTACT (FINANCIAL_RECORD_ID, CONTACT_ID, CONTACT_NAME)"
                         + " VALUES (1, 1, '홍길동')");
+            }
+        }
+        return installation;
+    }
+
+    /**
+     * 1.2.0의 프로그램으로 쓰던 실행 환경을 만든다. 마이그레이션 없이 초기화한 뒤 실제 마이그레이션을 그 버전의 스키마까지만 실행하고,
+     * 관리자와 그 버전의 보고서 종류마다 보고서 설정을 넣는다.
+     * <p>
+     * 넣는 SQL은 그 버전의 스키마에 맞춘 것이므로 이후 스키마가 바뀌어도 고치지 않는다.
+     */
+    private Installation createSecondReleasedInstallation(String directoryName) throws Exception {
+        Path noMigrations = Files.createDirectories(tempDir.resolve("no-migrations"));
+        Installation installation = createInstallation(directoryName, "1.2.0",
+                List.of("filesystem:" + noMigrations.toAbsolutePath()));
+        installation.databaseManager().initialize(ADMIN_ID, ADMIN_PASSWORD);
+        installation.databaseManager().loadDatabasePassword(ADMIN_ID, ADMIN_PASSWORD);
+        try (HikariDataSource dataSource = openDataSource(installation)) {
+            Flyway.configure()
+                    .dataSource(dataSource)
+                    .locations(DatabaseManager.MIGRATION_LOCATION)
+                    .target(SECOND_RELEASED_SCHEMA_VERSION)
+                    .load()
+                    .migrate();
+            try (Connection connection = dataSource.getConnection();
+                    Statement statement = connection.createStatement()) {
+                statement.execute("INSERT INTO USERS (ID, PASSWORD, ROLE, REMARKS)"
+                        + " VALUES ('" + ADMIN_ID + "', 'password-hash', 'ADMIN', NULL)");
+                for (String reportType : List.of("WEEKLY_SETTLEMENT", "INCOME_BUDGET_PLAN", "EXPENSE_BUDGET_PLAN",
+                        "ANNUAL_SETTLEMENT", "INCOME_SETTLEMENT_DETAIL", "EXPENSE_SETTLEMENT_DETAIL")) {
+                    statement.execute("INSERT INTO REPORT_SETTING (USER_ID, REPORT_TYPE, FONT_FAMILY, FONT_SIZE_STEP,"
+                            + " LINE_SPACING, AUTO_FIT, THUMBNAILS_VISIBLE, VIEW_MODE, ZOOM_MODE, ZOOM_PERCENT)"
+                            + " VALUES ('" + ADMIN_ID + "', '" + reportType + "', 'NANUM_MYEONGJO', 1, 150, FALSE,"
+                            + " FALSE, 'CONTINUOUS', 'CUSTOM', 120)");
+                }
             }
         }
         return installation;
@@ -518,6 +555,22 @@ class BackupManagerTest {
             target.databaseManager().loadDatabasePassword(ADMIN_ID, ADMIN_PASSWORD);
             assertThat(readRows(target, "SELECT TYPE, DESCRIPTION FROM FINANCIAL_RECORD ORDER BY ID"))
                     .containsExactly("INCOME|null", "EXPENSE|수리비", "EXPENSE|수리비", "EXPENSE|전등 교체");
+        }
+
+        @Test
+        @DisplayName("1.2.0의 스키마로 만든 백업을 복원하면 합쳐지거나 이름이 바뀐 보고서(예산안, 결산 보고서, 결산 세부 내역서)의 설정은 지우고 주간 보고서의 설정만 남긴다")
+        void restore_BackupFromSecondReleasedSchema_DeletesMergedReportSettings() throws Exception {
+            // Given
+            Path backupFile = createBackup(createSecondReleasedInstallation("source"));
+            Installation target = createInstallation("target", PROGRAM_VERSION);
+
+            // When
+            target.backupManager().restore(backupFile, ADMIN_ID, ADMIN_PASSWORD);
+
+            // Then
+            target.databaseManager().loadDatabasePassword(ADMIN_ID, ADMIN_PASSWORD);
+            assertThat(readRows(target, "SELECT REPORT_TYPE, LINE_SPACING FROM REPORT_SETTING"))
+                    .containsExactly("WEEKLY_SETTLEMENT|150");
         }
 
         @Test

@@ -325,20 +325,22 @@ public class ReportingView extends JPanel implements MenuActivatable {
                     endDate);
             yield style -> WeeklySettlementReportComposer.compose(report, template, style);
         }
-        case INCOME_BUDGET_PLAN, EXPENSE_BUDGET_PLAN -> {
-            BudgetType budgetType = type == ReportType.INCOME_BUDGET_PLAN ? BudgetType.INCOME : BudgetType.EXPENSE;
-            BudgetPlanReportDto report = reportController.getBudgetPlanReport(fiscalYearId, budgetType);
-            yield style -> BudgetPlanReportComposer.compose(report, template, style);
+        // 여러 보고서를 묶은 보고서는 묶인 보고서를 하나씩 조회해 차례로 배치한다.
+        case BUDGET_PLAN -> {
+            BudgetPlanReportDto income = reportController.getBudgetPlanReport(fiscalYearId, BudgetType.INCOME);
+            BudgetPlanReportDto expense = reportController.getBudgetPlanReport(fiscalYearId, BudgetType.EXPENSE);
+            yield style -> BudgetPlanReportComposer.compose(income, expense, template, style);
         }
         case ANNUAL_SETTLEMENT -> {
             AnnualSettlementReportDto report = reportController.getAnnualSettlementReport(fiscalYearId);
             yield style -> AnnualSettlementReportComposer.compose(report, template, style);
         }
-        case INCOME_SETTLEMENT_DETAIL, EXPENSE_SETTLEMENT_DETAIL -> {
-            BudgetType budgetType = type == ReportType.INCOME_SETTLEMENT_DETAIL ? BudgetType.INCOME
-                    : BudgetType.EXPENSE;
-            SettlementDetailReportDto report = reportController.getSettlementDetailReport(fiscalYearId, budgetType);
-            yield style -> SettlementDetailReportComposer.compose(report, template, style);
+        case SETTLEMENT_DETAIL -> {
+            SettlementDetailReportDto income = reportController.getSettlementDetailReport(fiscalYearId,
+                    BudgetType.INCOME);
+            SettlementDetailReportDto expense = reportController.getSettlementDetailReport(fiscalYearId,
+                    BudgetType.EXPENSE);
+            yield style -> SettlementDetailReportComposer.compose(income, expense, template, style);
         }
         };
     }

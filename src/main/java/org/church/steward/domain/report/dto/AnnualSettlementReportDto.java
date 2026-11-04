@@ -11,7 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 회계 연도 수입/지출 결산 보고서의 데이터
+ * 회계 연도 결산 보고서의 데이터
  */
 @Getter
 @Builder

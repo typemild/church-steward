@@ -31,11 +31,11 @@ public enum ReportTemplateTable implements ColumnOrderRule {
             List.of(ReportColumn.DESCRIPTION, ReportColumn.AMOUNT, ReportColumn.CONTACT, ReportColumn.REMARKS),
             Set.of(ReportColumn.CONTACT, ReportColumn.DESCRIPTION),
             Set.of(ReportColumn.DESCRIPTION, ReportColumn.REMARKS)),
-    INCOME_BUDGET_PLAN(ReportType.INCOME_BUDGET_PLAN, "수입 예산안", BudgetType.INCOME, Kind.BUDGETS,
+    INCOME_BUDGET_PLAN(ReportType.BUDGET_PLAN, "수입 예산안", BudgetType.INCOME, Kind.BUDGETS,
             List.of(ReportColumn.BUDGET_NAME, ReportColumn.BUDGETED_AMOUNT, ReportColumn.SHARE_RATE,
                     ReportColumn.CHANGE, ReportColumn.REMARKS),
             Set.of(ReportColumn.BUDGET_NAME), Set.of()),
-    EXPENSE_BUDGET_PLAN(ReportType.EXPENSE_BUDGET_PLAN, "지출 예산안", BudgetType.EXPENSE, Kind.BUDGETS,
+    EXPENSE_BUDGET_PLAN(ReportType.BUDGET_PLAN, "지출 예산안", BudgetType.EXPENSE, Kind.BUDGETS,
             List.of(ReportColumn.BUDGET_NAME, ReportColumn.BUDGETED_AMOUNT, ReportColumn.SHARE_RATE,
                     ReportColumn.CHANGE, ReportColumn.REMARKS),
             Set.of(ReportColumn.BUDGET_NAME), Set.of()),
@@ -47,12 +47,12 @@ public enum ReportTemplateTable implements ColumnOrderRule {
             List.of(ReportColumn.BUDGET_NAME, ReportColumn.ACTUAL_AMOUNT, ReportColumn.BUDGETED_AMOUNT,
                     ReportColumn.RATE),
             Set.of(ReportColumn.BUDGET_NAME), Set.of()),
-    INCOME_SETTLEMENT_DETAIL(ReportType.INCOME_SETTLEMENT_DETAIL, "수입 결산 세부 내역", BudgetType.INCOME,
+    INCOME_SETTLEMENT_DETAIL(ReportType.SETTLEMENT_DETAIL, "수입 결산 세부 내역", BudgetType.INCOME,
             Kind.BUDGETS,
             List.of(ReportColumn.BUDGET_NAME, ReportColumn.BUDGETED_AMOUNT, ReportColumn.SHARE_RATE,
                     ReportColumn.ACTUAL_AMOUNT, ReportColumn.RATE, ReportColumn.REMARKS),
             Set.of(ReportColumn.BUDGET_NAME), Set.of()),
-    EXPENSE_SETTLEMENT_DETAIL(ReportType.EXPENSE_SETTLEMENT_DETAIL, "지출 결산 세부 내역", BudgetType.EXPENSE,
+    EXPENSE_SETTLEMENT_DETAIL(ReportType.SETTLEMENT_DETAIL, "지출 결산 세부 내역", BudgetType.EXPENSE,
             Kind.BUDGETS,
             List.of(ReportColumn.BUDGET_NAME, ReportColumn.BUDGETED_AMOUNT, ReportColumn.SHARE_RATE,
                     ReportColumn.ACTUAL_AMOUNT, ReportColumn.RATE, ReportColumn.REMARKS),
@@ -103,16 +103,6 @@ public enum ReportTemplateTable implements ColumnOrderRule {
         return Arrays.stream(values())
                 .filter(table -> table.reportType == reportType)
                 .toList();
-    }
-
-    /**
-     * 보고서에 들어가는 구분별 표. 보고서마다 구분별로 표가 하나씩 있어야 한다.
-     */
-    public static ReportTemplateTable of(ReportType reportType, BudgetType budgetType) {
-        return Arrays.stream(values())
-                .filter(table -> table.reportType == reportType && table.budgetType == budgetType)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("보고서에 그 구분의 표가 없습니다: " + reportType));
     }
 
     @Override

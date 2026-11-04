@@ -127,15 +127,13 @@ class ReportTemplateDialog extends JDialog {
     }
 
     /**
-     * 칸 설정 패널에 덧붙일 보고서의 안내. 줄어들거나 숨긴 칸의 값을 적는 방식과 칸이 폭을 나누는 방식이다.
+     * 칸 설정 패널에 덧붙일 보고서의 안내. 줄어들거나 숨긴 칸의 값이 표시되는 방식이다.
      */
     private static List<String> createColumnHints(ReportTemplateTable table) {
         return switch (table.getKind()) {
         case STATUS -> List.of();
-        case RECORDS -> List.of("숨긴 칸에 값이 있으면 그 내역의 아랫줄에 적습니다.",
-                "금액까지는 내용에 맞춘 폭이고, 금액 뒤의 칸들이 남은 폭을 나눠 갖습니다.");
-        case BUDGETS -> List.of("모든 칸이 내용에 맞춘 폭에서 시작해 남은 폭을 고르게 나눠 갖고, 숫자는 칸의 가운데에 모아 적습니다.",
-                "비고가 칸에 들어가지 않으면 그 예산의 아랫줄에 모두 적습니다.");
+        case RECORDS -> List.of("숨긴 칸에 값이 있으면 그 내역의 아랫줄에 표시됩니다.");
+        case BUDGETS -> List.of("비고가 칸에 들어가지 않으면 그 예산의 아랫줄에 모두 표시됩니다.");
         };
     }
 

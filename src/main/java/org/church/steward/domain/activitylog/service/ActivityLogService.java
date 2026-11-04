@@ -60,7 +60,7 @@ public interface ActivityLogService {
     /**
      * 보고서 출력 내역을 기록한다. 종이로 인쇄한 경우와 PDF로 저장한 경우를 모두 "인쇄"로 기록하고 출력 방식으로 구분한다.
      *
-     * @param reportType   보고서 종류 (예시: 회계 연도 수입/지출 결산 보고서)
+     * @param reportType   보고서 종류 (예시: 회계 연도 결산 보고서)
      * @param target       대상. 회계 연도의 이름이며 주간 보고서는 기간을 덧붙인다 (예시: 2026년)
      * @param outputMethod 출력 방식 (예시: 인쇄, PDF 저장)
      */

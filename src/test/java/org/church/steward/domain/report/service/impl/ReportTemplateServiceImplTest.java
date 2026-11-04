@@ -113,6 +113,28 @@ class ReportTemplateServiceImplTest {
                 .build();
     }
 
+    /**
+     * 회계 연도 단위 보고서(예산안, 결산 보고서)의 양식. 주어진 표 말고는 기본 순서이고, 결재란이 있으면 직함이 빈 세 칸이며 현황 표의
+     * 막대는 보인다.
+     */
+    private static ReportTemplateDto createFiscalYearTemplate(ReportType reportType,
+            Map<ReportTemplateTable, List<ReportColumnDto>> overrides) {
+        Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
+        Map<ReportTemplateTable, Boolean> rateBars = new EnumMap<>(ReportTemplateTable.class);
+        for (ReportTemplateTable table : ReportTemplateTable.of(reportType)) {
+            tables.put(table, overrides.getOrDefault(table, createColumns(table.getDefaultColumns())));
+            if (table.hasRateBarOption()) {
+                rateBars.put(table, true);
+            }
+        }
+        return ReportTemplateDto.builder()
+                .reportType(reportType)
+                .approval(reportType.hasApproval() ? createApproval(true, null, null, null) : null)
+                .tables(tables)
+                .rateBarVisible(rateBars)
+                .build();
+    }
+
     private static ReportTemplateDto createIncomeRecordsTemplate(List<ReportColumnDto> columns) {
         return createTemplate(createApproval(true, null, null, null),
                 Map.of(ReportTemplateTable.WEEKLY_INCOME_RECORDS, columns));
@@ -250,20 +272,30 @@ class ReportTemplateServiceImplTest {
         @DisplayName("결재란이 없는 보고서는 결재란이 null이다")
         void getReportTemplate_ReportWithoutApproval_ReturnsNullApproval() {
             // When
-            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.INCOME_BUDGET_PLAN);
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.BUDGET_PLAN);
 
             // Then
             assertThat(actual.getApproval()).isNull();
         }
 
         @Test
-        @DisplayName("저장한 적이 없으면 예산안의 표는 예산 항목, 예산액, 점유율, 직전 대비 증감액, 비고 순이다")
-        void getReportTemplate_BudgetPlanNotSaved_ReturnsDefaultColumns() {
+        @DisplayName("회계 연도 예산안에는 수입 예산안과 지출 예산안의 두 표가 있다")
+        void getReportTemplate_BudgetPlan_HasIncomeAndExpenseTables() {
             // When
-            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.EXPENSE_BUDGET_PLAN);
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.BUDGET_PLAN);
 
             // Then
-            assertThat(actual.getTables()).containsOnlyKeys(ReportTemplateTable.EXPENSE_BUDGET_PLAN);
+            assertThat(actual.getTables()).containsOnlyKeys(ReportTemplateTable.INCOME_BUDGET_PLAN,
+                    ReportTemplateTable.EXPENSE_BUDGET_PLAN);
+        }
+
+        @Test
+        @DisplayName("저장한 적이 없으면 지출 예산안의 표는 예산 항목, 예산액, 점유율, 직전 대비 증감액, 비고 순이다")
+        void getReportTemplate_BudgetPlanNotSaved_ReturnsDefaultColumns() {
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.BUDGET_PLAN);
+
+            // Then
             assertThat(actual.getTables()
                     .get(ReportTemplateTable.EXPENSE_BUDGET_PLAN)).extracting(ReportColumnDto::getColumn)
                     .containsExactly(ReportColumn.BUDGET_NAME, ReportColumn.BUDGETED_AMOUNT, ReportColumn.SHARE_RATE,
@@ -274,7 +306,7 @@ class ReportTemplateServiceImplTest {
         @DisplayName("저장한 적이 없으면 수입 결산 세부 내역서의 표는 예산 항목, 예산액, 점유율, 수입액, 달성률, 비고 순이다")
         void getReportTemplate_SettlementDetailNotSaved_ReturnsDefaultColumns() {
             // When
-            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.INCOME_SETTLEMENT_DETAIL);
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.SETTLEMENT_DETAIL);
 
             // Then
             assertThat(actual.getTables()
@@ -287,10 +319,33 @@ class ReportTemplateServiceImplTest {
         @DisplayName("결산 세부 내역서는 비율 칸이 있어도 막대 설정이 없다")
         void getReportTemplate_SettlementDetail_HasNoRateBarOption() {
             // When
-            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.EXPENSE_SETTLEMENT_DETAIL);
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.SETTLEMENT_DETAIL);
 
             // Then
             assertThat(actual.getRateBarVisible()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("회계 연도 결산 세부 내역서에는 수입 결산 세부 내역과 지출 결산 세부 내역의 두 표가 있고 결재란은 없다")
+        void getReportTemplate_SettlementDetail_HasIncomeAndExpenseTablesWithoutApproval() {
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.SETTLEMENT_DETAIL);
+
+            // Then
+            assertThat(actual.getTables()).containsOnlyKeys(ReportTemplateTable.INCOME_SETTLEMENT_DETAIL,
+                    ReportTemplateTable.EXPENSE_SETTLEMENT_DETAIL);
+            assertThat(actual.getApproval()).isNull();
+        }
+
+        @Test
+        @DisplayName("회계 연도 결산 보고서에는 현황 표 둘만 있다")
+        void getReportTemplate_AnnualSettlement_HasOnlyStatusTables() {
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.ANNUAL_SETTLEMENT);
+
+            // Then
+            assertThat(actual.getTables()).containsOnlyKeys(ReportTemplateTable.ANNUAL_INCOME_STATUS,
+                    ReportTemplateTable.ANNUAL_EXPENSE_STATUS);
         }
 
         @Test
@@ -617,13 +672,10 @@ class ReportTemplateServiceImplTest {
         @DisplayName("예산안의 첫 번째 칸이 예산 항목이 아니면 예외를 던진다")
         void updateReportTemplate_BudgetPlanFirstColumnNotBudget_ThrowsException() {
             // Given
-            ReportTemplateDto template = ReportTemplateDto.builder()
-                    .reportType(ReportType.INCOME_BUDGET_PLAN)
-                    .tables(Map.of(ReportTemplateTable.INCOME_BUDGET_PLAN, createColumns(List.of(
+            ReportTemplateDto template = createFiscalYearTemplate(ReportType.BUDGET_PLAN,
+                    Map.of(ReportTemplateTable.INCOME_BUDGET_PLAN, createColumns(List.of(
                             ReportColumn.BUDGETED_AMOUNT, ReportColumn.BUDGET_NAME, ReportColumn.SHARE_RATE,
-                            ReportColumn.CHANGE, ReportColumn.REMARKS))))
-                    .rateBarVisible(Map.of())
-                    .build();
+                            ReportColumn.CHANGE, ReportColumn.REMARKS))));
 
             // When & Then
             assertThatThrownBy(() -> reportTemplateService.updateReportTemplate(template))
@@ -638,31 +690,25 @@ class ReportTemplateServiceImplTest {
             List<ReportColumn> order = List.of(ReportColumn.BUDGET_NAME, ReportColumn.REMARKS,
                     ReportColumn.BUDGETED_AMOUNT, ReportColumn.ACTUAL_AMOUNT, ReportColumn.RATE,
                     ReportColumn.SHARE_RATE);
-            ReportTemplateDto template = ReportTemplateDto.builder()
-                    .reportType(ReportType.EXPENSE_SETTLEMENT_DETAIL)
-                    .tables(Map.of(ReportTemplateTable.EXPENSE_SETTLEMENT_DETAIL, createColumns(order)))
-                    .rateBarVisible(Map.of())
-                    .build();
+            ReportTemplateDto template = createFiscalYearTemplate(ReportType.SETTLEMENT_DETAIL,
+                    Map.of(ReportTemplateTable.EXPENSE_SETTLEMENT_DETAIL, createColumns(order)));
 
             // When
             reportTemplateService.updateReportTemplate(template);
 
             // Then
-            verify(reportTableColumnRepository).saveAll(columnsCaptor.capture());
-            assertThat(columnsCaptor.getValue()).extracting(ReportTableColumn::getColumnType)
-                    .containsExactlyElementsOf(order);
+            verify(reportTableColumnRepository, times(2)).saveAll(columnsCaptor.capture());
+            assertThat(columnsCaptor.getAllValues()).anySatisfy(columns -> assertThat(columns)
+                    .allMatch(column -> column.getTableType() == ReportTemplateTable.EXPENSE_SETTLEMENT_DETAIL)
+                    .extracting(ReportTableColumn::getColumnType)
+                    .containsExactlyElementsOf(order));
         }
 
         @Test
         @DisplayName("결산 세부 내역서는 막대 설정이 없으므로 저장하지 않는다")
         void updateReportTemplate_SettlementDetail_DoesNotSaveOption() {
             // Given
-            ReportTemplateDto template = ReportTemplateDto.builder()
-                    .reportType(ReportType.INCOME_SETTLEMENT_DETAIL)
-                    .tables(Map.of(ReportTemplateTable.INCOME_SETTLEMENT_DETAIL, createColumns(
-                            ReportTemplateTable.INCOME_SETTLEMENT_DETAIL.getDefaultColumns())))
-                    .rateBarVisible(Map.of())
-                    .build();
+            ReportTemplateDto template = createFiscalYearTemplate(ReportType.SETTLEMENT_DETAIL, Map.of());
 
             // When
             reportTemplateService.updateReportTemplate(template);

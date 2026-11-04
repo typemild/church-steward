@@ -99,7 +99,7 @@ class ReportControllerTest {
     class GetAnnualSettlementReportTest {
 
         @Test
-        @DisplayName("회계 연도로 서비스가 집계한 회계 연도 수입/지출 결산 보고서 데이터를 그대로 반환한다")
+        @DisplayName("회계 연도로 서비스가 집계한 회계 연도 결산 보고서 데이터를 그대로 반환한다")
         void getAnnualSettlementReport_ValidYear_ReturnsServiceResult() {
             // Given
             AnnualSettlementReportDto expected = AnnualSettlementReportDto.builder()

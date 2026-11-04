@@ -8,7 +8,8 @@ import org.church.steward.domain.report.entity.ReportFontFamily;
 import org.church.steward.domain.report.entity.ReportSettingConstraints;
 
 /**
- * 보고서가 한 페이지에 담기도록 행 간격과 글자 크기를 줄여 가며 다시 배치한다.
+ * 보고서가 한 페이지에 담기도록 행 간격과 글자 크기를 줄여 가며 다시 배치한다. 여러 보고서를 묶은 문서는 묶은 보고서마다 한 페이지에
+ * 담기도록 하며, 서식은 문서 전체에 하나다.
  * <p>
  * 사용자가 직접 정한 글자 크기와 행 간격과 무관하게 항상 기본 서식(글꼴만 사용자가 고른 것)에서 시작하며, 줄이기만 하고 키우지는
  * 않는다. 줄이는 순서는 다음과 같다. 글자를 읽기 좋게 두려고 행 간격을 먼저 조금 줄이고, 행 간격이 아주 좁아지는 것은 마지막으로
@@ -29,7 +30,8 @@ public final class ReportAutoFitter {
      * 맞춘 결과
      *
      * @param document 배치한 문서. 문서의 서식이 실제로 쓴 서식이다.
-     * @param fits     한 페이지에 담겼는지 여부. 가장 작게 줄여도 넘치면 false이며 그때의 문서를 돌려준다.
+     * @param fits     한 페이지(묶은 보고서마다 한 페이지)에 담겼는지 여부. 가장 작게 줄여도 넘치면 false이며 그때의 문서를
+     *                 돌려준다.
      */
     public record Result(ReportDocument document, boolean fits) {
     }
@@ -45,14 +47,14 @@ public final class ReportAutoFitter {
     public static Result fit(Function<ReportStyle, ReportDocument> composer, ReportFontFamily fontFamily) {
         ReportStyle start = ReportStyle.DEFAULT.withFontFamily(fontFamily);
         ReportDocument first = composer.apply(start);
-        if (first.getPageCount() <= 1) {
+        if (first.isOnePagePerPart()) {
             return new Result(first, true);
         }
 
         ReportDocument document = first;
         for (ReportStyle candidate : candidates(start, first.getMinFontSizeStep())) {
             document = composer.apply(candidate);
-            if (document.getPageCount() <= 1) {
+            if (document.isOnePagePerPart()) {
                 return new Result(document, true);
             }
         }

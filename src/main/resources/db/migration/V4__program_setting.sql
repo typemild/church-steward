@@ -47,6 +47,13 @@ CREATE TABLE REPORT_TABLE_OPTION (
     CONSTRAINT PK_REPORT_TABLE_OPTION PRIMARY KEY (TABLE_TYPE)
 );
 
+-- 수입 예산안과 지출 예산안을 "회계 연도 예산안"(BUDGET_PLAN)으로, 수입·지출 결산 세부 내역서를 "회계 연도 결산 세부
+-- 내역서"(SETTLEMENT_DETAIL)로 합치고, 수입/지출 결산 보고서의 이름을 "회계 연도 결산 보고서"로 바꿨다.
+-- 바뀌기 전 보고서의 사용자별 설정은 지우고 기본값에서 다시 시작한다(ANNUAL_SETTLEMENT는 키는 그대로지만 함께 지운다).
+DELETE FROM REPORT_SETTING
+WHERE REPORT_TYPE IN ('INCOME_BUDGET_PLAN', 'EXPENSE_BUDGET_PLAN', 'ANNUAL_SETTLEMENT',
+                      'INCOME_SETTLEMENT_DETAIL', 'EXPENSE_SETTLEMENT_DETAIL');
+
 -- 예산의 비고. 기존 예산과 과거 버전의 백업은 비어 있다.
 ALTER TABLE BUDGET ADD COLUMN REMARKS VARCHAR(100);
 

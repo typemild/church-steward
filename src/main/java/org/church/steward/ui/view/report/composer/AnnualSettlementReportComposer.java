@@ -20,14 +20,14 @@ import org.church.steward.ui.view.report.layout.ReportTable.RowStyle;
 import org.church.steward.ui.view.report.layout.ReportText;
 
 /**
- * 회계 연도 수입/지출 결산 보고서를 배치한다. 위에서부터 머리 부분(왼쪽에 제목과 회계 연도·회계 기간, 오른쪽에 결재란. 주간 회계 결산
- * 보고서와 같은 배치), 직전 회계 연도와 해당 회계 연도의 총괄, 월별 수입/지출(차트와 표), 수입 현황과 지출 현황 순이다. 결재란과
- * 현황 표의 칸 순서·막대는 보고서 양식({@link ReportTemplateDto})이 정하며, 결재란은 주간 회계 결산 보고서와 따로
- * 정한다.
+ * 회계 연도 결산 보고서를 배치한다. 위에서부터 머리 부분(왼쪽에 제목과 회계 연도·회계 기간, 오른쪽에 결재란. 주간 회계 결산 보고서와
+ * 같은 배치), 직전 회계 연도와 해당 회계 연도의 총괄, 월별 수입/지출(차트와 표), 수입 현황과 지출 현황 순이다. 결재란과 현황 표의
+ * 칸 순서·막대는 보고서 양식({@link ReportTemplateDto})이 정하며, 결재란은 주간 회계 결산 보고서와 따로 정한다.
+ * 예산별 결산은 회계 연도 결산 세부 내역서({@link SettlementDetailReportComposer})가 따로 다룬다.
  */
 public final class AnnualSettlementReportComposer {
 
-    private static final String TITLE = "회계 연도 수입/지출 결산 보고서";
+    private static final String TITLE = "회계 연도 결산 보고서";
 
     private static final float BODY_SIZE = 9f;
     private static final float STATUS_SIZE = ReportFonts.SIZE_BODY;
@@ -45,9 +45,7 @@ public final class AnnualSettlementReportComposer {
     public static ReportDocument compose(AnnualSettlementReportDto report, ReportTemplateDto template,
             ReportStyle style) {
         // 파일 이름으로도 쓰이므로 문서 제목에는 어느 회계 연도의 보고서인지 넣는다. 지면의 제목에는 넣지 않고 아래 줄에 적는다.
-        String documentTitle = String.format("%s %s", report.getFiscalYearName(), TITLE);
-
-        ReportCanvas canvas = new ReportCanvas(documentTitle, style);
+        ReportCanvas canvas = new ReportCanvas(String.format("%s %s", report.getFiscalYearName(), TITLE), style);
         ReportHeader.draw(canvas, TITLE, ReportStyles.ANNUAL_TITLE_SIZE, List.of(
                 new ReportHeader.Info("회계 연도 : ", report.getFiscalYearName()),
                 new ReportHeader.Info("회계 기간 : ", ReportFormats.period(report.getFiscalYearStartDate(),
@@ -62,7 +60,6 @@ public final class AnnualSettlementReportComposer {
         BudgetStatusSection.render(canvas, report.getIncomeStatus(), report.getExpenseStatus(),
                 BudgetStatusSection.Layout.of(template, ReportTemplateTable.ANNUAL_INCOME_STATUS),
                 BudgetStatusSection.Layout.of(template, ReportTemplateTable.ANNUAL_EXPENSE_STATUS), STATUS_SIZE, "");
-
         return canvas.finish();
     }
 

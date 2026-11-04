@@ -720,7 +720,7 @@ class ReportServiceImplTest {
             reportService.logOutput(reportType, ReportOutputType.PDF, CURRENT_ID, null, null);
 
             // Then
-            verify(activityLogService).logReportPrint("회계 연도 수입/지출 결산 보고서", "2026년", "PDF 저장");
+            verify(activityLogService).logReportPrint("회계 연도 결산 보고서", "2026년", "PDF 저장");
         }
 
         @Test

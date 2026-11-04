@@ -4,18 +4,19 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * 보고서 종류
+ * 보고서 종류. 회계 연도 예산안과 회계 연도 결산 세부 내역서는 수입과 지출의 보고서를 차례로 묶은 것이며, 묶인 보고서마다 새 페이지에서
+ * 시작한다.
  */
 @Getter
 @AllArgsConstructor
 public enum ReportType {
 
     WEEKLY_SETTLEMENT("주간 회계 결산 보고서"),
-    INCOME_BUDGET_PLAN("회계 연도 수입 예산안"),
-    EXPENSE_BUDGET_PLAN("회계 연도 지출 예산안"),
-    ANNUAL_SETTLEMENT("회계 연도 수입/지출 결산 보고서"),
-    INCOME_SETTLEMENT_DETAIL("회계 연도 수입 결산 세부 내역서"),
-    EXPENSE_SETTLEMENT_DETAIL("회계 연도 지출 결산 세부 내역서");
+    /** 수입 예산안, 지출 예산안 순 */
+    BUDGET_PLAN("회계 연도 예산안"),
+    ANNUAL_SETTLEMENT("회계 연도 결산 보고서"),
+    /** 수입 결산 세부 내역서, 지출 결산 세부 내역서 순 */
+    SETTLEMENT_DETAIL("회계 연도 결산 세부 내역서");
 
     private final String label;
 

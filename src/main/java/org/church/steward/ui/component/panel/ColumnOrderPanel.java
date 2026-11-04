@@ -68,7 +68,7 @@ public class ColumnOrderPanel extends JPanel {
 
     /**
      * @param rateBarVisible 비율 칸의 왼쪽에 막대를 함께 그리는지 여부. 막대를 정할 수 없는 표이면 쓰지 않는다.
-     * @param extraHints     표의 규칙 안내 아래에 덧붙일 문장. 칸을 숨기거나 폭을 나누는 방식처럼 표를 쓰는 곳마다 다른
+     * @param extraHints     표의 규칙 안내 아래에 덧붙일 문장. 숨긴 칸의 값을 보는 방법처럼 표를 쓰는 곳마다 다른
      *                       내용이다.
      */
     public ColumnOrderPanel(ColumnOrderRule rule, List<ReportColumnDto> columns, boolean rateBarVisible,
@@ -160,7 +160,7 @@ public class ColumnOrderPanel extends JPanel {
         if (candidates.size() == 1) {
             lines.add(String.format("%s 칸은 항상 첫 번째 칸입니다.", candidates.get(0)));
         } else {
-            lines.add(String.format("첫 번째 칸에는 %s만 둘 수 있고, 일자는 그 칸의 왼쪽에 붙여 적습니다.",
+            lines.add(String.format("첫 번째 칸에는 %s만 둘 수 있고, 일자는 그 칸의 왼쪽에 붙여 표시됩니다.",
                     String.join(" 또는 ", candidates)));
         }
         String hideable = rule.getDefaultColumns()

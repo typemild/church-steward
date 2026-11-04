@@ -89,7 +89,7 @@ class ReportSettingServiceImplTest {
         }
 
         @Test
-        @DisplayName("저장된 설정이 없으면 기본 설정(나눔고딕, 기본 크기, 행 간격 130%, 한 페이지에 맞춤 꺼짐, 이어 보기, 폭 맞춤)을 반환한다")
+        @DisplayName("저장된 설정이 없으면 기본 설정(나눔고딕, 기본 크기, 행 간격 130%, 한 페이지에 맞춤 꺼짐, 페이지 목록 표시, 페이지별 보기, 폭 맞춤)을 반환한다")
         void getReportSetting_NoSetting_ReturnsDefaults() {
             // Given
             when(reportSettingRepository.findById(new ReportSettingId(USER_ID, TYPE))).thenReturn(Optional.empty());
@@ -103,8 +103,8 @@ class ReportSettingServiceImplTest {
             assertThat(actual.getFontSizeStep()).isZero();
             assertThat(actual.getLineSpacing()).isEqualTo(130);
             assertThat(actual.isAutoFit()).isFalse();
-            assertThat(actual.isThumbnailsVisible()).isFalse();
-            assertThat(actual.getViewMode()).isEqualTo(ReportViewMode.CONTINUOUS);
+            assertThat(actual.isThumbnailsVisible()).isTrue();
+            assertThat(actual.getViewMode()).isEqualTo(ReportViewMode.SINGLE_PAGE);
             assertThat(actual.getZoomMode()).isEqualTo(ReportZoomMode.FIT_WIDTH);
             assertThat(actual.getZoomPercent()).isEqualTo(100);
         }

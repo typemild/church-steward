@@ -13,7 +13,7 @@ import org.church.steward.ui.view.report.layout.ReportText;
 
 /**
  * 결재란. 왼쪽에 세로로 적은 "결재"가 있고, 직함을 적는 위 칸과 서명하는 아래 칸이 칸 수만큼 있다. 주간 회계 결산 보고서와 회계
- * 연도 수입/지출 결산 보고서가 함께 쓰며, 칸 수와 직함은 보고서마다 양식에서 따로 정한다.
+ * 연도 결산 보고서가 함께 쓰며, 칸 수와 직함은 보고서마다 양식에서 따로 정한다.
  */
 final class ApprovalBox {
 

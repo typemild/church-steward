@@ -43,16 +43,18 @@ final class ReportStyles {
     }
 
     /**
-     * 회계 연도 단위 보고서의 제목을 놓고, 그 아래 가운데에 "2026-01-01 ~ 2026-12-31"처럼 회계 연도의 기간을 적은 뒤
-     * 제목 아래의 간격만큼 이동한다.
+     * 회계 연도 단위 보고서의 제목을 놓고, 그 아래 가운데에 "회계 연도 : 2026년 (2026-01-01 ~ 2026-12-31)"처럼
+     * 회계 연도의 이름과 기간을 적은 뒤 제목 아래의 간격만큼 이동한다. 제목에는 회계 연도의 이름을 넣지 않는다.
      */
-    static void drawAnnualTitle(ReportCanvas canvas, String title, LocalDate startDate, LocalDate endDate) {
+    static void drawAnnualTitle(ReportCanvas canvas, String title, String fiscalYearName, LocalDate startDate,
+            LocalDate endDate) {
         canvas.title(title, ANNUAL_TITLE_SIZE);
 
         Font font = canvas.getStyle()
                 .regular(SUBTITLE_SIZE);
         canvas.moveDown(ReportText.lineHeight(font) * SUBTITLE_GAP_RATIO);
-        canvas.text(ReportFormats.period(startDate, endDate), font, ReportAlign.CENTER,
+        canvas.text(String.format("회계 연도 : %s (%s)", fiscalYearName, ReportFormats.period(startDate, endDate)),
+                font, ReportAlign.CENTER,
                 (canvas.getLeft() + canvas.getRight()) / 2, canvas.getY() + ReportText.ascent(font));
         canvas.moveDown(ReportText.lineHeight(font) + TITLE_GAP);
     }

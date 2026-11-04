@@ -127,6 +127,20 @@ class AnnualSettlementReportComposerTest {
     class ComposeTest {
 
         @Test
+        @DisplayName("문서 제목에는 회계 연도의 이름을 넣는다")
+        void compose_Title_ContainsFiscalYearName() {
+            // Given
+            AnnualSettlementReportDto report = report(null, monthlyTrend(10_000_000L, 8_000_000L));
+
+            // When
+            ReportDocument document = AnnualSettlementReportComposer.compose(report, DEFAULT_TEMPLATE,
+                    ReportStyle.DEFAULT);
+
+            // Then
+            assertThat(document.getTitle()).isEqualTo("2026년 회계 연도 결산 보고서");
+        }
+
+        @Test
         @DisplayName("총괄, 월별 차트와 표, 최상위 예산 십여 개의 현황을 A4 한 장에 담는다")
         void compose_TypicalYear_FitsOnSinglePage() {
             // Given
@@ -141,20 +155,6 @@ class AnnualSettlementReportComposerTest {
 
             // Then
             assertThat(document.getPageCount()).isEqualTo(1);
-        }
-
-        @Test
-        @DisplayName("제목에 회계 연도의 이름을 넣는다")
-        void compose_Title_ContainsFiscalYearName() {
-            // Given
-            AnnualSettlementReportDto report = report(null, monthlyTrend(10_000_000L, 8_000_000L));
-
-            // When
-            ReportDocument document = AnnualSettlementReportComposer.compose(report, DEFAULT_TEMPLATE,
-                    ReportStyle.DEFAULT);
-
-            // Then
-            assertThat(document.getTitle()).isEqualTo("2026년 회계 연도 수입/지출 결산 보고서");
         }
 
         @Test
@@ -317,8 +317,8 @@ class AnnualSettlementReportComposerTest {
                     ReportStyle.DEFAULT);
 
             // Then
-            assertThat(textsOf(document)).doesNotContain("2026년 회계 연도 수입/지출 결산 보고서");
-            assertThat(findText(document, "회계 연도 수입/지출 결산 보고서").x()).isCloseTo(ReportPaper.MARGIN,
+            assertThat(textsOf(document)).doesNotContain("2026년 회계 연도 결산 보고서");
+            assertThat(findText(document, "회계 연도 결산 보고서").x()).isCloseTo(ReportPaper.MARGIN,
                     within(0.01));
         }
 
@@ -333,7 +333,7 @@ class AnnualSettlementReportComposerTest {
                     ReportStyle.DEFAULT);
 
             // Then
-            ReportElement.Text title = findText(document, "회계 연도 수입/지출 결산 보고서");
+            ReportElement.Text title = findText(document, "회계 연도 결산 보고서");
             ReportElement.Text name = findText(document, "2026년");
             ReportElement.Text period = findText(document, "2026-01-01 ~ 2026-12-31");
             assertThat(textsOf(document)).contains("회계 연도 : ", "회계 기간 : ");
@@ -368,7 +368,7 @@ class AnnualSettlementReportComposerTest {
                     ReportStyle.DEFAULT);
 
             // Then
-            ReportElement.Text title = findText(document, "회계 연도 수입/지출 결산 보고서");
+            ReportElement.Text title = findText(document, "회계 연도 결산 보고서");
             assertThat(approvalBoxesOf(document, 3)).singleElement()
                     .satisfies(box -> {
                         assertThat(box.x() + box.width()).isCloseTo(ReportPaper.WIDTH - ReportPaper.MARGIN,

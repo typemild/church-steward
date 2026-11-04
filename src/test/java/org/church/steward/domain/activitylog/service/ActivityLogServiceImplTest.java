@@ -467,7 +467,7 @@ class ActivityLogServiceImplTest {
         void logReportPrint_validParams_recordsCorrectly() {
             // Given
             mockLoggedInUser("test-user");
-            String reportType = "회계 연도 수입/지출 결산 보고서";
+            String reportType = "회계 연도 결산 보고서";
             String target = "2026년";
 
             // When
@@ -477,7 +477,7 @@ class ActivityLogServiceImplTest {
             verify(activityLogMapper).toEntity(eq("test-user"), eq(ActivityType.PRINT), eq(reportType),
                     fieldsCaptor.capture());
             assertCapturedFields(
-                    tuple("유형", null, "회계 연도 수입/지출 결산 보고서", false),
+                    tuple("유형", null, "회계 연도 결산 보고서", false),
                     tuple("대상", null, "2026년", false),
                     tuple("출력 방식", null, "PDF 저장", false));
         }

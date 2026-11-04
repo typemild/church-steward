@@ -126,7 +126,7 @@ README의 화면은 `docs/screenshots/`에 있고, 예시 데이터(가상의 �
 | `record-entry.png` | 수입/지출 관리 "건별 보기", 수입 추가 다이얼로그, 봉헌자에 "김"을 입력하고 김찬양에 포커스해 그룹 서브 목록이 열린 상태(저장하지 않음) |
 | `budget.png` | 예산 관리, 모두 펼침 |
 | `report-weekly.png` | 주간 회계 결산 보고서, 2026-10-11 ~ 10-17 |
-| `report-settlement.png` | 회계 연도 수입/지출 결산 보고서, 사이드바에서 "2025년" 선택 |
+| `report-settlement.png` | 회계 연도 결산 보고서, 사이드바에서 "2025년" 선택 |
 | `import.png` | 데이터 관리 > 수입/지출 가져오기의 매핑 단계 |
 | `update-backup.png` | [업데이트 안내](docs/update.md)용. 데이터 관리 > 백업/복원 탭 |
 | `update-init.png` | 업데이트 안내용. 빈 폴더에서 처음 실행했을 때의 "시작 방법 선택" 화면 |

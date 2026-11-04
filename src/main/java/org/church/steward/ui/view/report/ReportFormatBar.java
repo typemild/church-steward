@@ -122,7 +122,8 @@ class ReportFormatBar extends JPanel {
         spacingDownButton.setToolTipText("행 간격 좁게");
         spacingUpButton.setToolTipText("행 간격 넓게");
         resetButton.setToolTipText("이 보고서의 글꼴, 글자 크기, 행 간격을 기본값으로 되돌리고 한 페이지에 맞춤을 끕니다.");
-        autoFitCheckBox.setToolTipText("내용이 한 페이지에 모두 담기도록 행 간격과 글자 크기를 자동으로 줄입니다. "
+        autoFitCheckBox.setToolTipText("내용이 한 페이지에 모두 담기도록(여러 보고서를 묶은 보고서는 보고서마다 한 페이지) "
+                + "행 간격과 글자 크기를 자동으로 줄입니다. "
                 + "글자 크기나 행 간격을 직접 바꾸면 꺼집니다.");
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         controls.setOpaque(false);
