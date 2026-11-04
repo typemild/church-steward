@@ -27,10 +27,10 @@ public enum ReportType {
     }
 
     /**
-     * 보고서 양식에 결재란이 있는지 여부
+     * 보고서 양식에 결재란이 있는지 여부. 결재란은 보고서마다 따로 저장한다.
      */
     public boolean hasApproval() {
-        return this == WEEKLY_SETTLEMENT;
+        return this == WEEKLY_SETTLEMENT || this == ANNUAL_SETTLEMENT;
     }
 
     /**

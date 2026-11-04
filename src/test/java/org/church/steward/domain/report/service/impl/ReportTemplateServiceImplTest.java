@@ -219,6 +219,34 @@ class ReportTemplateServiceImplTest {
         }
 
         @Test
+        @DisplayName("회계 연도 결산 보고서도 저장한 적이 없으면 결재란은 직함이 빈 세 칸을 보이는 것이다")
+        void getReportTemplate_AnnualSettlementNotSaved_ReturnsDefaultApproval() {
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.ANNUAL_SETTLEMENT);
+
+            // Then
+            assertThat(actual.getApproval()).isEqualTo(createApproval(true, null, null, null));
+        }
+
+        @Test
+        @DisplayName("회계 연도 결산 보고서의 결재란은 주간 보고서의 결재란과 따로 읽는다")
+        void getReportTemplate_AnnualSettlement_ReadsOwnApproval() {
+            // Given
+            when(reportApprovalRepository.findById(ReportType.ANNUAL_SETTLEMENT)).thenReturn(Optional.of(
+                    ReportApproval.builder()
+                            .reportType(ReportType.ANNUAL_SETTLEMENT)
+                            .visible(true)
+                            .titles(Arrays.asList("재정부장", "감사"))
+                            .build()));
+
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.ANNUAL_SETTLEMENT);
+
+            // Then
+            assertThat(actual.getApproval()).isEqualTo(createApproval(true, "재정부장", "감사"));
+        }
+
+        @Test
         @DisplayName("결재란이 없는 보고서는 결재란이 null이다")
         void getReportTemplate_ReportWithoutApproval_ReturnsNullApproval() {
             // When
@@ -554,6 +582,35 @@ class ReportTemplateServiceImplTest {
             assertThatThrownBy(() -> reportTemplateService.updateReportTemplate(template))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("주간 수입 내역의 칸 구성이 올바르지 않습니다.");
+        }
+
+        @Test
+        @DisplayName("회계 연도 결산 보고서의 결재란은 그 보고서의 행으로 저장한다")
+        void updateReportTemplate_AnnualSettlementApproval_SavesUnderOwnReportType() {
+            // Given
+            Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
+            Map<ReportTemplateTable, Boolean> rateBars = new EnumMap<>(ReportTemplateTable.class);
+            for (ReportTemplateTable table : ReportTemplateTable.of(ReportType.ANNUAL_SETTLEMENT)) {
+                tables.put(table, createColumns(table.getDefaultColumns()));
+                rateBars.put(table, true);
+            }
+            ReportTemplateDto template = ReportTemplateDto.builder()
+                    .reportType(ReportType.ANNUAL_SETTLEMENT)
+                    .approval(createApproval(true, "재정부장", " 감사 "))
+                    .tables(tables)
+                    .rateBarVisible(rateBars)
+                    .build();
+            ArgumentCaptor<ReportApproval> captor = ArgumentCaptor.forClass(ReportApproval.class);
+
+            // When
+            reportTemplateService.updateReportTemplate(template);
+
+            // Then
+            verify(reportApprovalRepository).save(captor.capture());
+            assertThat(captor.getValue()
+                    .getReportType()).isEqualTo(ReportType.ANNUAL_SETTLEMENT);
+            assertThat(captor.getValue()
+                    .getTitles()).containsExactly("재정부장", "감사");
         }
 
         @Test

@@ -1,6 +1,7 @@
 package org.church.steward.ui.view.report.composer;
 
 import java.time.YearMonth;
+import java.util.List;
 
 import org.church.steward.domain.dashboard.dto.MonthlyTrendDto;
 import org.church.steward.domain.report.dto.AnnualSettlementReportDto;
@@ -16,12 +17,17 @@ import org.church.steward.ui.view.report.layout.ReportStyle;
 import org.church.steward.ui.view.report.layout.ReportTable;
 import org.church.steward.ui.view.report.layout.ReportTable.Column;
 import org.church.steward.ui.view.report.layout.ReportTable.RowStyle;
+import org.church.steward.ui.view.report.layout.ReportText;
 
 /**
- * 회계 연도 수입/지출 결산 보고서를 배치한다. 위에서부터 직전 회계 연도와 해당 회계 연도의 총괄, 월별 수입/지출(차트와 표), 수입
- * 현황과 지출 현황 순이다. 현황 표의 칸 순서와 막대는 보고서 양식({@link ReportTemplateDto})이 정한다.
+ * 회계 연도 수입/지출 결산 보고서를 배치한다. 위에서부터 머리 부분(왼쪽에 제목과 회계 연도·회계 기간, 오른쪽에 결재란. 주간 회계 결산
+ * 보고서와 같은 배치), 직전 회계 연도와 해당 회계 연도의 총괄, 월별 수입/지출(차트와 표), 수입 현황과 지출 현황 순이다. 결재란과
+ * 현황 표의 칸 순서·막대는 보고서 양식({@link ReportTemplateDto})이 정하며, 결재란은 주간 회계 결산 보고서와 따로
+ * 정한다.
  */
 public final class AnnualSettlementReportComposer {
+
+    private static final String TITLE = "회계 연도 수입/지출 결산 보고서";
 
     private static final float BODY_SIZE = 9f;
     private static final float STATUS_SIZE = ReportFonts.SIZE_BODY;
@@ -38,12 +44,16 @@ public final class AnnualSettlementReportComposer {
 
     public static ReportDocument compose(AnnualSettlementReportDto report, ReportTemplateDto template,
             ReportStyle style) {
-        String title = String.format("%s 회계 연도 수입/지출 결산 보고서", report.getFiscalYearName());
+        // 파일 이름으로도 쓰이므로 문서 제목에는 어느 회계 연도의 보고서인지 넣는다. 지면의 제목에는 넣지 않고 아래 줄에 적는다.
+        String documentTitle = String.format("%s %s", report.getFiscalYearName(), TITLE);
 
-        ReportCanvas canvas = new ReportCanvas(title, style);
-        canvas.title(title, ReportStyles.ANNUAL_TITLE_SIZE);
-        canvas.moveDown(ReportStyles.TITLE_GAP);
-        ReportStyles.drawUnit(canvas, ReportFonts.SIZE_SMALL);
+        ReportCanvas canvas = new ReportCanvas(documentTitle, style);
+        ReportHeader.draw(canvas, TITLE, ReportStyles.ANNUAL_TITLE_SIZE, List.of(
+                new ReportHeader.Info("회계 연도 : ", report.getFiscalYearName()),
+                new ReportHeader.Info("회계 기간 : ", ReportFormats.period(report.getFiscalYearStartDate(),
+                        report.getFiscalYearEndDate()))),
+                template.getApproval());
+        canvas.moveDown(ReportStyles.SECTION_SPACING);
 
         drawSummary(canvas, report);
         canvas.moveDown(ReportStyles.SECTION_SPACING);
@@ -57,11 +67,16 @@ public final class AnnualSettlementReportComposer {
     }
 
     /**
-     * 직전 회계 연도와 해당 회계 연도의 수입 총액, 지출 총액, 차액. 금액 칸은 세 칸 모두 가장 넓은 금액(머리글 포함)에 맞춘 같은
-     * 폭이고, 회계 연도 칸이 남은 폭을 가져간다.
+     * 직전 회계 연도와 해당 회계 연도의 수입 총액, 지출 총액, 차액. 절 제목과 같은 줄의 오른쪽 끝에 금액의 단위를 적는다.
+     * <p>
+     * 칸은 내용에 맞춘 폭(금액 칸은 세 칸 모두 가장 넓은 금액이나 머리글에 맞춘 같은 폭)에서 시작해 남는 폭을 네 칸이 똑같이 나눠
+     * 갖는다. 금액은 오른쪽 정렬한 덩어리로 칸 가운데에 놓아 칸이 넓어져도 머리글과 멀어지지 않게 한다.
      */
     private static void drawSummary(ReportCanvas canvas, AnnualSettlementReportDto report) {
+        double sectionBaseline = canvas.getY() + ReportText.ascent(canvas.getStyle()
+                .bold(ReportFonts.SIZE_SECTION));
         canvas.section("수입/지출 총괄", ReportFonts.SIZE_SECTION, canvas.getLeft());
+        ReportStyles.drawUnitAt(canvas, ReportFonts.SIZE_SMALL, sectionBaseline);
 
         ReportTable table = new ReportTable(canvas.getStyle(), BODY_SIZE,
                 new Column("회계 연도", 0, ReportAlign.LEFT),
@@ -81,8 +96,16 @@ public final class AnnualSettlementReportComposer {
         double amountWidth = 0;
         for (int i = 1; i <= 3; i++) {
             amountWidth = Math.max(amountWidth, table.measureNaturalWidth(i));
+            table.setBlockCentered(i);
         }
-        table.setWidths(0, amountWidth, amountWidth, amountWidth);
+        double nameWidth = table.measureNaturalWidth(0);
+        double extra = (canvas.getContentWidth() - nameWidth - amountWidth * 3) / 4;
+        if (extra >= 0) {
+            table.setWidths(nameWidth + extra, amountWidth + extra, amountWidth + extra, amountWidth + extra);
+        } else {
+            // 회계 연도 칸이 한 줄에 들어가지 않을 만큼 좁으면(글자를 아주 키운 경우) 남는 폭에서 줄을 바꾼다.
+            table.setWidths(0, amountWidth, amountWidth, amountWidth);
+        }
         table.render(canvas);
     }
 

@@ -49,6 +49,8 @@ class ReportTemplateDialog extends JDialog {
     private static final long serialVersionUID = 1L;
 
     private static final int TITLE_FIELD_COLUMNS = 10;
+    /** 맨 위 안내 문구와 탭 사이의 간격 */
+    private static final int NOTICE_GAP = 12;
 
     private final ReportTemplateDto original;
     private final Consumer<ReportTemplateDto> saveAction;
@@ -94,11 +96,11 @@ class ReportTemplateDialog extends JDialog {
             tabbedPane.addTab(table.getLabel(), panel);
         }
 
-        JPanel contentPanel = new JPanel(new BorderLayout());
+        // 안내 문구와 탭 사이를 띄워 탭 머리와 붙어 보이지 않게 한다.
+        JPanel contentPanel = new JPanel(new BorderLayout(0, NOTICE_GAP));
         contentPanel.setOpaque(false);
         contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 0, 20));
-        contentPanel.add(new SubFieldLabel("양식은 모든 사용자의 보고서에 함께 적용됩니다.", ComponentSize.SMALL),
-                BorderLayout.NORTH);
+        contentPanel.add(new SubFieldLabel("양식 설정은 모든 사용자에게 적용됩니다.", ComponentSize.SMALL), BorderLayout.NORTH);
         contentPanel.add(tabbedPane, BorderLayout.CENTER);
         add(contentPanel, BorderLayout.CENTER);
 
@@ -129,7 +131,7 @@ class ReportTemplateDialog extends JDialog {
      */
     private static List<String> createColumnHints(ReportTemplateTable table) {
         return switch (table.getKind()) {
-        case STATUS -> List.of("모든 칸이 폭을 고르게 나눠 갖습니다.");
+        case STATUS -> List.of();
         case RECORDS -> List.of("숨긴 칸에 값이 있으면 그 내역의 아랫줄에 적습니다.",
                 "금액까지는 내용에 맞춘 폭이고, 금액 뒤의 칸들이 남은 폭을 나눠 갖습니다.");
         case BUDGETS -> List.of("모든 칸이 내용에 맞춘 폭에서 시작해 남은 폭을 고르게 나눠 갖고, 숫자는 칸의 가운데에 모아 적습니다.",
@@ -182,8 +184,7 @@ class ReportTemplateDialog extends JDialog {
         gbc.gridy = 2 + ReportTemplateConstraints.APPROVAL_CELL_COUNT_MAX;
         gbc.gridwidth = 2;
         gbc.insets = new Insets(4, 0, 0, 0);
-        panel.add(new SubFieldLabel(String.format("<html>직함은 %d자 이내이며, 비워 두면 손으로 쓸 수 있게 빈칸으로 둡니다.<br>"
-                + "칸에 들어가지 않는 직함은 글자를 작게 줄여 적습니다.</html>",
+        panel.add(new SubFieldLabel(String.format("직함은 %d자 이내이며, 비워 두면 손으로 쓸 수 있게 빈칸으로 둡니다.",
                 ReportTemplateConstraints.APPROVAL_TITLE_MAX_LENGTH), ComponentSize.SMALL), gbc);
 
         // 남는 높이는 아래로 보내 입력란을 위에 모은다.

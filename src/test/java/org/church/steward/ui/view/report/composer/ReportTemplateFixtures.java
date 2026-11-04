@@ -1,10 +1,12 @@
 package org.church.steward.ui.view.report.composer;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.church.steward.domain.report.dto.ReportApprovalDto;
 import org.church.steward.domain.report.dto.ReportColumnDto;
 import org.church.steward.domain.report.dto.ReportTemplateDto;
 import org.church.steward.domain.report.entity.ReportColumn;
@@ -12,12 +14,35 @@ import org.church.steward.domain.report.entity.ReportTemplateTable;
 import org.church.steward.domain.report.entity.ReportType;
 
 /**
- * 회계 연도 단위 보고서의 composer 테스트에서 쓰는 보고서 양식. 결재란이 없는 보고서만 다룬다.
+ * 회계 연도 단위 보고서의 composer 테스트에서 쓰는 보고서 양식. 결재란이 있는 보고서는 직함이 빈 세 칸을 보이는 기본 결재란을
+ * 담는다.
  */
 final class ReportTemplateFixtures {
 
     private ReportTemplateFixtures() {
         // 인스턴스화 방지
+    }
+
+    /**
+     * 결재란. 칸 수는 직함의 개수다.
+     */
+    static ReportApprovalDto createApproval(boolean visible, String... titles) {
+        return ReportApprovalDto.builder()
+                .visible(visible)
+                .titles(Arrays.asList(titles))
+                .build();
+    }
+
+    /**
+     * 기본 양식에서 결재란만 바꾼다.
+     */
+    static ReportTemplateDto withApproval(ReportTemplateDto template, ReportApprovalDto approval) {
+        return ReportTemplateDto.builder()
+                .reportType(template.getReportType())
+                .approval(approval)
+                .tables(template.getTables())
+                .rateBarVisible(template.getRateBarVisible())
+                .build();
     }
 
     /**
@@ -62,6 +87,7 @@ final class ReportTemplateFixtures {
         }
         return ReportTemplateDto.builder()
                 .reportType(reportType)
+                .approval(reportType.hasApproval() ? createApproval(true, null, null, null) : null)
                 .tables(tables)
                 .rateBarVisible(rateBars)
                 .build();

@@ -63,8 +63,16 @@ final class ReportStyles {
     static void drawUnit(ReportCanvas canvas, float baseSize) {
         Font font = canvas.getStyle()
                 .regular(baseSize);
-        canvas.text("(단위: 원)", font, ReportAlign.RIGHT, canvas.getRight(), canvas.getY() + ReportText.ascent(font),
-                UIColors.REPORT_TEXT_SUB);
+        drawUnitAt(canvas, baseSize, canvas.getY() + ReportText.ascent(font));
         canvas.moveDown(ReportText.lineHeight(font) + UNIT_GAP);
+    }
+
+    /**
+     * 정한 기준선의 오른쪽 끝에 금액의 단위를 적는다. 작업대의 위치는 바꾸지 않으므로 절 제목과 같은 줄에 적을 때 쓴다.
+     */
+    static void drawUnitAt(ReportCanvas canvas, float baseSize, double baseline) {
+        Font font = canvas.getStyle()
+                .regular(baseSize);
+        canvas.text("(단위: 원)", font, ReportAlign.RIGHT, canvas.getRight(), baseline, UIColors.REPORT_TEXT_SUB);
     }
 }
