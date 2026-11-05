@@ -22,6 +22,7 @@ import javax.swing.JTabbedPane;
 import org.church.steward.domain.report.dto.ReportApprovalDto;
 import org.church.steward.domain.report.dto.ReportColumnDto;
 import org.church.steward.domain.report.dto.ReportTemplateDto;
+import org.church.steward.domain.report.entity.RecordOrder;
 import org.church.steward.domain.report.entity.ReportTemplateConstraints;
 import org.church.steward.domain.report.entity.ReportTemplateTable;
 import org.church.steward.ui.component.ComponentSize;
@@ -91,6 +92,8 @@ class ReportTemplateDialog extends JDialog {
                     .get(table),
                     Boolean.TRUE.equals(template.getRateBarVisible()
                             .get(table)),
+                    template.getRecordOrders()
+                            .get(table),
                     createColumnHints(table));
             columnPanels.put(table, panel);
             tabbedPane.addTab(table.getLabel(), panel);
@@ -248,6 +251,7 @@ class ReportTemplateDialog extends JDialog {
 
         Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, Boolean> rateBarVisible = new EnumMap<>(ReportTemplateTable.class);
+        Map<ReportTemplateTable, RecordOrder> recordOrders = new EnumMap<>(ReportTemplateTable.class);
         for (Map.Entry<ReportTemplateTable, ColumnOrderPanel> entry : columnPanels.entrySet()) {
             tables.put(entry.getKey(), entry.getValue()
                     .getColumns());
@@ -256,6 +260,11 @@ class ReportTemplateDialog extends JDialog {
                 rateBarVisible.put(entry.getKey(), entry.getValue()
                         .isRateBarVisible());
             }
+            if (entry.getKey()
+                    .hasRecordOrderOption()) {
+                recordOrders.put(entry.getKey(), entry.getValue()
+                        .getRecordOrder());
+            }
         }
 
         return ReportTemplateDto.builder()
@@ -263,6 +272,7 @@ class ReportTemplateDialog extends JDialog {
                 .approval(approval)
                 .tables(tables)
                 .rateBarVisible(rateBarVisible)
+                .recordOrders(recordOrders)
                 .build();
     }
 

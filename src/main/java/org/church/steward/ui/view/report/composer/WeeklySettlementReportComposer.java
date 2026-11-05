@@ -65,6 +65,10 @@ public final class WeeklySettlementReportComposer {
                 template.getTables()
                         .get(ReportTemplateTable.WEEKLY_INCOME_RECORDS),
                 template.getTables()
+                        .get(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS),
+                template.getRecordOrders()
+                        .get(ReportTemplateTable.WEEKLY_INCOME_RECORDS),
+                template.getRecordOrders()
                         .get(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS));
         return canvas.finish();
     }

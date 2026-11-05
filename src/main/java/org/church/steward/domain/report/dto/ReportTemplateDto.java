@@ -3,6 +3,7 @@ package org.church.steward.domain.report.dto;
 import java.util.List;
 import java.util.Map;
 
+import org.church.steward.domain.report.entity.RecordOrder;
 import org.church.steward.domain.report.entity.ReportTemplateTable;
 import org.church.steward.domain.report.entity.ReportType;
 
@@ -32,4 +33,9 @@ public class ReportTemplateDto {
      * 표({@link ReportTemplateTable#hasRateBarOption()})만 들어 있다.
      */
     private Map<ReportTemplateTable, Boolean> rateBarVisible;
+    /**
+     * 내역 표마다 같은 날짜의 내역끼리의 순서. 순서를 정할 수 있는
+     * 표({@link ReportTemplateTable#hasRecordOrderOption()})만 들어 있다.
+     */
+    private Map<ReportTemplateTable, RecordOrder> recordOrders;
 }

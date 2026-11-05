@@ -9,6 +9,7 @@ import java.util.Set;
 import org.church.steward.domain.report.dto.ReportApprovalDto;
 import org.church.steward.domain.report.dto.ReportColumnDto;
 import org.church.steward.domain.report.dto.ReportTemplateDto;
+import org.church.steward.domain.report.entity.RecordOrder;
 import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.domain.report.entity.ReportTemplateTable;
 import org.church.steward.domain.report.entity.ReportType;
@@ -42,6 +43,7 @@ final class ReportTemplateFixtures {
                 .approval(approval)
                 .tables(template.getTables())
                 .rateBarVisible(template.getRateBarVisible())
+                .recordOrders(template.getRecordOrders())
                 .build();
     }
 
@@ -65,7 +67,7 @@ final class ReportTemplateFixtures {
     }
 
     /**
-     * 기본 양식(모든 표가 기본 순서, 현황 표의 막대는 보임)
+     * 기본 양식(모든 표가 기본 순서, 현황 표의 막대는 보임, 내역 표의 같은 날짜는 가나다순)
      */
     static ReportTemplateDto createDefaultTemplate(ReportType reportType) {
         return createTemplate(reportType, Map.of(), true);
@@ -79,10 +81,14 @@ final class ReportTemplateFixtures {
             Map<ReportTemplateTable, List<ReportColumnDto>> overrides, boolean rateBarVisible) {
         Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, Boolean> rateBars = new EnumMap<>(ReportTemplateTable.class);
+        Map<ReportTemplateTable, RecordOrder> recordOrders = new EnumMap<>(ReportTemplateTable.class);
         for (ReportTemplateTable table : ReportTemplateTable.of(reportType)) {
             tables.put(table, overrides.getOrDefault(table, createColumns(table.getDefaultColumns())));
             if (table.hasRateBarOption()) {
                 rateBars.put(table, rateBarVisible);
+            }
+            if (table.hasRecordOrderOption()) {
+                recordOrders.put(table, RecordOrder.FIRST_COLUMN);
             }
         }
         return ReportTemplateDto.builder()
@@ -90,6 +96,7 @@ final class ReportTemplateFixtures {
                 .approval(reportType.hasApproval() ? createApproval(true, null, null, null) : null)
                 .tables(tables)
                 .rateBarVisible(rateBars)
+                .recordOrders(recordOrders)
                 .build();
     }
 }

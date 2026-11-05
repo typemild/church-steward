@@ -15,10 +15,13 @@ public final class ReportTemplateConstraints {
     public static final int DEFAULT_APPROVAL_CELL_COUNT = 3;
     /** 현황 표의 비율 칸 왼쪽에 막대를 함께 그리는지 여부의 기본값 */
     public static final boolean DEFAULT_RATE_BAR_VISIBLE = true;
+    /** 주간 내역에서 같은 날짜의 내역끼리의 순서의 기본값 */
+    public static final RecordOrder DEFAULT_RECORD_ORDER = RecordOrder.FIRST_COLUMN;
 
     /** enum 칼럼의 길이 */
     public static final int TABLE_MAX_LENGTH = 30;
     public static final int COLUMN_MAX_LENGTH = 20;
+    public static final int RECORD_ORDER_MAX_LENGTH = 20;
 
     private ReportTemplateConstraints() {
     }

@@ -24,6 +24,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
+import org.church.steward.domain.programsetting.entity.BudgetViewTable;
 import org.church.steward.infrastructure.annotation.UiView;
 import org.church.steward.infrastructure.security.UserSessionHolder;
 import org.church.steward.ui.MenuActivatable;
@@ -181,7 +182,7 @@ public class MainView extends JFrame {
         fiscalYearSelector.addChangeListener(this::onFiscalYearChanged);
         fiscalYearSelector.setManageAction(this::showFiscalYearManagement);
         setupReminder.setShortcutActions(this::showFiscalYearManagement, () -> selectMenu("BUDGET"));
-        incomeExpenseView.setColumnSettingsAction(this::showProgramSetting);
+        incomeExpenseView.setColumnSettingsAction(this::showBudgetViewColumnSettings);
         fiscalYearSelector.reload();
 
         setVisible(true);
@@ -196,11 +197,14 @@ public class MainView extends JFrame {
     }
 
     /**
-     * 설정 메뉴의 프로그램 설정 화면으로 이동한다. 수입/지출 관리의 예산별 보기에서 칸 설정 버튼을 눌렀을 때 실행된다.
+     * 설정 메뉴의 프로그램 설정 화면으로 이동해 예산별 보기의 칸 설정 다이얼로그를 띄운다. 수입/지출 관리의 예산별 보기에서 칸 설정 버튼을
+     * 눌렀을 때 실행된다.
+     *
+     * @param table 다이얼로그에서 처음에 열어 둘 표. 칸 설정 버튼을 누른 표다.
      */
-    private void showProgramSetting() {
+    private void showBudgetViewColumnSettings(BudgetViewTable table) {
         selectMenu("SETTINGS");
-        settingsView.showProgramSettingTab();
+        settingsView.showBudgetViewColumnDialog(table);
     }
 
     /**

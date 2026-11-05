@@ -11,6 +11,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.church.steward.domain.programsetting.entity.BudgetViewTable;
 import org.church.steward.infrastructure.annotation.UiView;
 import org.church.steward.infrastructure.security.UserSessionHolder;
 import org.church.steward.ui.MenuActivatable;
@@ -114,6 +115,17 @@ public class SettingsView extends JPanel implements MenuActivatable {
             initializeTabs();
         }
         tabbedPane.setSelectedComponent(programSettingPanelView);
+    }
+
+    /**
+     * 프로그램 설정 탭을 보여주고 예산별 보기의 칸 설정 다이얼로그를 띄운다. 설정 메뉴가 선택된
+     * 뒤({@link #onMenuSelected()})에 호출해야 한다.
+     *
+     * @param table 다이얼로그에서 처음에 열어 둘 표
+     */
+    public void showBudgetViewColumnDialog(BudgetViewTable table) {
+        showProgramSettingTab();
+        programSettingPanelView.openBudgetViewColumnDialog(table);
     }
 
 }

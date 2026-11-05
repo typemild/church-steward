@@ -25,6 +25,7 @@ import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
 import org.church.steward.domain.programsetting.entity.BudgetViewTable;
 import org.church.steward.domain.report.dto.ReportColumnDto;
+import org.church.steward.domain.report.entity.RecordOrder;
 import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.button.IconButton;
@@ -206,6 +207,15 @@ public class BudgetRecordPanel extends JPanel {
                 .repaint();
     }
 
+    /**
+     * 같은 날짜의 내역끼리의 순서를 정한다. 다음에 내역을 넣을 때({@link #setRecords}) 적용된다. null이면 그대로 둔다.
+     */
+    public void setRecordOrder(RecordOrder recordOrder) {
+        if (recordOrder != null) {
+            tableModel.setRecordOrder(recordOrder);
+        }
+    }
+
     private void setupEvents() {
         table.getSelectionModel()
                 .addListSelectionListener(e -> {
@@ -223,7 +233,7 @@ public class BudgetRecordPanel extends JPanel {
         btnEdit.addActionListener(_ -> onEdit());
         btnDelete.addActionListener(_ -> onDelete());
         btnView.addActionListener(_ -> onView());
-        btnColumnSettings.addActionListener(_ -> actionHandler.showColumnSettings());
+        btnColumnSettings.addActionListener(_ -> actionHandler.showColumnSettings(viewTable));
     }
 
     /**

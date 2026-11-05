@@ -50,4 +50,12 @@ public interface ColumnOrderRule {
     default boolean hasRateBarOption() {
         return false;
     }
+
+    /**
+     * 같은 날짜의 내역끼리의 순서({@link RecordOrder})를 정할 수 있는 표인지 여부. 내역을 나열하는 표(주간 보고서의 내역,
+     * 예산별 보기)만 정할 수 있다.
+     */
+    default boolean hasRecordOrderOption() {
+        return false;
+    }
 }

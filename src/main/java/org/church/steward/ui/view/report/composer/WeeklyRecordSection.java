@@ -4,11 +4,13 @@ import java.awt.Color;
 import java.awt.Font;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import org.church.steward.domain.report.dto.ReportColumnDto;
 import org.church.steward.domain.report.dto.ReportRecordDto;
 import org.church.steward.domain.report.dto.ReportRecordGroupDto;
+import org.church.steward.domain.report.entity.RecordOrder;
 import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.domain.report.entity.ReportTemplateTable;
 import org.church.steward.ui.util.UIColors;
@@ -149,12 +151,15 @@ final class WeeklyRecordSection {
     /**
      * 현재 위치부터 주간 수입 내역과 주간 지출 내역을 좌우 두 단으로 그리고, 더 길게 내려간 단의 아래로 이동한다.
      *
+     * @param incomeRecords  예산별 수입 내역. 예산 안의 내역은 일자순, 같은 날짜는 입력순이어야 한다.
      * @param incomeColumns  주간 수입 내역의 칸 순서와 숨김
      * @param expenseColumns 주간 지출 내역의 칸 순서와 숨김
+     * @param incomeOrder    주간 수입 내역에서 같은 날짜의 내역끼리의 순서
+     * @param expenseOrder   주간 지출 내역에서 같은 날짜의 내역끼리의 순서
      */
     void render(ReportCanvas canvas, List<ReportRecordGroupDto> incomeRecords,
             List<ReportRecordGroupDto> expenseRecords, List<ReportColumnDto> incomeColumns,
-            List<ReportColumnDto> expenseColumns) {
+            List<ReportColumnDto> expenseColumns, RecordOrder incomeOrder, RecordOrder expenseOrder) {
         // 절 제목과 머리글만 페이지 끝에 남지 않도록, 내역이 몇 줄은 들어갈 공간이 없으면 다음 페이지에서 시작한다.
         if (!canvas.fits(lineHeight * 6)) {
             canvas.newPage();
@@ -166,10 +171,10 @@ final class WeeklyRecordSection {
         double startY = canvas.getY();
 
         End incomeEnd = renderColumn(canvas, canvas.getLeft(), columnWidth, ReportTemplateTable.WEEKLY_INCOME_RECORDS,
-                incomeColumns, incomeRecords);
+                incomeColumns, incomeOrder, incomeRecords);
         canvas.setPosition(startPage, startY);
         End expenseEnd = renderColumn(canvas, expenseLeft, columnWidth, ReportTemplateTable.WEEKLY_EXPENSE_RECORDS,
-                expenseColumns, expenseRecords);
+                expenseColumns, expenseOrder, expenseRecords);
 
         if (incomeEnd.isAfter(expenseEnd)) {
             canvas.setPosition(incomeEnd.pageIndex(), incomeEnd.y());
@@ -177,7 +182,7 @@ final class WeeklyRecordSection {
     }
 
     private End renderColumn(ReportCanvas canvas, double left, double width, ReportTemplateTable table,
-            List<ReportColumnDto> columns, List<ReportRecordGroupDto> groups) {
+            List<ReportColumnDto> columns, RecordOrder recordOrder, List<ReportRecordGroupDto> groups) {
         long total = 0;
         for (ReportRecordGroupDto group : groups) {
             total += group.getTotalAmount();
@@ -195,7 +200,7 @@ final class WeeklyRecordSection {
 
         boolean atTop = true;
         for (ReportRecordGroupDto group : groups) {
-            List<Block> blocks = toBlocks(group, layout);
+            List<Block> blocks = toBlocks(group, layout, recordOrder);
             for (int i = 0; i < blocks.size(); i++) {
                 Block block = blocks.get(i);
                 // 예산과 예산 사이는 빈 줄로 띄운다. 머리글 바로 아래에서는 띄우지 않는다.
@@ -437,11 +442,11 @@ final class WeeklyRecordSection {
      * 건마다(줄어든 내용을 다시 적는 줄 포함) 한 묶음이다. 내역의 바탕은 예산 행 바로 아래의 첫 내역을 흰 바탕으로 해서 한 건씩 번갈아
      * 깐다.
      */
-    private List<Block> toBlocks(ReportRecordGroupDto group, Layout layout) {
+    private List<Block> toBlocks(ReportRecordGroupDto group, Layout layout, RecordOrder recordOrder) {
         List<Block> blocks = new ArrayList<>();
         List<RowLine> lines = new ArrayList<>(toBudgetLines(group, layout));
 
-        List<ReportRecordDto> records = group.getRecords();
+        List<ReportRecordDto> records = sortRecords(group.getRecords(), layout, recordOrder);
         for (int i = 0; i < records.size(); i++) {
             Color background = i % 2 == 0 ? null : UIColors.REPORT_FILL;
             lines.addAll(toRecordLines(records.get(i), layout, background));
@@ -452,6 +457,22 @@ final class WeeklyRecordSection {
             blocks.add(new Block(lines));
         }
         return blocks;
+    }
+
+    /**
+     * 한 예산의 내역을 일자순으로, 같은 날짜는 정한 순서로 늘어놓는다. 가나다순은 첫 번째 칸의 값으로 견준다. 받은 내역은 입력순이고 안정
+     * 정렬이므로 견준 값이 같은 내역은 입력순으로 남는다.
+     */
+    private static List<ReportRecordDto> sortRecords(List<ReportRecordDto> records, Layout layout,
+            RecordOrder recordOrder) {
+        ReportColumn firstColumn = layout.cells()
+                .getFirst()
+                .column();
+        return records.stream()
+                .sorted(Comparator.comparing(ReportRecordDto::getDate)
+                        .thenComparing(recordOrder.sameDateComparator(
+                                (ReportRecordDto record) -> valueOf(record, firstColumn))))
+                .toList();
     }
 
     /**

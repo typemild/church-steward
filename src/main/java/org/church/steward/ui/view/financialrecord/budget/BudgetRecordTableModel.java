@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
+import org.church.steward.domain.programsetting.entity.ProgramSettingConstraints;
+import org.church.steward.domain.report.entity.RecordOrder;
 import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.ui.component.table.AbstractTreeTableModel;
 import org.church.steward.ui.component.table.TooltipTableModel;
@@ -38,6 +40,8 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
 
     /** 트리 칸에 날짜와 함께 적는 칸. 관계자 또는 내용이다. */
     private ReportColumn firstColumn = ReportColumn.CONTACT;
+    /** 같은 날짜의 내역끼리의 순서 */
+    private RecordOrder recordOrder = ProgramSettingConstraints.DEFAULT_RECORD_ORDER;
 
     public BudgetRecordTableModel() {
         super(false);
@@ -74,8 +78,16 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
     }
 
     /**
-     * 표시할 수입/지출 내역을 설정한다. 예산은 예산 설정 화면과 같은 순서로, 예산 안의 내역은 새로 입력한 내역이 아래에 붙도록 날짜
-     * 오름차순, 같은 날짜에서는 ID 오름차순으로 정렬한다.
+     * 같은 날짜의 내역끼리의 순서를 정한다. 다음에 내역을 넣을 때({@link #setRecords}) 적용된다.
+     */
+    public void setRecordOrder(RecordOrder recordOrder) {
+        this.recordOrder = recordOrder;
+    }
+
+    /**
+     * 표시할 수입/지출 내역을 설정한다. 예산은 예산 설정 화면과 같은 순서로, 예산 안의 내역은 날짜 오름차순으로 정렬한다. 같은 날짜에서는
+     * 정한 순서({@link #setRecordOrder})를 따르며, 가나다순은 첫 번째 칸의 값으로 견준다. 그래도 같으면 새로 입력한
+     * 내역이 아래에 붙도록 ID 오름차순이다.
      *
      * @param budgetPositions 예산 ID별 표시 위치({@link BudgetDisplayOrder#positionsOf}).
      *                        여기에 없는 예산은 맨 뒤에 둔다.
@@ -86,6 +98,7 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
                 .<FinancialRecordResponseDto>comparingInt(
                         record -> budgetPositions.getOrDefault(record.getBudgetId(), Integer.MAX_VALUE))
                 .thenComparing(FinancialRecordResponseDto::getDate)
+                .thenComparing(recordOrder.sameDateComparator(this::firstValueOf))
                 .thenComparing(FinancialRecordResponseDto::getId));
 
         // 예산 ID별 수입/지출 내역. 예산의 표시 순서대로 정렬되어 있다.
@@ -110,6 +123,14 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
                     BudgetRecordRow.ofBudget(budgetId, budgetNameOf(budgetRecords.getFirst()), total), recordNodes));
         }
         setRoots(budgetNodes);
+    }
+
+    /**
+     * 내역의 첫 번째 칸에 적는 값. 트리 칸에서 일자 뒤에 적는 값과 같다.
+     */
+    private String firstValueOf(FinancialRecordResponseDto record) {
+        return firstColumn == ReportColumn.DESCRIPTION ? record.getDescription()
+                : FinancialRecordFormats.joinNames(record.getContactNames());
     }
 
     private static String budgetNameOf(FinancialRecordResponseDto record) {

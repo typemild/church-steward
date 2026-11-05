@@ -20,6 +20,7 @@ import org.church.steward.domain.report.dto.ReportRecordGroupDto;
 import org.church.steward.domain.report.dto.ReportSummaryDto;
 import org.church.steward.domain.report.dto.ReportTemplateDto;
 import org.church.steward.domain.report.dto.WeeklySettlementReportDto;
+import org.church.steward.domain.report.entity.RecordOrder;
 import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.domain.report.entity.ReportTemplateTable;
 import org.church.steward.domain.report.entity.ReportType;
@@ -40,8 +41,16 @@ class WeeklySettlementReportComposerTest {
     private static final LocalDate WEEK_END = LocalDate.of(2026, 10, 10);
 
     private ReportRecordDto record(String contactName, String description, String remarks) {
+        return record(WEEK_START, contactName, description, remarks);
+    }
+
+    private ReportRecordDto record(LocalDate date, String contactName, String description) {
+        return record(date, contactName, description, "");
+    }
+
+    private ReportRecordDto record(LocalDate date, String contactName, String description, String remarks) {
         return ReportRecordDto.builder()
-                .date(WEEK_START)
+                .date(date)
                 .contactNames(List.of(contactName))
                 .description(description)
                 .amount(50_000L)
@@ -153,12 +162,34 @@ class WeeklySettlementReportComposerTest {
      */
     private static ReportTemplateDto createTemplate(ReportApprovalDto approval,
             Map<ReportTemplateTable, List<ReportColumnDto>> overrides, boolean rateBarVisible) {
+        return createTemplate(approval, overrides, rateBarVisible, RecordOrder.FIRST_COLUMN);
+    }
+
+    /**
+     * 기본 양식에서 내역 표의 같은 날짜의 순서만 바꾼다.
+     */
+    private static ReportTemplateDto createTemplate(RecordOrder recordOrder) {
+        return createTemplate(createApproval(true, null, null, null), Map.of(), true, recordOrder);
+    }
+
+    /**
+     * @param overrides      기본 순서 대신 쓸 표의 칸
+     * @param rateBarVisible 모든 현황 표의 비율 칸 왼쪽에 막대를 함께 그리는지 여부
+     * @param recordOrder    모든 내역 표의 같은 날짜의 순서
+     */
+    private static ReportTemplateDto createTemplate(ReportApprovalDto approval,
+            Map<ReportTemplateTable, List<ReportColumnDto>> overrides, boolean rateBarVisible,
+            RecordOrder recordOrder) {
         Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, Boolean> rateBars = new EnumMap<>(ReportTemplateTable.class);
+        Map<ReportTemplateTable, RecordOrder> recordOrders = new EnumMap<>(ReportTemplateTable.class);
         for (ReportTemplateTable table : ReportTemplateTable.of(ReportType.WEEKLY_SETTLEMENT)) {
             tables.put(table, overrides.getOrDefault(table, createColumns(table.getDefaultColumns())));
             if (table.hasRateBarOption()) {
                 rateBars.put(table, rateBarVisible);
+            }
+            if (table.hasRecordOrderOption()) {
+                recordOrders.put(table, recordOrder);
             }
         }
         return ReportTemplateDto.builder()
@@ -166,6 +197,7 @@ class WeeklySettlementReportComposerTest {
                 .approval(approval)
                 .tables(tables)
                 .rateBarVisible(rateBars)
+                .recordOrders(recordOrders)
                 .build();
     }
 
@@ -696,6 +728,66 @@ class WeeklySettlementReportComposerTest {
             // Then
             assertThat(countFills(withTwo, UIColors.REPORT_FILL) - countFills(withOne, UIColors.REPORT_FILL))
                     .isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("기본 양식에서는 같은 날짜의 수입 내역을 첫 번째 칸인 봉헌자의 가나다순으로 적는다")
+        void compose_DefaultRecordOrder_SortsIncomeByContactName() {
+            // Given
+            WeeklySettlementReportDto report = report(List.of(group("주일헌금", List.of(
+                    record(WEEK_START, "홍길동", ""), record(WEEK_START, "김철수", "")))), List.of());
+
+            // When
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, createTemplate(),
+                    ReportStyle.DEFAULT);
+
+            // Then
+            assertThat(textsOf(document)).containsSubsequence("[10/4] 김철수", "[10/4] 홍길동");
+        }
+
+        @Test
+        @DisplayName("지출 내역의 첫 번째 칸이 내용이면 같은 날짜의 내역을 내용의 가나다순으로 적는다")
+        void compose_DefaultRecordOrder_SortsExpenseByDescription() {
+            // Given
+            WeeklySettlementReportDto report = report(List.of(), List.of(group("관리비", List.of(
+                    record(WEEK_START, "가나설비", "전기료"), record(WEEK_START, "하늘가스", "가스비")))));
+
+            // When
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, createTemplate(),
+                    ReportStyle.DEFAULT);
+
+            // Then
+            assertThat(textsOf(document)).containsSubsequence("[10/4] 가스비", "[10/4] 전기료");
+        }
+
+        @Test
+        @DisplayName("가나다순이어도 일자가 앞선 내역을 먼저 적는다")
+        void compose_DefaultRecordOrder_KeepsDateOrderFirst() {
+            // Given
+            WeeklySettlementReportDto report = report(List.of(group("주일헌금", List.of(
+                    record(WEEK_START, "홍길동", ""), record(WEEK_START.plusDays(1), "김철수", "")))), List.of());
+
+            // When
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, createTemplate(),
+                    ReportStyle.DEFAULT);
+
+            // Then
+            assertThat(textsOf(document)).containsSubsequence("[10/4] 홍길동", "[10/5] 김철수");
+        }
+
+        @Test
+        @DisplayName("같은 날짜의 순서가 입력순이면 받은 순서(입력순) 그대로 적는다")
+        void compose_EntryRecordOrder_KeepsReceivedOrder() {
+            // Given
+            WeeklySettlementReportDto report = report(List.of(group("주일헌금", List.of(
+                    record(WEEK_START, "홍길동", ""), record(WEEK_START, "김철수", "")))), List.of());
+
+            // When
+            ReportDocument document = WeeklySettlementReportComposer.compose(report,
+                    createTemplate(RecordOrder.ENTRY), ReportStyle.DEFAULT);
+
+            // Then
+            assertThat(textsOf(document)).containsSubsequence("[10/4] 홍길동", "[10/4] 김철수");
         }
     }
 }

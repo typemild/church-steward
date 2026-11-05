@@ -16,6 +16,13 @@ CREATE TABLE BUDGET_VIEW_COLUMN (
     CONSTRAINT PK_BUDGET_VIEW_COLUMN PRIMARY KEY (TABLE_TYPE, COLUMN_TYPE)
 );
 
+-- 예산별 보기에서 표 단위로 정하는 것(같은 날짜의 내역끼리의 순서). 행이 없으면 첫 번째 칸의 가나다순이다.
+CREATE TABLE BUDGET_VIEW_OPTION (
+    TABLE_TYPE   VARCHAR(10) NOT NULL,
+    RECORD_ORDER VARCHAR(20) NOT NULL,
+    CONSTRAINT PK_BUDGET_VIEW_OPTION PRIMARY KEY (TABLE_TYPE)
+);
+
 -- 보고서 양식(프로그램 전체 설정이며 사용자별 서식인 REPORT_SETTING과 따로 둔다)
 -- 행은 처음 저장할 때 만든다. 행이 없으면(기존 데이터, 과거 버전의 백업) 기본 양식을 쓴다.
 -- 결재란. 직함은 칸 순서대로이며 칸 수보다 뒤의 직함과 빈 직함은 NULL이다.
@@ -40,10 +47,12 @@ CREATE TABLE REPORT_TABLE_COLUMN (
     CONSTRAINT PK_REPORT_TABLE_COLUMN PRIMARY KEY (TABLE_TYPE, COLUMN_TYPE)
 );
 
--- 표 단위로 정하는 것(현황 표의 비율 칸 왼쪽에 막대를 함께 그리는지 여부)
+-- 표 단위로 정하는 것(현황 표의 비율 칸 왼쪽에 막대를 함께 그리는지 여부, 주간 내역에서 같은 날짜의 내역끼리의 순서)
+-- 표마다 정할 수 있는 것만 쓰고 나머지 칼럼에는 기본값을 둔다.
 CREATE TABLE REPORT_TABLE_OPTION (
     TABLE_TYPE       VARCHAR(30) NOT NULL,
     RATE_BAR_VISIBLE BOOLEAN     NOT NULL,
+    RECORD_ORDER     VARCHAR(20) NOT NULL,
     CONSTRAINT PK_REPORT_TABLE_OPTION PRIMARY KEY (TABLE_TYPE)
 );
 

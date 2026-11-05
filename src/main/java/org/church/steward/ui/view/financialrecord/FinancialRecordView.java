@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.swing.BorderFactory;
@@ -33,6 +34,7 @@ import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
 import org.church.steward.domain.fiscalyear.dto.FiscalYearDto;
 import org.church.steward.domain.programsetting.controller.ProgramSettingController;
 import org.church.steward.domain.programsetting.dto.BudgetViewColumnsDto;
+import org.church.steward.domain.programsetting.entity.BudgetViewTable;
 import org.church.steward.infrastructure.annotation.UiView;
 import org.church.steward.ui.MenuActivatable;
 import org.church.steward.ui.component.ComponentSize;
@@ -81,8 +83,11 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     private long searchSequence = 0;
     /** 마지막 추가 다이얼로그에서 확정한 입력값. 아직 추가한 적이 없거나 회계 연도가 바뀌면 null이다. */
     private LastAddInput lastAddInput;
-    /** 설정 메뉴의 프로그램 설정 화면으로 이동하는 동작. 순환 의존을 피하려고 MainView가 넘긴다. */
-    private Runnable columnSettingsAction = () -> {
+    /**
+     * 설정 메뉴의 프로그램 설정 화면으로 이동해 칸 설정 다이얼로그를 띄우는 동작. 인자는 처음에 열어 둘 표다. 순환 의존을 피하려고
+     * MainView가 넘긴다.
+     */
+    private Consumer<BudgetViewTable> columnSettingsAction = _ -> {
     };
 
     /**
@@ -200,19 +205,19 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     }
 
     /**
-     * 설정 메뉴의 프로그램 설정 화면으로 이동하는 동작을 정한다.
+     * 설정 메뉴의 프로그램 설정 화면으로 이동해 예산별 보기의 칸 설정 다이얼로그를 띄우는 동작을 정한다. 동작은 처음에 열어 둘 표를 받는다.
      */
-    public void setColumnSettingsAction(Runnable columnSettingsAction) {
+    public void setColumnSettingsAction(Consumer<BudgetViewTable> columnSettingsAction) {
         this.columnSettingsAction = columnSettingsAction;
     }
 
     @Override
-    public void showColumnSettings() {
+    public void showColumnSettings(BudgetViewTable table) {
         int answer = JOptionPane.showConfirmDialog(this,
-                "예산별 보기의 칸 순서와 숨길 칸은 설정 > 프로그램 설정에서 바꿀 수 있습니다.\n프로그램 설정으로 이동할까요?", "칸 설정",
+                "예산별 보기의 화면 설정은 \"설정 > 프로그램 설정\"에서 변경할 수 있습니다.\n해당 메뉴로 이동할까요?", "칸 설정",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
         if (answer == JOptionPane.OK_OPTION) {
-            columnSettingsAction.run();
+            columnSettingsAction.accept(table);
         }
     }
 

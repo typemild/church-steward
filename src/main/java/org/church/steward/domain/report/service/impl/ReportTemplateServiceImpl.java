@@ -8,6 +8,7 @@ import java.util.Map;
 import org.church.steward.domain.report.dto.ReportApprovalDto;
 import org.church.steward.domain.report.dto.ReportColumnDto;
 import org.church.steward.domain.report.dto.ReportTemplateDto;
+import org.church.steward.domain.report.entity.RecordOrder;
 import org.church.steward.domain.report.entity.ReportApproval;
 import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.domain.report.entity.ReportTableColumn;
@@ -53,14 +54,19 @@ public class ReportTemplateServiceImpl implements ReportTemplateService {
 
         Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, Boolean> rateBarVisible = new EnumMap<>(ReportTemplateTable.class);
+        Map<ReportTemplateTable, RecordOrder> recordOrders = new EnumMap<>(ReportTemplateTable.class);
         for (ReportTemplateTable table : ReportTemplateTable.of(reportType)) {
             tables.put(table, findColumns(table).stream()
                     .map(reportTemplateMapper::toColumnDto)
                     .toList());
-            if (table.hasRateBarOption()) {
-                rateBarVisible.put(table, reportTableOptionRepository.findById(table)
-                        .map(ReportTableOption::isRateBarVisible)
-                        .orElse(ReportTemplateConstraints.DEFAULT_RATE_BAR_VISIBLE));
+            if (table.hasRateBarOption() || table.hasRecordOrderOption()) {
+                ReportTableOption option = findOption(table);
+                if (table.hasRateBarOption()) {
+                    rateBarVisible.put(table, option.isRateBarVisible());
+                }
+                if (table.hasRecordOrderOption()) {
+                    recordOrders.put(table, option.getRecordOrder());
+                }
             }
         }
 
@@ -69,6 +75,7 @@ public class ReportTemplateServiceImpl implements ReportTemplateService {
                 .approval(approval)
                 .tables(tables)
                 .rateBarVisible(rateBarVisible)
+                .recordOrders(recordOrders)
                 .build();
     }
 
@@ -118,6 +125,10 @@ public class ReportTemplateServiceImpl implements ReportTemplateService {
                     .get(table) == null)) {
                 throw new IllegalArgumentException("보고서 양식에 빠진 항목이 있습니다.");
             }
+            if (table.hasRecordOrderOption() && (template.getRecordOrders() == null || template.getRecordOrders()
+                    .get(table) == null)) {
+                throw new IllegalArgumentException("보고서 양식에 빠진 항목이 있습니다.");
+            }
         }
 
         if (titles != null) {
@@ -127,9 +138,8 @@ public class ReportTemplateServiceImpl implements ReportTemplateService {
         for (ReportTemplateTable table : ReportTemplateTable.of(reportType)) {
             saveColumns(table, template.getTables()
                     .get(table));
-            if (table.hasRateBarOption()) {
-                saveOption(table, template.getRateBarVisible()
-                        .get(table));
+            if (table.hasRateBarOption() || table.hasRecordOrderOption()) {
+                saveOption(table, template);
             }
         }
     }
@@ -183,12 +193,24 @@ public class ReportTemplateServiceImpl implements ReportTemplateService {
         reportApprovalRepository.save(approval);
     }
 
-    private void saveOption(ReportTemplateTable table, boolean rateBarVisible) {
-        ReportTableOption option = reportTableOptionRepository.findById(table)
-                .orElseGet(() -> ReportTableOption.builder()
-                        .tableType(table)
-                        .build());
-        option.update(rateBarVisible);
+    /**
+     * 저장된 표 단위 설정. 저장한 적이 없으면 기본 설정이다.
+     */
+    private ReportTableOption findOption(ReportTemplateTable table) {
+        return reportTableOptionRepository.findById(table)
+                .orElseGet(() -> ReportTableOption.defaults(table));
+    }
+
+    /**
+     * 표 단위 설정을 저장한다. 그 표가 정할 수 없는 값은 저장된 값(처음이면 기본값)을 그대로 둔다.
+     */
+    private void saveOption(ReportTemplateTable table, ReportTemplateDto template) {
+        ReportTableOption option = findOption(table);
+        boolean rateBarVisible = table.hasRateBarOption() ? template.getRateBarVisible()
+                .get(table) : option.isRateBarVisible();
+        RecordOrder recordOrder = table.hasRecordOrderOption() ? template.getRecordOrders()
+                .get(table) : option.getRecordOrder();
+        option.update(rateBarVisible, recordOrder);
         reportTableOptionRepository.save(option);
     }
 

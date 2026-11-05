@@ -116,6 +116,11 @@ public enum ReportTemplateTable implements ColumnOrderRule {
     }
 
     @Override
+    public boolean hasRecordOrderOption() {
+        return kind == Kind.RECORDS;
+    }
+
+    @Override
     public String labelOf(ReportColumn column) {
         boolean income = budgetType == BudgetType.INCOME;
         return switch (column) {

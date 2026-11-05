@@ -2,6 +2,7 @@ package org.church.steward.domain.report.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.church.steward.domain.report.entity.RecordOrder;
 import org.church.steward.domain.report.entity.ReportTableOption;
 import org.church.steward.domain.report.entity.ReportTemplateTable;
 import org.junit.jupiter.api.DisplayName;
@@ -38,6 +39,7 @@ class ReportTableOptionRepositoryTest {
             reportTableOptionRepository.save(ReportTableOption.builder()
                     .tableType(ReportTemplateTable.WEEKLY_INCOME_STATUS)
                     .rateBarVisible(false)
+                    .recordOrder(RecordOrder.FIRST_COLUMN)
                     .build());
             entityManager.flush();
             entityManager.clear();
@@ -48,6 +50,26 @@ class ReportTableOptionRepositoryTest {
 
             // Then
             assertThat(found.isRateBarVisible()).isFalse();
+        }
+
+        @Test
+        @DisplayName("저장한 같은 날짜의 순서를 그대로 읽어 온다")
+        void findById_Saved_ReadsRecordOrder() {
+            // Given
+            reportTableOptionRepository.save(ReportTableOption.builder()
+                    .tableType(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS)
+                    .rateBarVisible(true)
+                    .recordOrder(RecordOrder.ENTRY)
+                    .build());
+            entityManager.flush();
+            entityManager.clear();
+
+            // When
+            ReportTableOption found = reportTableOptionRepository.findById(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS)
+                    .orElseThrow();
+
+            // Then
+            assertThat(found.getRecordOrder()).isEqualTo(RecordOrder.ENTRY);
         }
     }
 }

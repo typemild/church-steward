@@ -8,14 +8,17 @@ import java.util.Map;
 
 import org.church.steward.domain.programsetting.dto.BudgetViewColumnsDto;
 import org.church.steward.domain.programsetting.entity.BudgetViewColumn;
+import org.church.steward.domain.programsetting.entity.BudgetViewOption;
 import org.church.steward.domain.programsetting.entity.BudgetViewTable;
 import org.church.steward.domain.programsetting.entity.ProgramSetting;
 import org.church.steward.domain.programsetting.entity.ProgramSettingConstraints;
 import org.church.steward.domain.programsetting.mapper.ProgramSettingMapper;
 import org.church.steward.domain.programsetting.repository.BudgetViewColumnRepository;
+import org.church.steward.domain.programsetting.repository.BudgetViewOptionRepository;
 import org.church.steward.domain.programsetting.repository.ProgramSettingRepository;
 import org.church.steward.domain.programsetting.service.ProgramSettingService;
 import org.church.steward.domain.report.dto.ReportColumnDto;
+import org.church.steward.domain.report.entity.RecordOrder;
 import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.domain.report.service.ColumnOrderValidator;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,7 @@ public class ProgramSettingServiceImpl implements ProgramSettingService {
 
     private final ProgramSettingRepository programSettingRepository;
     private final BudgetViewColumnRepository budgetViewColumnRepository;
+    private final BudgetViewOptionRepository budgetViewOptionRepository;
     private final ProgramSettingMapper programSettingMapper;
 
     @Override
@@ -61,11 +65,16 @@ public class ProgramSettingServiceImpl implements ProgramSettingService {
     @Transactional(readOnly = true)
     public BudgetViewColumnsDto getBudgetViewColumns() {
         Map<BudgetViewTable, List<ReportColumnDto>> tables = new EnumMap<>(BudgetViewTable.class);
+        Map<BudgetViewTable, RecordOrder> recordOrders = new EnumMap<>(BudgetViewTable.class);
         for (BudgetViewTable table : BudgetViewTable.values()) {
             tables.put(table, findColumns(table));
+            recordOrders.put(table, budgetViewOptionRepository.findById(table)
+                    .map(BudgetViewOption::getRecordOrder)
+                    .orElse(ProgramSettingConstraints.DEFAULT_RECORD_ORDER));
         }
         return BudgetViewColumnsDto.builder()
                 .tables(tables)
+                .recordOrders(recordOrders)
                 .build();
     }
 
@@ -92,7 +101,7 @@ public class ProgramSettingServiceImpl implements ProgramSettingService {
 
     @Override
     public void updateBudgetViewColumns(BudgetViewColumnsDto columns) {
-        if (columns == null || columns.getTables() == null) {
+        if (columns == null || columns.getTables() == null || columns.getRecordOrders() == null) {
             throw new IllegalArgumentException("예산별 보기의 칸 설정에 빠진 항목이 있습니다.");
         }
 
@@ -100,7 +109,8 @@ public class ProgramSettingServiceImpl implements ProgramSettingService {
         for (BudgetViewTable table : BudgetViewTable.values()) {
             List<ReportColumnDto> tableColumns = columns.getTables()
                     .get(table);
-            if (ColumnOrderValidator.hasMissing(tableColumns)) {
+            if (ColumnOrderValidator.hasMissing(tableColumns) || columns.getRecordOrders()
+                    .get(table) == null) {
                 throw new IllegalArgumentException("예산별 보기의 칸 설정에 빠진 항목이 있습니다.");
             }
             String error = ColumnOrderValidator.findError(table, tableColumns);
@@ -112,7 +122,18 @@ public class ProgramSettingServiceImpl implements ProgramSettingService {
         for (BudgetViewTable table : BudgetViewTable.values()) {
             saveColumns(table, columns.getTables()
                     .get(table));
+            saveOption(table, columns.getRecordOrders()
+                    .get(table));
         }
+    }
+
+    private void saveOption(BudgetViewTable table, RecordOrder recordOrder) {
+        BudgetViewOption option = budgetViewOptionRepository.findById(table)
+                .orElseGet(() -> BudgetViewOption.builder()
+                        .tableType(table)
+                        .build());
+        option.update(recordOrder);
+        budgetViewOptionRepository.save(option);
     }
 
     /**

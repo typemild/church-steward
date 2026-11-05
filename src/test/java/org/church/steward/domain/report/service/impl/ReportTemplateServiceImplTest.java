@@ -20,6 +20,7 @@ import java.util.Set;
 import org.church.steward.domain.report.dto.ReportApprovalDto;
 import org.church.steward.domain.report.dto.ReportColumnDto;
 import org.church.steward.domain.report.dto.ReportTemplateDto;
+import org.church.steward.domain.report.entity.RecordOrder;
 import org.church.steward.domain.report.entity.ReportApproval;
 import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.domain.report.entity.ReportTableColumn;
@@ -85,7 +86,7 @@ class ReportTemplateServiceImplTest {
     }
 
     /**
-     * 주간 회계 결산 보고서의 양식. 주어진 표 말고는 기본 순서이고 현황 표의 막대는 보인다.
+     * 주간 회계 결산 보고서의 양식. 주어진 표 말고는 기본 순서이고 현황 표의 막대는 보이며, 내역 표의 같은 날짜의 순서는 가나다순이다.
      */
     private static ReportTemplateDto createTemplate(ReportApprovalDto approval,
             Map<ReportTemplateTable, List<ReportColumnDto>> overrides) {
@@ -97,12 +98,26 @@ class ReportTemplateServiceImplTest {
      */
     private static ReportTemplateDto createTemplate(ReportApprovalDto approval,
             Map<ReportTemplateTable, List<ReportColumnDto>> overrides, boolean rateBarVisible) {
+        return createTemplate(approval, overrides, rateBarVisible, RecordOrder.FIRST_COLUMN);
+    }
+
+    /**
+     * @param rateBarVisible 모든 현황 표의 비율 칸 왼쪽에 막대를 함께 그리는지 여부
+     * @param recordOrder    모든 내역 표의 같은 날짜의 순서
+     */
+    private static ReportTemplateDto createTemplate(ReportApprovalDto approval,
+            Map<ReportTemplateTable, List<ReportColumnDto>> overrides, boolean rateBarVisible,
+            RecordOrder recordOrder) {
         Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, Boolean> rateBars = new EnumMap<>(ReportTemplateTable.class);
+        Map<ReportTemplateTable, RecordOrder> recordOrders = new EnumMap<>(ReportTemplateTable.class);
         for (ReportTemplateTable table : ReportTemplateTable.of(ReportType.WEEKLY_SETTLEMENT)) {
             tables.put(table, overrides.getOrDefault(table, createColumns(table.getDefaultColumns())));
             if (table.hasRateBarOption()) {
                 rateBars.put(table, rateBarVisible);
+            }
+            if (table.hasRecordOrderOption()) {
+                recordOrders.put(table, recordOrder);
             }
         }
         return ReportTemplateDto.builder()
@@ -110,6 +125,7 @@ class ReportTemplateServiceImplTest {
                 .approval(approval)
                 .tables(tables)
                 .rateBarVisible(rateBars)
+                .recordOrders(recordOrders)
                 .build();
     }
 
@@ -392,6 +408,50 @@ class ReportTemplateServiceImplTest {
         }
 
         @Test
+        @DisplayName("저장한 적이 없으면 내역 표의 같은 날짜의 순서는 첫 번째 칸의 가나다순이고, 현황 표에는 순서 설정이 없다")
+        void getReportTemplate_NotSaved_ReturnsFirstColumnOrderOnRecordsTables() {
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.WEEKLY_SETTLEMENT);
+
+            // Then
+            assertThat(actual.getRecordOrders()).containsOnly(
+                    entry(ReportTemplateTable.WEEKLY_INCOME_RECORDS, RecordOrder.FIRST_COLUMN),
+                    entry(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS, RecordOrder.FIRST_COLUMN));
+        }
+
+        @Test
+        @DisplayName("저장된 같은 날짜의 순서가 있으면 그 값을 반환한다")
+        void getReportTemplate_SavedRecordOrder_ReturnsSaved() {
+            // Given
+            when(reportTableOptionRepository.findById(any()))
+                    .thenAnswer(invocation -> invocation.getArgument(0) == ReportTemplateTable.WEEKLY_INCOME_RECORDS
+                            ? Optional.of(ReportTableOption.builder()
+                                    .tableType(ReportTemplateTable.WEEKLY_INCOME_RECORDS)
+                                    .rateBarVisible(true)
+                                    .recordOrder(RecordOrder.ENTRY)
+                                    .build())
+                            : Optional.empty());
+
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.WEEKLY_SETTLEMENT);
+
+            // Then
+            assertThat(actual.getRecordOrders()).containsOnly(
+                    entry(ReportTemplateTable.WEEKLY_INCOME_RECORDS, RecordOrder.ENTRY),
+                    entry(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS, RecordOrder.FIRST_COLUMN));
+        }
+
+        @Test
+        @DisplayName("주간 보고서가 아니면 같은 날짜의 순서 설정이 없다")
+        void getReportTemplate_BudgetPlan_HasNoRecordOrderOption() {
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.BUDGET_PLAN);
+
+            // Then
+            assertThat(actual.getRecordOrders()).isEmpty();
+        }
+
+        @Test
         @DisplayName("저장된 막대 설정이 있으면 그 값을 반환한다")
         void getReportTemplate_SavedRateBar_ReturnsSaved() {
             // Given
@@ -428,11 +488,74 @@ class ReportTemplateServiceImplTest {
             reportTemplateService.updateReportTemplate(template);
 
             // Then
-            verify(reportTableOptionRepository, times(2)).save(captor.capture());
-            assertThat(captor.getAllValues()).extracting(ReportTableOption::getTableType,
-                    ReportTableOption::isRateBarVisible)
+            verify(reportTableOptionRepository, times(4)).save(captor.capture());
+            assertThat(captor.getAllValues()).filteredOn(option -> option.getTableType()
+                    .hasRateBarOption())
+                    .extracting(ReportTableOption::getTableType, ReportTableOption::isRateBarVisible)
                     .containsExactly(tuple(ReportTemplateTable.WEEKLY_INCOME_STATUS, false),
                             tuple(ReportTemplateTable.WEEKLY_EXPENSE_STATUS, false));
+        }
+
+        @Test
+        @DisplayName("내역 표마다 같은 날짜의 순서를 저장한다")
+        void updateReportTemplate_RecordOrder_SavesOptionPerRecordsTable() {
+            // Given
+            ReportTemplateDto template = createTemplate(createApproval(true, null, null, null), Map.of(), true,
+                    RecordOrder.ENTRY);
+            ArgumentCaptor<ReportTableOption> captor = ArgumentCaptor.forClass(ReportTableOption.class);
+
+            // When
+            reportTemplateService.updateReportTemplate(template);
+
+            // Then
+            verify(reportTableOptionRepository, times(4)).save(captor.capture());
+            assertThat(captor.getAllValues()).filteredOn(option -> option.getTableType()
+                    .hasRecordOrderOption())
+                    .extracting(ReportTableOption::getTableType, ReportTableOption::getRecordOrder)
+                    .containsExactly(tuple(ReportTemplateTable.WEEKLY_INCOME_RECORDS, RecordOrder.ENTRY),
+                            tuple(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS, RecordOrder.ENTRY));
+        }
+
+        @Test
+        @DisplayName("현황 표의 설정을 처음 저장하면 같은 날짜의 순서에는 기본값을 둔다")
+        void updateReportTemplate_NewStatusOption_KeepsDefaultRecordOrder() {
+            // Given
+            ReportTemplateDto template = createTemplate(createApproval(true, null, null, null), Map.of(), false,
+                    RecordOrder.ENTRY);
+            ArgumentCaptor<ReportTableOption> captor = ArgumentCaptor.forClass(ReportTableOption.class);
+
+            // When
+            reportTemplateService.updateReportTemplate(template);
+
+            // Then
+            verify(reportTableOptionRepository, times(4)).save(captor.capture());
+            assertThat(captor.getAllValues()).filteredOn(option -> option.getTableType()
+                    .hasRateBarOption())
+                    .extracting(ReportTableOption::getRecordOrder)
+                    .containsOnly(RecordOrder.FIRST_COLUMN);
+        }
+
+        @Test
+        @DisplayName("내역 표의 같은 날짜의 순서가 빠져 있으면 예외를 던진다")
+        void updateReportTemplate_MissingRecordOrder_ThrowsException() {
+            // Given
+            Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
+            for (ReportTemplateTable table : ReportTemplateTable.of(ReportType.WEEKLY_SETTLEMENT)) {
+                tables.put(table, createColumns(table.getDefaultColumns()));
+            }
+            ReportTemplateDto template = ReportTemplateDto.builder()
+                    .reportType(ReportType.WEEKLY_SETTLEMENT)
+                    .approval(createApproval(true, null, null, null))
+                    .tables(tables)
+                    .rateBarVisible(Map.of(ReportTemplateTable.WEEKLY_INCOME_STATUS, true,
+                            ReportTemplateTable.WEEKLY_EXPENSE_STATUS, true))
+                    .recordOrders(Map.of(ReportTemplateTable.WEEKLY_INCOME_RECORDS, RecordOrder.ENTRY))
+                    .build();
+
+            // When & Then
+            assertThatThrownBy(() -> reportTemplateService.updateReportTemplate(template))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("보고서 양식에 빠진 항목이 있습니다.");
         }
 
         @Test
@@ -448,6 +571,8 @@ class ReportTemplateServiceImplTest {
                     .approval(createApproval(true, null, null, null))
                     .tables(tables)
                     .rateBarVisible(Map.of(ReportTemplateTable.WEEKLY_INCOME_STATUS, true))
+                    .recordOrders(Map.of(ReportTemplateTable.WEEKLY_INCOME_RECORDS, RecordOrder.FIRST_COLUMN,
+                            ReportTemplateTable.WEEKLY_EXPENSE_RECORDS, RecordOrder.FIRST_COLUMN))
                     .build();
 
             // When & Then

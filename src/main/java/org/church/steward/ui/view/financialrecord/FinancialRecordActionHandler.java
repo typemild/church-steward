@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
+import org.church.steward.domain.programsetting.entity.BudgetViewTable;
 
 /**
  * 탭의 일괄 변경/추가/수정/삭제/상세 보기 버튼이 요청하는 동작을 처리하는 역할
@@ -49,7 +50,9 @@ public interface FinancialRecordActionHandler {
     void viewRecord(FinancialRecordResponseDto record);
 
     /**
-     * 예산별 보기의 칸 설정이 프로그램 설정에 있음을 알리고, 확인하면 그 화면으로 이동한다.
+     * 예산별 보기의 칸 설정이 프로그램 설정에 있음을 알리고, 확인하면 그 화면으로 이동해 칸 설정 다이얼로그를 띄운다.
+     *
+     * @param table 설정 버튼을 누른 표. 다이얼로그는 이 표의 탭을 연 채로 뜬다.
      */
-    void showColumnSettings();
+    void showColumnSettings(BudgetViewTable table);
 }

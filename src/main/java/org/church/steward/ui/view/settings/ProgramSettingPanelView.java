@@ -16,6 +16,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import org.church.steward.domain.programsetting.controller.ProgramSettingController;
+import org.church.steward.domain.programsetting.entity.BudgetViewTable;
 import org.church.steward.infrastructure.annotation.UiView;
 import org.church.steward.ui.MenuActivatable;
 import org.church.steward.ui.component.ComponentSize;
@@ -107,26 +108,30 @@ public class ProgramSettingPanelView extends JPanel implements MenuActivatable {
         card.addRow("주간 결산 요일", weeklyClosingDayControl,
                 "본 설정은 수입/지출 관리의 조회 기간(주간)과 주간 회계 결산 보고서의 조회 기간에 적용됩니다.",
                 "주일에 결산하시는 경우 일요일로 지정하시면, 전주 월요일부터 주일까지가 조회 기간이 됩니다.");
-        card.addRow("예산별 보기 칸", budgetViewColumnsControl,
-                "수입/지출 관리의 예산별 보기에서 수입과 지출 내역의 칸 순서와 숨길 칸을 정합니다.",
+        card.addRow("예산별 보기", budgetViewColumnsControl,
+                "수입/지출 관리의 예산별 보기에서 수입과 지출 내역의 칸 순서와 숨길 칸, 정렬 순서를 정합니다.",
                 "처음에는 주간 회계 결산 보고서의 주간 내역과 같은 순서이며, 보고서 양식과는 따로 저장됩니다.");
 
         // 카드는 위쪽에 붙이고 남는 높이는 비워 둔다.
         add(card, BorderLayout.NORTH);
 
         weeklyClosingDayCombo.addActionListener(_ -> onWeeklyClosingDaySelected());
-        budgetViewColumnsButton.addActionListener(_ -> openBudgetViewColumnDialog());
+        budgetViewColumnsButton.addActionListener(_ -> openBudgetViewColumnDialog(BudgetViewTable.INCOME));
     }
 
     /**
-     * 지금 저장된 칸 설정을 읽어 칸 설정 다이얼로그를 띄운다. 이 화면은 칸 설정을 보관하지 않으므로 띄울 때마다 읽는다.
+     * 지금 저장된 칸 설정을 읽어 칸 설정 다이얼로그를 띄운다. 이 화면은 칸 설정을 보관하지 않으므로 띄울 때마다 읽는다. 수입/지출 관리의
+     * 예산별 보기에서 이 화면으로 옮겨 올 때도 바로
+     * 띄운다({@link SettingsView#showBudgetViewColumnDialog}).
+     *
+     * @param table 처음에 열어 둘 표의 탭
      */
-    private void openBudgetViewColumnDialog() {
+    void openBudgetViewColumnDialog(BudgetViewTable table) {
         AsyncTask.run(budgetViewColumnsButton,
                 programSettingController::getBudgetViewColumns,
                 columns -> {
                     BudgetViewColumnDialog dialog = new BudgetViewColumnDialog(SwingUtilities.getWindowAncestor(this),
-                            columns, programSettingController::updateBudgetViewColumns,
+                            columns, table, programSettingController::updateBudgetViewColumns,
                             budgetViewColumnsSavedIndicator::showSuccess);
                     dialog.setVisible(true);
                 },

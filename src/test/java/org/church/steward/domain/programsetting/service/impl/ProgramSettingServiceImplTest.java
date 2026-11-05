@@ -18,13 +18,16 @@ import java.util.Set;
 
 import org.church.steward.domain.programsetting.dto.BudgetViewColumnsDto;
 import org.church.steward.domain.programsetting.entity.BudgetViewColumn;
+import org.church.steward.domain.programsetting.entity.BudgetViewOption;
 import org.church.steward.domain.programsetting.entity.BudgetViewTable;
 import org.church.steward.domain.programsetting.entity.ProgramSetting;
 import org.church.steward.domain.programsetting.entity.ProgramSettingConstraints;
 import org.church.steward.domain.programsetting.mapper.ProgramSettingMapper;
 import org.church.steward.domain.programsetting.repository.BudgetViewColumnRepository;
+import org.church.steward.domain.programsetting.repository.BudgetViewOptionRepository;
 import org.church.steward.domain.programsetting.repository.ProgramSettingRepository;
 import org.church.steward.domain.report.dto.ReportColumnDto;
+import org.church.steward.domain.report.entity.RecordOrder;
 import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.domain.report.entity.ReportTemplateTable;
 import org.junit.jupiter.api.DisplayName;
@@ -46,6 +49,9 @@ class ProgramSettingServiceImplTest {
 
     @Mock
     private BudgetViewColumnRepository budgetViewColumnRepository;
+
+    @Mock
+    private BudgetViewOptionRepository budgetViewOptionRepository;
 
     @Spy
     private ProgramSettingMapper programSettingMapper = new ProgramSettingMapper();
@@ -79,7 +85,7 @@ class ProgramSettingServiceImplTest {
     }
 
     /**
-     * 예산별 보기의 칸 설정. 주어진 표 말고는 기본 순서다.
+     * 예산별 보기의 칸 설정. 주어진 표 말고는 기본 순서이고, 같은 날짜의 순서는 모두 가나다순이다.
      */
     private static BudgetViewColumnsDto createBudgetViewColumns(BudgetViewTable table,
             List<ReportColumnDto> columns) {
@@ -89,6 +95,40 @@ class ProgramSettingServiceImplTest {
         }
         return BudgetViewColumnsDto.builder()
                 .tables(tables)
+                .recordOrders(createRecordOrders(BudgetViewTable.INCOME, RecordOrder.FIRST_COLUMN))
+                .build();
+    }
+
+    /**
+     * 같은 날짜의 순서. 주어진 표 말고는 가나다순이다.
+     */
+    private static Map<BudgetViewTable, RecordOrder> createRecordOrders(BudgetViewTable table,
+            RecordOrder recordOrder) {
+        Map<BudgetViewTable, RecordOrder> recordOrders = new EnumMap<>(BudgetViewTable.class);
+        for (BudgetViewTable each : BudgetViewTable.values()) {
+            recordOrders.put(each, each == table ? recordOrder : RecordOrder.FIRST_COLUMN);
+        }
+        return recordOrders;
+    }
+
+    /**
+     * 칸은 모두 기본 순서이고 같은 날짜의 순서만 주어진 대로인 예산별 보기의 칸 설정
+     */
+    private static BudgetViewColumnsDto createBudgetViewColumns(Map<BudgetViewTable, RecordOrder> recordOrders) {
+        Map<BudgetViewTable, List<ReportColumnDto>> tables = new EnumMap<>(BudgetViewTable.class);
+        for (BudgetViewTable each : BudgetViewTable.values()) {
+            tables.put(each, createColumns(each.getDefaultColumns()));
+        }
+        return BudgetViewColumnsDto.builder()
+                .tables(tables)
+                .recordOrders(recordOrders)
+                .build();
+    }
+
+    private static BudgetViewOption createSavedOption(BudgetViewTable table, RecordOrder recordOrder) {
+        return BudgetViewOption.builder()
+                .tableType(table)
+                .recordOrder(recordOrder)
                 .build();
     }
 
@@ -287,6 +327,45 @@ class ProgramSettingServiceImplTest {
             // Then
             verify(budgetViewColumnRepository, never()).saveAll(any());
         }
+
+        @Test
+        @DisplayName("같은 날짜의 순서를 저장한 적이 없으면 두 표 모두 기본값인 첫 번째 칸의 가나다순이다")
+        void getBudgetViewColumns_RecordOrderNotSaved_ReturnsFirstColumn() {
+            // When
+            BudgetViewColumnsDto actual = programSettingService.getBudgetViewColumns();
+
+            // Then
+            assertThat(actual.getRecordOrders()).containsOnly(
+                    Map.entry(BudgetViewTable.INCOME, RecordOrder.FIRST_COLUMN),
+                    Map.entry(BudgetViewTable.EXPENSE, RecordOrder.FIRST_COLUMN));
+        }
+
+        @Test
+        @DisplayName("같은 날짜의 순서를 저장한 표는 저장된 순서를 반환한다")
+        void getBudgetViewColumns_RecordOrderSaved_ReturnsSaved() {
+            // Given
+            when(budgetViewOptionRepository.findById(BudgetViewTable.INCOME)).thenReturn(Optional.empty());
+            when(budgetViewOptionRepository.findById(BudgetViewTable.EXPENSE))
+                    .thenReturn(Optional.of(createSavedOption(BudgetViewTable.EXPENSE, RecordOrder.ENTRY)));
+
+            // When
+            BudgetViewColumnsDto actual = programSettingService.getBudgetViewColumns();
+
+            // Then
+            assertThat(actual.getRecordOrders()).containsOnly(
+                    Map.entry(BudgetViewTable.INCOME, RecordOrder.FIRST_COLUMN),
+                    Map.entry(BudgetViewTable.EXPENSE, RecordOrder.ENTRY));
+        }
+
+        @Test
+        @DisplayName("같은 날짜의 순서를 저장한 적이 없어도 기본값을 저장하지는 않는다")
+        void getBudgetViewColumns_RecordOrderNotSaved_DoesNotSave() {
+            // When
+            programSettingService.getBudgetViewColumns();
+
+            // Then
+            verify(budgetViewOptionRepository, never()).save(any());
+        }
     }
 
     @Nested
@@ -375,12 +454,80 @@ class ProgramSettingServiceImplTest {
             BudgetViewColumnsDto columns = BudgetViewColumnsDto.builder()
                     .tables(Map.of(BudgetViewTable.INCOME,
                             createColumns(BudgetViewTable.INCOME.getDefaultColumns())))
+                    .recordOrders(createRecordOrders(BudgetViewTable.INCOME, RecordOrder.FIRST_COLUMN))
                     .build();
 
             // When & Then
             assertThatThrownBy(() -> programSettingService.updateBudgetViewColumns(columns))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("예산별 보기의 칸 설정에 빠진 항목이 있습니다.");
+        }
+
+        @Test
+        @DisplayName("같은 날짜의 순서가 빠진 표가 있으면 예외를 던진다")
+        void updateBudgetViewColumns_MissingRecordOrder_ThrowsException() {
+            // Given
+            BudgetViewColumnsDto columns = createBudgetViewColumns(
+                    Map.of(BudgetViewTable.INCOME, RecordOrder.ENTRY));
+
+            // When & Then
+            assertThatThrownBy(() -> programSettingService.updateBudgetViewColumns(columns))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("예산별 보기의 칸 설정에 빠진 항목이 있습니다.");
+        }
+
+        @Test
+        @DisplayName("같은 날짜의 순서가 빠진 표가 있으면 같은 날짜의 순서를 저장하지 않는다")
+        void updateBudgetViewColumns_MissingRecordOrder_DoesNotSaveOption() {
+            // Given
+            BudgetViewColumnsDto columns = createBudgetViewColumns(
+                    Map.of(BudgetViewTable.INCOME, RecordOrder.ENTRY));
+
+            // When
+            assertThatThrownBy(() -> programSettingService.updateBudgetViewColumns(columns))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            // Then
+            verify(budgetViewOptionRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("표마다 같은 날짜의 순서를 저장한다")
+        void updateBudgetViewColumns_RecordOrders_SavesEachTable() {
+            // Given
+            BudgetViewColumnsDto columns = createBudgetViewColumns(
+                    createRecordOrders(BudgetViewTable.INCOME, RecordOrder.ENTRY));
+            ArgumentCaptor<BudgetViewOption> captor = ArgumentCaptor.forClass(BudgetViewOption.class);
+
+            // When
+            programSettingService.updateBudgetViewColumns(columns);
+
+            // Then
+            verify(budgetViewOptionRepository, times(2)).save(captor.capture());
+            assertThat(captor.getAllValues()).extracting(BudgetViewOption::getTableType,
+                    BudgetViewOption::getRecordOrder)
+                    .containsExactlyInAnyOrder(tuple(BudgetViewTable.INCOME, RecordOrder.ENTRY),
+                            tuple(BudgetViewTable.EXPENSE, RecordOrder.FIRST_COLUMN));
+        }
+
+        @Test
+        @DisplayName("같은 날짜의 순서를 저장한 표는 저장된 행을 고쳐 저장한다")
+        void updateBudgetViewColumns_ExistingOption_UpdatesSavedRow() {
+            // Given
+            BudgetViewOption saved = createSavedOption(BudgetViewTable.EXPENSE, RecordOrder.FIRST_COLUMN);
+            when(budgetViewOptionRepository.findById(BudgetViewTable.INCOME)).thenReturn(Optional.empty());
+            when(budgetViewOptionRepository.findById(BudgetViewTable.EXPENSE)).thenReturn(Optional.of(saved));
+            BudgetViewColumnsDto columns = createBudgetViewColumns(
+                    createRecordOrders(BudgetViewTable.EXPENSE, RecordOrder.ENTRY));
+            ArgumentCaptor<BudgetViewOption> captor = ArgumentCaptor.forClass(BudgetViewOption.class);
+
+            // When
+            programSettingService.updateBudgetViewColumns(columns);
+
+            // Then
+            verify(budgetViewOptionRepository, times(2)).save(captor.capture());
+            assertThat(captor.getAllValues()).contains(saved);
+            assertThat(saved.getRecordOrder()).isEqualTo(RecordOrder.ENTRY);
         }
 
         @Test

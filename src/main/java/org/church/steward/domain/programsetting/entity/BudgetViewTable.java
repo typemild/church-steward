@@ -57,6 +57,11 @@ public enum BudgetViewTable implements ColumnOrderRule {
     }
 
     @Override
+    public boolean hasRecordOrderOption() {
+        return true;
+    }
+
+    @Override
     public String labelOf(ReportColumn column) {
         return switch (column) {
         case CONTACT -> recordType == FinancialRecordType.INCOME ? "봉헌자" : "수취인";

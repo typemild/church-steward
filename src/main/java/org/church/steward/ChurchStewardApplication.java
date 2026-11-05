@@ -9,6 +9,7 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 import javax.swing.JOptionPane;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
 import org.church.steward.domain.backup.service.BackupService;
@@ -88,11 +89,13 @@ public class ChurchStewardApplication {
         }
         // 포커스 색을 프로그램의 Primary 색으로 맞춘다. setup() 전에 지정해야 이 값을 참조하는 다른 색에도 반영된다.
         // 텍스트 입력란은 FlatLaf 기본값(TextComponent.arc = 0)이 네모난 모서리라, 콤보박스와 같은 둥글기로 맞춘다.
+        // 메시지 창의 버튼은 FlatLaf 기본값(오른쪽)이 아니라 프로그램의 다이얼로그처럼 가운데에 둔다. 값은 문자열로 넘겨야 한다.
         String focusColor = String.format("#%06X", UIColors.PRIMARY_BACKGROUND.getRGB() & 0xFFFFFF);
         FlatLaf.setGlobalExtraDefaults(Map.of(
                 "Component.focusedBorderColor", focusColor,
                 "Component.focusColor", focusColor,
-                "TextComponent.arc", "$Component.arc"));
+                "TextComponent.arc", "$Component.arc",
+                "OptionPane.buttonOrientation", String.valueOf(SwingConstants.CENTER)));
         FlatLightLaf.setup();
         AppIcons.install();
 
