@@ -17,9 +17,21 @@ public interface BudgetService {
      */
     List<BudgetDto> getBudgetsWithActualAmount(Long fiscalYearId, BudgetType type);
 
-    void createBudget(Long fiscalYearId, Long parentId, String name, long amount, BudgetType type);
+    /**
+     * 회계 연도에 예산이 하나도 등록되지 않은 구분을 {@link BudgetType} 선언 순서(수입, 지출)대로 조회한다. 예산이 없는
+     * 구분은 수입/지출을 입력할 수 없으므로 화면이 예산 등록을 안내하는 데 쓴다.
+     */
+    List<BudgetType> getMissingBudgetTypes(Long fiscalYearId);
 
-    void updateBudget(Long id, String newName, long newAmount);
+    /**
+     * @param remarks 비고. 비어 있으면 null로 저장한다.
+     */
+    void createBudget(Long fiscalYearId, Long parentId, String name, long amount, String remarks, BudgetType type);
+
+    /**
+     * @param newRemarks 비고. 비어 있으면 null로 저장한다.
+     */
+    void updateBudget(Long id, String newName, long newAmount, String newRemarks);
 
     /**
      * 활동 기록을 남기지 않고 예산을 추가한다. 검증은 {@link #createBudget}과 같다. 여러 예산을 한꺼번에 처리하고 활동
@@ -27,7 +39,8 @@ public interface BudgetService {
      *
      * @return 추가된 예산
      */
-    Budget createBudgetWithoutLog(Long fiscalYearId, Long parentId, String name, long amount, BudgetType type);
+    Budget createBudgetWithoutLog(Long fiscalYearId, Long parentId, String name, long amount, String remarks,
+            BudgetType type);
 
     /**
      * 활동 기록을 남기지 않고 예산을 수정한다. 검증은 {@link #updateBudget}과 같다. 여러 예산을 한꺼번에 처리하고 활동
@@ -35,7 +48,7 @@ public interface BudgetService {
      *
      * @return 수정된 예산
      */
-    Budget updateBudgetWithoutLog(Long id, String newName, long newAmount);
+    Budget updateBudgetWithoutLog(Long id, String newName, long newAmount, String newRemarks);
 
     void deleteBudget(Long id);
 

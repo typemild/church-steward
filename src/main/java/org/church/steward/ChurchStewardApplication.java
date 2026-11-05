@@ -4,16 +4,17 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
 
 import javax.sql.DataSource;
 import javax.swing.JOptionPane;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
 import org.church.steward.domain.backup.service.BackupService;
 import org.church.steward.domain.fiscalyear.service.FiscalYearService;
+import org.church.steward.domain.programsetting.service.ProgramSettingService;
 import org.church.steward.domain.user.service.UserService;
 import org.church.steward.infrastructure.backup.BackupManager;
 import org.church.steward.infrastructure.backup.BackupManifest;
@@ -22,8 +23,8 @@ import org.church.steward.infrastructure.config.AppSettingManager;
 import org.church.steward.infrastructure.config.DatabaseManager;
 import org.church.steward.ui.util.AppIcons;
 import org.church.steward.ui.util.UIColors;
-import org.church.steward.ui.view.login.DatabaseInitView;
 import org.church.steward.ui.view.login.DatabaseRestoreView;
+import org.church.steward.ui.view.login.InitialSetupView;
 import org.church.steward.ui.view.login.LoginView;
 import org.church.steward.ui.view.main.MainView;
 import org.church.steward.util.ProgramVersion;
@@ -87,10 +88,14 @@ public class ChurchStewardApplication {
             System.setProperty("flatlaf.useRoundedPopupBorder", "false");
         }
         // 포커스 색을 프로그램의 Primary 색으로 맞춘다. setup() 전에 지정해야 이 값을 참조하는 다른 색에도 반영된다.
+        // 텍스트 입력란은 FlatLaf 기본값(TextComponent.arc = 0)이 네모난 모서리라, 콤보박스와 같은 둥글기로 맞춘다.
+        // 메시지 창의 버튼은 FlatLaf 기본값(오른쪽)이 아니라 프로그램의 다이얼로그처럼 가운데에 둔다. 값은 문자열로 넘겨야 한다.
         String focusColor = String.format("#%06X", UIColors.PRIMARY_BACKGROUND.getRGB() & 0xFFFFFF);
         FlatLaf.setGlobalExtraDefaults(Map.of(
                 "Component.focusedBorderColor", focusColor,
-                "Component.focusColor", focusColor));
+                "Component.focusColor", focusColor,
+                "TextComponent.arc", "$Component.arc",
+                "OptionPane.buttonOrientation", String.valueOf(SwingConstants.CENTER)));
         FlatLightLaf.setup();
         AppIcons.install();
 
@@ -125,31 +130,34 @@ public class ChurchStewardApplication {
     private static void runDatabaseInitialization(String[] args)
             throws InvocationTargetException, InterruptedException {
         SwingUtilities.invokeAndWait(() -> {
-            DatabaseInitView initView = new DatabaseInitView();
-            // 관리자 계정을 만드는 대신 백업에서 복원할 수도 있다.
-            initView.setRestoreAction(() -> new DatabaseRestoreView(initView, backupManager, restoreAction(args))
-                    .showRestoreDialog(null));
-            boolean success = initView.showInitDialog((adminId, adminPassword) -> {
+            // 새로 시작하는 대신 백업에서 복원할 수도 있다.
+            InitialSetupView setupView = new InitialSetupView(backupManager, restoreAction(args));
+            boolean success = setupView.showSetupDialog(input -> {
                 try {
-                    databaseManager.initialize(adminId, adminPassword);
+                    databaseManager.initialize(input.adminId(), input.adminPassword());
                 } catch (SQLException e) {
                     throw new IllegalStateException(e.getMessage(), e);
                 }
 
                 // 초기 정보 생성하기 위해서 스프링 부트를 시작하고 작업 완료 후 중지한다. 스키마는 initialize가 이미 만들었다.
+                // 입력값은 화면이 미리 검증했다. DB 파일을 만든 뒤에 실패하면 되돌릴 수 없기 때문이다.
                 try (ConfigurableApplicationContext context = SpringApplication.run(ChurchStewardApplication.class,
                         args)) {
                     // 관리자 계정 생성
                     UserService userService = context.getBean(UserService.class);
-                    userService.createAdmin(adminId, adminPassword, "초기 관리자 계정 생성");
+                    userService.createAdmin(input.adminId(), input.adminPassword(), "초기 관리자 계정 생성");
 
-                    // 회계 연도 생성 (이름은 "2026년" 형식, 기간은 올해 1월 1일 ~ 12월 31일이며, 회계 연도 관리에서 바꿀 수 있다)
-                    FiscalYearService fiscalYearService = context.getBean(FiscalYearService.class);
-                    int year = LocalDate.now().getYear();
-                    String fiscalYearName = year + "년";
-                    fiscalYearService.createFiscalYear(fiscalYearName, LocalDate.of(year, 1, 1),
-                            LocalDate.of(year, 12, 31));
-                    log.info("Database initialized. Admin: {}, first fiscal year: {}", adminId, fiscalYearName);
+                    // 주간 결산 요일 저장. 기본값(일요일)이어도 저장해, 설정 행이 없는 것은 과거 버전의 데이터뿐이게 한다.
+                    context.getBean(ProgramSettingService.class)
+                            .updateWeeklyClosingDay(input.weeklyClosingDay());
+
+                    // 첫 회계 연도 생성 (회계 연도 관리에서 바꾸거나 추가할 수 있다)
+                    context.getBean(FiscalYearService.class)
+                            .createFiscalYear(input.fiscalYearName(), input.fiscalYearStartDate(),
+                                    input.fiscalYearEndDate());
+                    log.info("Database initialized. Admin: {}, weekly closing day: {}, first fiscal year: {} ({} ~ {})",
+                            input.adminId(), input.weeklyClosingDay(), input.fiscalYearName(),
+                            input.fiscalYearStartDate(), input.fiscalYearEndDate());
                 }
             });
 

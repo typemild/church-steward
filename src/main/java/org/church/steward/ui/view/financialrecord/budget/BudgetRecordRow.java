@@ -3,6 +3,7 @@ package org.church.steward.ui.view.financialrecord.budget;
 import java.time.format.DateTimeFormatter;
 
 import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
+import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.ui.view.financialrecord.FinancialRecordFormats;
 
 import lombok.Getter;
@@ -50,15 +51,20 @@ public class BudgetRecordRow {
     }
 
     /**
-     * 첫 번째 컬럼에 표시할 텍스트를 반환한다. 예산 행은 전체 예산명, 내역 행은 "[4/7] 홍길동"과 같이 날짜와 관계자명이다.
+     * 첫 번째 컬럼에 표시할 텍스트를 반환한다. 예산 행은 전체 예산명, 내역 행은 "[4/7] 홍길동"이나 "[4/7] 주일헌금"과 같이
+     * 날짜와 첫 번째 칸의 값이다.
+     *
+     * @param firstColumn 첫 번째 칸. 관계자({@link ReportColumn#CONTACT}) 또는
+     *                    내용({@link ReportColumn#DESCRIPTION})이다.
      */
-    public String getDisplayName() {
+    public String getDisplayName(ReportColumn firstColumn) {
         if (isBudgetRow()) {
             return budgetName;
         }
         String date = "[" + record.getDate()
                 .format(DATE_FORMAT) + "]";
-        String names = FinancialRecordFormats.joinNames(record.getContactNames());
-        return names.isEmpty() ? date : date + " " + names;
+        String value = firstColumn == ReportColumn.DESCRIPTION ? record.getDescription()
+                : FinancialRecordFormats.joinNames(record.getContactNames());
+        return value == null || value.isEmpty() ? date : date + " " + value;
     }
 }

@@ -22,16 +22,19 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.fiscalyear.dto.FiscalYearDto;
+import org.church.steward.domain.programsetting.controller.ProgramSettingController;
 import org.church.steward.domain.report.controller.ReportController;
 import org.church.steward.domain.report.dto.AnnualSettlementReportDto;
 import org.church.steward.domain.report.dto.BudgetPlanReportDto;
 import org.church.steward.domain.report.dto.ReportOutputType;
 import org.church.steward.domain.report.dto.ReportSettingDto;
+import org.church.steward.domain.report.dto.ReportTemplateDto;
 import org.church.steward.domain.report.dto.SettlementDetailReportDto;
 import org.church.steward.domain.report.dto.WeeklySettlementReportDto;
 import org.church.steward.domain.report.entity.ReportFontFamily;
@@ -40,6 +43,7 @@ import org.church.steward.domain.report.entity.ReportType;
 import org.church.steward.infrastructure.annotation.UiView;
 import org.church.steward.ui.MenuActivatable;
 import org.church.steward.ui.component.ComponentSize;
+import org.church.steward.ui.component.button.IconButton;
 import org.church.steward.ui.component.button.PrimaryButton;
 import org.church.steward.ui.component.button.SecondaryButton;
 import org.church.steward.ui.component.field.StyledComboBox;
@@ -68,6 +72,9 @@ import lombok.extern.slf4j.Slf4j;
  * <p>
  * 글꼴, 글자 크기, 행 간격, 한 페이지에 맞춤과 미리보기 설정은 사용자가 보고서마다 정하며, 바꿀 때마다 저장한다. 서식을 바꾸면
  * 데이터를 다시 조회하지 않고 조회해 둔 데이터로 다시 배치한다.
+ * <p>
+ * 결재란과 표의 칸 순서·숨김(보고서 양식)은 사용자별이 아니라 프로그램 전체 설정이다. "조회" 버튼 오른쪽의 톱니바퀴 버튼으로 양식 설정
+ * 다이얼로그를 띄우며, 저장하면 다시 조회해 미리보기에 반영한다. 서식의 "초기화"는 양식에 영향을 주지 않는다.
  */
 @UiView
 @Slf4j
@@ -81,13 +88,17 @@ public class ReportingView extends JPanel implements MenuActivatable {
     private static final int SAVE_DELAY = 500;
 
     private final ReportController reportController;
+    private final ProgramSettingController programSettingController;
     private final FiscalYearSelector fiscalYearSelector;
 
     private final StyledComboBox<ReportType> typeCombo = new StyledComboBox<>(ReportType.values(),
             ComponentSize.MEDIUM);
     /** 주간 보고서의 대상 주간. 주간 보고서에서만 보여준다. */
     private final WeekSelectorPanel weekSelector = new WeekSelectorPanel(this::load);
+    /** 양식 설정 버튼과 주간 사이의 간격. 주간을 숨기면 함께 숨긴다. */
+    private final Component weekGap = Box.createHorizontalStrut(GAP);
     private final PrimaryButton searchButton = new PrimaryButton("조회", ComponentSize.MEDIUM);
+    private final IconButton templateButton = new IconButton(FontAwesomeSolid.COG, ComponentSize.MEDIUM);
     private final SecondaryButton pdfButton = new SecondaryButton("PDF 저장", ComponentSize.MEDIUM);
     private final SecondaryButton printButton = new SecondaryButton("인쇄", ComponentSize.MEDIUM);
     private final ReportFormatBar formatBar = new ReportFormatBar(new FormatListener());
@@ -139,12 +150,14 @@ public class ReportingView extends JPanel implements MenuActivatable {
     private record LoadResult(ReportSettingDto setting, LoadedReport report) {
     }
 
-    public ReportingView(ReportController reportController, FiscalYearSelector fiscalYearSelector) {
+    public ReportingView(ReportController reportController, ProgramSettingController programSettingController,
+            FiscalYearSelector fiscalYearSelector) {
         this.reportController = reportController;
+        this.programSettingController = programSettingController;
         this.fiscalYearSelector = fiscalYearSelector;
 
-        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일) : 720 x 600
-        setPreferredSize(new Dimension(720, 600));
+        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일) : 820 x 600
+        setPreferredSize(new Dimension(820, 600));
         setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         setBackground(UIColors.BACKGROUND);
         setLayout(new BorderLayout(0, 10));
@@ -159,6 +172,8 @@ public class ReportingView extends JPanel implements MenuActivatable {
             load();
         });
         searchButton.addActionListener(_ -> load());
+        templateButton.setToolTipText("양식 설정");
+        templateButton.addActionListener(_ -> openTemplateDialog());
         pdfButton.addActionListener(_ -> savePdf());
         printButton.addActionListener(_ -> print());
         viewer.setStateChangeListener(() -> {
@@ -189,33 +204,42 @@ public class ReportingView extends JPanel implements MenuActivatable {
             }
         });
 
+        // 레이블의 글자는 두지 않고 아이콘만 둔다. 이름은 툴팁으로 알린다.
+        FieldLabel typeIcon = new FieldLabel("", FontAwesomeSolid.FILE_ALT, SwingConstants.LEFT,
+                ComponentSize.MEDIUM);
+        typeIcon.setToolTipText("보고서");
+
+        // 주간은 주간 보고서에서만 보이며, 숨겨져 있는 동안에는 앞의 간격도 함께 사라진다.
         JPanel conditionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         conditionPanel.setOpaque(false);
-        conditionPanel.add(new FieldLabel("보고서", FontAwesomeSolid.FILE_ALT, SwingConstants.LEFT,
-                ComponentSize.MEDIUM));
+        conditionPanel.add(typeIcon);
         conditionPanel.add(Box.createHorizontalStrut(GAP));
         conditionPanel.add(typeCombo);
         conditionPanel.add(Box.createHorizontalStrut(GAP));
         conditionPanel.add(searchButton);
+        conditionPanel.add(Box.createHorizontalStrut(GAP));
+        conditionPanel.add(templateButton);
+        conditionPanel.add(weekGap);
+        conditionPanel.add(weekSelector);
 
+        // 출력 버튼은 서식 줄의 오른쪽 끝, 곧 뷰어의 오른쪽 위에 둔다. 서식 줄 아래에 안내가 나타나도 위에 붙어 있도록
+        // FlowLayout으로 감싼다.
         JPanel outputPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         outputPanel.setOpaque(false);
         outputPanel.add(pdfButton);
         outputPanel.add(Box.createHorizontalStrut(GAP));
         outputPanel.add(printButton);
 
-        JPanel buttonRow = new JPanel(new BorderLayout(GAP, 0));
-        buttonRow.setOpaque(false);
-        buttonRow.add(conditionPanel, BorderLayout.WEST);
-        buttonRow.add(outputPanel, BorderLayout.EAST);
+        JPanel formatRow = new JPanel(new BorderLayout(GAP, 0));
+        formatRow.setOpaque(false);
+        formatRow.add(formatBar, BorderLayout.CENTER);
+        formatRow.add(outputPanel, BorderLayout.EAST);
 
-        // 주간은 한 줄에 다 들어가지 않으므로 아랫줄에 따로 둔다. 숨겨져 있는 동안에는 줄과 간격이 함께 사라진다.
-        // 서식은 그 아래 줄이다.
+        // 서식은 아랫줄이다.
         JPanel toolbar = new JPanel(new BorderLayout(0, 10));
         toolbar.setOpaque(false);
-        toolbar.add(buttonRow, BorderLayout.NORTH);
-        toolbar.add(weekSelector, BorderLayout.CENTER);
-        toolbar.add(formatBar, BorderLayout.SOUTH);
+        toolbar.add(conditionPanel, BorderLayout.NORTH);
+        toolbar.add(formatRow, BorderLayout.SOUTH);
         updateWeekVisibility();
         return toolbar;
     }
@@ -230,7 +254,18 @@ public class ReportingView extends JPanel implements MenuActivatable {
         if (fiscalYear != null) {
             weekSelector.setLimits(fiscalYear.getStartDate(), fiscalYear.getEndDate());
         }
-        load();
+        // 주간 결산 요일은 설정 메뉴에서 바뀔 수 있으므로 매번 읽어 주간을 맞춘 뒤 조회한다.
+        AsyncTask.run(viewer,
+                programSettingController::getWeeklyClosingDay,
+                weeklyClosingDay -> {
+                    weekSelector.setWeeklyClosingDay(weeklyClosingDay);
+                    load();
+                },
+                err -> {
+                    log.error("Failed to load weekly closing day", err);
+                    JOptionPane.showMessageDialog(this, "주간 결산 요일을 불러오는데 실패했습니다: " + err.getMessage());
+                    load();
+                });
     }
 
     private void load() {
@@ -242,7 +277,8 @@ public class ReportingView extends JPanel implements MenuActivatable {
             return;
         }
 
-        // 주간 보고서만 기간을 쓴다. 주간은 수입/지출 관리의 "주간"과 같이 일요일부터 토요일까지이며, 회계 연도의 기간을 벗어난 부분은 빠진다.
+        // 주간 보고서만 기간을 쓴다. 주간은 수입/지출 관리의 "주간"과 같이 결산 요일의 다음 날부터 결산 요일까지이며,
+        // 회계 연도의 기간을 벗어난 부분은 빠진다.
         final LocalDate startDate = type.isWeekly() ? weekSelector.getStartDate() : null;
         final LocalDate endDate = type.isWeekly() ? weekSelector.getEndDate() : null;
         final ReportSettingDto cachedSetting = settings.get(type);
@@ -290,26 +326,30 @@ public class ReportingView extends JPanel implements MenuActivatable {
      */
     private Function<ReportStyle, ReportDocument> fetch(ReportType type, Long fiscalYearId, LocalDate startDate,
             LocalDate endDate) {
+        // 양식은 따로 보관하지 않고 조회할 때 보고서와 함께 읽는다. 양식 설정에서 저장하면 다시 조회하므로 바뀐 양식이 반영된다.
+        ReportTemplateDto template = reportController.getReportTemplate(type);
         return switch (type) {
         case WEEKLY_SETTLEMENT -> {
             WeeklySettlementReportDto report = reportController.getWeeklySettlementReport(fiscalYearId, startDate,
                     endDate);
-            yield style -> WeeklySettlementReportComposer.compose(report, style);
+            yield style -> WeeklySettlementReportComposer.compose(report, template, style);
         }
-        case INCOME_BUDGET_PLAN, EXPENSE_BUDGET_PLAN -> {
-            BudgetType budgetType = type == ReportType.INCOME_BUDGET_PLAN ? BudgetType.INCOME : BudgetType.EXPENSE;
-            BudgetPlanReportDto report = reportController.getBudgetPlanReport(fiscalYearId, budgetType);
-            yield style -> BudgetPlanReportComposer.compose(report, style);
+        // 여러 보고서를 묶은 보고서는 묶인 보고서를 하나씩 조회해 차례로 배치한다.
+        case BUDGET_PLAN -> {
+            BudgetPlanReportDto income = reportController.getBudgetPlanReport(fiscalYearId, BudgetType.INCOME);
+            BudgetPlanReportDto expense = reportController.getBudgetPlanReport(fiscalYearId, BudgetType.EXPENSE);
+            yield style -> BudgetPlanReportComposer.compose(income, expense, template, style);
         }
         case ANNUAL_SETTLEMENT -> {
             AnnualSettlementReportDto report = reportController.getAnnualSettlementReport(fiscalYearId);
-            yield style -> AnnualSettlementReportComposer.compose(report, style);
+            yield style -> AnnualSettlementReportComposer.compose(report, template, style);
         }
-        case INCOME_SETTLEMENT_DETAIL, EXPENSE_SETTLEMENT_DETAIL -> {
-            BudgetType budgetType = type == ReportType.INCOME_SETTLEMENT_DETAIL ? BudgetType.INCOME
-                    : BudgetType.EXPENSE;
-            SettlementDetailReportDto report = reportController.getSettlementDetailReport(fiscalYearId, budgetType);
-            yield style -> SettlementDetailReportComposer.compose(report, style);
+        case SETTLEMENT_DETAIL -> {
+            SettlementDetailReportDto income = reportController.getSettlementDetailReport(fiscalYearId,
+                    BudgetType.INCOME);
+            SettlementDetailReportDto expense = reportController.getSettlementDetailReport(fiscalYearId,
+                    BudgetType.EXPENSE);
+            yield style -> SettlementDetailReportComposer.compose(income, expense, template, style);
         }
         };
     }
@@ -494,12 +534,45 @@ public class ReportingView extends JPanel implements MenuActivatable {
     }
 
     /**
-     * 주간은 주간 보고서에서만 쓰므로 그때만 보여준다.
+     * 주간은 주간 보고서에서만 쓰므로 그때만 보여준다. 양식 설정은 양식에서 정할 것이 있는 보고서에서만 켠다.
      */
     private void updateWeekVisibility() {
         ReportType type = (ReportType) typeCombo.getSelectedItem();
-        weekSelector.setVisible(type != null && type.isWeekly());
+        boolean weekly = type != null && type.isWeekly();
+        weekSelector.setVisible(weekly);
+        weekGap.setVisible(weekly);
+        updateTemplateButton();
         revalidate();
+    }
+
+    private void updateTemplateButton() {
+        ReportType type = (ReportType) typeCombo.getSelectedItem();
+        templateButton.setEnabled(type != null && type.hasTemplate());
+    }
+
+    /**
+     * 고른 보고서의 양식 설정 다이얼로그를 띄운다. 양식은 최신 값을 읽어 채우며, 저장하면 다시 조회해 미리보기에 반영한다.
+     */
+    private void openTemplateDialog() {
+        final ReportType type = (ReportType) typeCombo.getSelectedItem();
+        if (type == null || !type.hasTemplate()) {
+            return;
+        }
+
+        AsyncTask.run(templateButton,
+                () -> reportController.getReportTemplate(type),
+                template -> {
+                    // 작업이 끝나면 버튼이 켜지므로, 그 사이에 양식이 없는 보고서로 바꿨으면 다시 끈다.
+                    updateTemplateButton();
+                    ReportTemplateDialog dialog = new ReportTemplateDialog(SwingUtilities.getWindowAncestor(this),
+                            template, reportController::updateReportTemplate, this::load);
+                    dialog.setVisible(true);
+                },
+                err -> {
+                    updateTemplateButton();
+                    log.error("Failed to load report template: {}", type, err);
+                    JOptionPane.showMessageDialog(this, "보고서 양식을 불러오는데 실패했습니다: " + err.getMessage());
+                });
     }
 
     /**

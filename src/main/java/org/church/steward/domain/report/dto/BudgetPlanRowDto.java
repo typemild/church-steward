@@ -21,6 +21,8 @@ public class BudgetPlanRowDto {
     private Double shareRate;
     /** 직전 회계 연도에서 전체 경로가 같은 예산의 금액. 그런 예산이 없으면 null */
     private Long previousAmount;
+    /** 예산의 비고. 없으면 null */
+    private String remarks;
 
     /**
      * 직전 회계 연도 대비 증감액. 직전 회계 연도에 같은 예산이 없으면 null

@@ -40,7 +40,7 @@ public class BudgetImportSession extends ImportSession {
      * 고른 건들의 요약.
      *
      * @param createCount 추가할 예산의 수
-     * @param updateCount 금액을 갱신할 예산의 수
+     * @param updateCount 금액이나 비고를 갱신할 예산의 수
      * @param totalAmount 고른 말단 예산의 금액 합계
      */
     public record SelectionSummary(int createCount, int updateCount, long totalAmount) {
@@ -61,9 +61,11 @@ public class BudgetImportSession extends ImportSession {
     @Setter
     private Integer amountColumn;
     @Setter
+    private Integer remarksColumn;
+    @Setter
     private boolean fillDown;
     @Setter
-    private boolean updateExistingAmounts;
+    private boolean updateExistingBudgets;
     /** 지금의 파일과 머리글 행에 대해 열을 자동으로 추측했는지 여부 */
     private boolean mappingGuessed;
 
@@ -82,8 +84,9 @@ public class BudgetImportSession extends ImportSession {
         levelColumns = List.of();
         pathColumn = null;
         amountColumn = null;
+        remarksColumn = null;
         fillDown = false;
-        updateExistingAmounts = false;
+        updateExistingBudgets = false;
         mappingGuessed = false;
         clearAnalysis();
     }
@@ -115,7 +118,7 @@ public class BudgetImportSession extends ImportSession {
 
     /**
      * 머리글 이름으로 열을 추측해 열 지정을 채운다. 같은 파일과 머리글 행에 대해서는 한 번만 한다. 프로그램이 내보낸 파일과 빈 양식의
-     * 머리글("구분", "예산 1단계", "예산액")은 모두 알아본다.
+     * 머리글("구분", "예산 1단계", "예산액", "비고")은 모두 알아본다.
      */
     public void guessMappingIfNeeded() {
         if (mappingGuessed) {
@@ -126,6 +129,7 @@ public class BudgetImportSession extends ImportSession {
         typeColumn = null;
         pathColumn = null;
         amountColumn = null;
+        remarksColumn = null;
         Map<Integer, Integer> numberedLevels = new TreeMap<>();
         Map<Integer, Integer> namedLevels = new TreeMap<>();
         Integer nameColumn = null;
@@ -144,6 +148,8 @@ public class BudgetImportSession extends ImportSession {
                 typeColumn = column;
             } else if (header.equals("예산액") || (header.contains("금액") && amountColumn == null)) {
                 amountColumn = column;
+            } else if ((header.contains("비고") || header.contains("메모")) && remarksColumn == null) {
+                remarksColumn = column;
             } else if ((header.contains("예산명") || header.contains("항목") || header.contains("과목"))
                     && nameColumn == null) {
                 nameColumn = column;
@@ -198,8 +204,9 @@ public class BudgetImportSession extends ImportSession {
                 .levelColumns(pathMode ? List.of() : levelColumns)
                 .pathColumn(pathMode ? pathColumn : null)
                 .amountColumn(amountColumn)
+                .remarksColumn(remarksColumn)
                 .fillDown(fillDown)
-                .updateExistingAmounts(updateExistingAmounts)
+                .updateExistingBudgets(updateExistingBudgets)
                 .build();
     }
 
@@ -209,8 +216,8 @@ public class BudgetImportSession extends ImportSession {
      * 새 분석 결과를 받아들이고 선택을 다시 계산한다. 사용자가 직접 바꾼 선택은 유지하고, 손대지 않은 건은 고를 수 있으면 선택한다. 분석
      * 결과가 달라졌을 수 있으므로 받아 둔 백업은 다시 확인받도록 서비스에 맡긴다(여기서는 지우지 않는다).
      *
-     * @return 이전 분석 결과와 비교해 상태, 할 일, 금액, 설명이 달라졌거나 새로 생기거나 없어진 건의 수. 이전 분석 결과가 없었으면
-     *         0
+     * @return 이전 분석 결과와 비교해 상태, 할 일, 금액, 비고, 설명이 달라졌거나 새로 생기거나 없어진 건의 수. 이전 분석 결과가
+     *         없었으면 0
      */
     public int applyAnalysis(BudgetImportAnalysisDto newAnalysis) {
         int changedCount = analysis == null ? 0 : countChanges(analysis, newAnalysis);
@@ -237,7 +244,8 @@ public class BudgetImportSession extends ImportSession {
     }
 
     private String stateOf(BudgetImportItemDto item) {
-        return item.getStatus() + "|" + item.getAction() + "|" + item.getAmount() + "|" + item.getMessage();
+        return item.getStatus() + "|" + item.getAction() + "|" + item.getAmount() + "|" + item.getRemarks() + "|"
+                + item.getMessage();
     }
 
     /**

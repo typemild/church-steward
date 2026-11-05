@@ -1,5 +1,6 @@
 package org.church.steward.domain.budget.service.impl;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -23,6 +24,7 @@ import org.church.steward.domain.financialrecord.repository.BudgetAmountProjecti
 import org.church.steward.domain.financialrecord.repository.FinancialRecordRepository;
 import org.church.steward.domain.fiscalyear.entity.FiscalYear;
 import org.church.steward.domain.fiscalyear.repository.FiscalYearRepository;
+import org.church.steward.util.TextUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,6 +64,14 @@ public class BudgetServiceImpl implements BudgetService {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<BudgetType> getMissingBudgetTypes(Long fiscalYearId) {
+        return Arrays.stream(BudgetType.values())
+                .filter(type -> !budgetRepository.existsByFiscalYearIdAndType(fiscalYearId, type))
+                .toList();
+    }
+
     /**
      * 예산과 그 하위 예산에 등록된 내역의 금액을 모두 더한다.
      *
@@ -76,18 +86,22 @@ public class BudgetServiceImpl implements BudgetService {
     }
 
     @Override
-    public void createBudget(Long fiscalYearId, Long parentId, String name, long amount, BudgetType type) {
-        Budget newBudget = createBudgetWithoutLog(fiscalYearId, parentId, name, amount, type);
+    public void createBudget(Long fiscalYearId, Long parentId, String name, long amount, String remarks,
+            BudgetType type) {
+        Budget newBudget = createBudgetWithoutLog(fiscalYearId, parentId, name, amount, remarks, type);
         activityLogService.logCreation(newBudget);
     }
 
     @Override
-    public Budget createBudgetWithoutLog(Long fiscalYearId, Long parentId, String name, long amount,
+    public Budget createBudgetWithoutLog(Long fiscalYearId, Long parentId, String name, long amount, String remarks,
             BudgetType type) {
         FiscalYear fiscalYear = fiscalYearRepository.findById(fiscalYearId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회계 연도입니다."));
         validateNotClosed(fiscalYear);
-        validateName(name);
+        String normalizedName = TextUtils.normalize(name);
+        validateName(normalizedName);
+        String normalizedRemarks = TextUtils.normalize(remarks);
+        validateRemarks(normalizedRemarks);
 
         Budget parent = null;
         if (parentId != null) {
@@ -119,41 +133,53 @@ public class BudgetServiceImpl implements BudgetService {
 
         return budgetRepository.save(Budget.builder()
                 .fiscalYear(fiscalYear)
-                .name(name)
+                .name(normalizedName)
                 .parent(parent)
                 .amount(amount)
+                .remarks(normalizedRemarks)
                 .type(type)
                 .sortOrder(nextSortOrder)
                 .build());
     }
 
     @Override
-    public void updateBudget(Long id, String newName, long newAmount) {
+    public void updateBudget(Long id, String newName, long newAmount, String newRemarks) {
         Budget budget = budgetRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("예산 항목을 찾을 수 없습니다."));
         validateNotClosed(budget.getFiscalYear());
-        validateName(newName);
+        String normalizedName = TextUtils.normalize(newName);
+        validateName(normalizedName);
+        String normalizedRemarks = TextUtils.normalize(newRemarks);
+        validateRemarks(normalizedRemarks);
 
         // 변경 전 상태를 스냅샷으로 캡처
         EntitySnapshot<Budget> oldSnapshot = snapshotCapturer.capture(budget);
 
-        applyUpdate(budget, newName, newAmount);
+        applyUpdate(budget, normalizedName, newAmount, normalizedRemarks);
         activityLogService.logUpdate(oldSnapshot, budget);
     }
 
     @Override
-    public Budget updateBudgetWithoutLog(Long id, String newName, long newAmount) {
+    public Budget updateBudgetWithoutLog(Long id, String newName, long newAmount, String newRemarks) {
         Budget budget = budgetRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("예산 항목을 찾을 수 없습니다."));
         validateNotClosed(budget.getFiscalYear());
-        validateName(newName);
+        String normalizedName = TextUtils.normalize(newName);
+        validateName(normalizedName);
+        String normalizedRemarks = TextUtils.normalize(newRemarks);
+        validateRemarks(normalizedRemarks);
 
-        applyUpdate(budget, newName, newAmount);
+        applyUpdate(budget, normalizedName, newAmount, normalizedRemarks);
         return budget;
     }
 
-    private void applyUpdate(Budget budget, String newName, long newAmount) {
+    /**
+     * @param newName    앞뒤 공백을 지운 예산명
+     * @param newRemarks 앞뒤 공백을 지우고 빈 값을 null로 바꾼 비고
+     */
+    private void applyUpdate(Budget budget, String newName, long newAmount, String newRemarks) {
         budget.setName(newName);
+        budget.setRemarks(newRemarks);
 
         if (budget.hasChildren()) {
             // 부모 항목은 하위 항목들의 합으로 금액이 결정되므로, 금액을 직접 수정할 수 없다.
@@ -278,7 +304,8 @@ public class BudgetServiceImpl implements BudgetService {
 
     /**
      * 예산명은 비워 둘 수 없고 {@value BudgetConstraints#NAME_MAX_LENGTH}자 이내여야 한다.
-     * {@code <}와 {@code >}는 전체 예산명("예산A > 예산B")의 구분 문자와 섞이지 않도록 쓸 수 없다.
+     * {@code <}와 {@code >}는 전체 예산명("예산A > 예산B")의 구분 문자와 섞이지 않도록 쓸 수 없다. 앞뒤 공백을 지운
+     * 이름으로 받는다.
      */
     private void validateName(String name) {
         if (name == null || name.isBlank()) {
@@ -289,6 +316,12 @@ public class BudgetServiceImpl implements BudgetService {
         }
         if (name.contains("<") || name.contains(">")) {
             throw new IllegalArgumentException("예산명에는 '<', '>' 문자를 사용할 수 없습니다.");
+        }
+    }
+
+    private void validateRemarks(String remarks) {
+        if (remarks != null && remarks.length() > BudgetConstraints.REMARKS_MAX_LENGTH) {
+            throw new IllegalArgumentException("비고는 " + BudgetConstraints.REMARKS_MAX_LENGTH + "자 이내로 입력해주세요.");
         }
     }
 

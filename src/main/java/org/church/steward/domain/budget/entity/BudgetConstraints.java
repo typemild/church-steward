@@ -6,6 +6,7 @@ package org.church.steward.domain.budget.entity;
 public final class BudgetConstraints {
 
     public static final int NAME_MAX_LENGTH = 50;
+    public static final int REMARKS_MAX_LENGTH = 100;
 
     private BudgetConstraints() {
     }

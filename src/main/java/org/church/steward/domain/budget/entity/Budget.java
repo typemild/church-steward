@@ -78,6 +78,11 @@ public class Budget {
     private Long amount; // 자식 건 존재 시 null이 됨
 
     @Setter
+    @Column(length = BudgetConstraints.REMARKS_MAX_LENGTH)
+    @LoggableField(name = "비고")
+    private String remarks;
+
+    @Setter
     @Column(nullable = false)
     private int sortOrder;
 

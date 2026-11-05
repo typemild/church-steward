@@ -25,6 +25,8 @@ public final class ReportCanvas {
     private List<ReportElement> page;
     private int pageIndex;
     private double y;
+    /** 이 문서에 묶은 보고서의 수. {@link #startNextPart()}를 부를 때마다 늘어난다. */
+    private int partCount = 1;
     /** 지금까지 놓은 글자 중 가장 작은 글자의 크기(페이지 번호 제외). 글자 크기를 조정할 수 있는 범위를 정하는 데 쓴다. */
     private float smallestFontSize = Float.MAX_VALUE;
 
@@ -85,6 +87,15 @@ public final class ReportCanvas {
      */
     public void newPage() {
         setPosition(getPageIndex() + 1, ReportPaper.MARGIN);
+    }
+
+    /**
+     * 여러 보고서를 한 문서로 묶을 때, 지금까지의 보고서를 마치고 다음 보고서를 새 페이지의 맨 위에서 시작한다. 단을 오가느라 현재 페이지가
+     * 마지막 페이지가 아닐 수 있으므로 마지막 페이지의 다음 페이지로 간다.
+     */
+    public void startNextPart() {
+        setPosition(pages.size(), ReportPaper.MARGIN);
+        partCount++;
     }
 
     /**
@@ -150,6 +161,26 @@ public final class ReportCanvas {
         text(text, font, align, anchorX, baseline, UIColors.REPORT_TEXT);
     }
 
+    /**
+     * 현재 페이지에 한 줄의 글자를 놓되, 폭을 넘으면 말줄임표 없이 글자를 작게 줄여 모두 적는다. 가장 작은 글자를 셀 때는 줄이기 전의
+     * 크기로 센다. 칸에 맞추려고 줄인 글자 때문에 글자 크기를 조정할 수 있는 범위가 좁아지지 않게 하기 위함이다.
+     *
+     * @param maxWidth 글자가 차지할 수 있는 폭
+     */
+    public void shrinkingText(String text, Font font, ReportAlign align, double anchorX, double baseline,
+            double maxWidth) {
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+        double width = ReportText.width(text, font);
+        Font fitted = width > maxWidth && maxWidth > 0 ? font.deriveFont(font.getSize2D() * (float) (maxWidth / width))
+                : font;
+
+        float smallest = smallestFontSize;
+        text(text, fitted, align, anchorX, baseline);
+        smallestFontSize = Math.min(smallest, font.getSize2D());
+    }
+
     public void line(double x1, double y1, double x2, double y2, double width, Color color) {
         page.add(new ReportElement.Line(x1, y1, x2, y2, width, color));
     }
@@ -174,8 +205,8 @@ public final class ReportCanvas {
     }
 
     /**
-     * 배치를 마치고 모든 페이지의 아래 가운데에 "현재 페이지 / 전체 페이지"를 적는다. 페이지 번호는 글자 크기 조정의 대상이 아니므로 가장
-     * 작은 글자를 셀 때 넣지 않는다.
+     * 배치를 마치고 모든 페이지의 아래 가운데에 "현재 페이지 / 전체 페이지"를 적는다. 여러 보고서를 묶었으면 문서 전체로 센다. 페이지
+     * 번호는 글자 크기 조정의 대상이 아니므로 가장 작은 글자를 셀 때 넣지 않는다.
      */
     public ReportDocument finish() {
         // 글자가 하나도 없는 문서는 없지만, 있더라도 범위 계산이 깨지지 않게 보고서의 기본 글자 크기로 본다.
@@ -187,6 +218,6 @@ public final class ReportCanvas {
             text((i + 1) + " / " + pages.size(), font, ReportAlign.CENTER, ReportPaper.WIDTH / 2, baseline,
                     UIColors.REPORT_TEXT_SUB);
         }
-        return new ReportDocument(title, pages, style, smallest);
+        return new ReportDocument(title, pages, partCount, style, smallest);
     }
 }

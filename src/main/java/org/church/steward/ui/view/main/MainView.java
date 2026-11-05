@@ -24,6 +24,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
+import org.church.steward.domain.programsetting.entity.BudgetViewTable;
 import org.church.steward.infrastructure.annotation.UiView;
 import org.church.steward.infrastructure.security.UserSessionHolder;
 import org.church.steward.ui.MenuActivatable;
@@ -52,6 +53,8 @@ public class MainView extends JFrame {
     /** 회계 연도에 영향을 받는 화면. 사이드바에서 회계 연도 선택란 바로 아래에 묶어 표시한다. */
     private static final Set<String> FISCAL_YEAR_CARDS = Set.of("DASHBOARD", "INCOME_EXPENSE", "REPORTING",
             "BUDGET");
+    /** 들어올 때 회계 연도와 예산이 준비되어 있는지 확인하는 화면(수입/지출 관리) */
+    private static final String INCOME_EXPENSE_CARD = "INCOME_EXPENSE";
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel contentPanel = new JPanel(cardLayout);
@@ -61,6 +64,7 @@ public class MainView extends JFrame {
 
     private final UserSessionHolder userSessionHolder;
     private final FiscalYearSelector fiscalYearSelector;
+    private final SetupReminder setupReminder;
     private final DashboardView dashboardView;
     private final FinancialRecordView incomeExpenseView;
     private final ReportingView reportingView;
@@ -73,12 +77,13 @@ public class MainView extends JFrame {
     private String selectedCardName = null; // 현재 표시 중인 화면의 카드 이름
 
     public MainView(UserSessionHolder userSessionHolder, FiscalYearSelector fiscalYearSelector,
-            DashboardView dashboardView, FinancialRecordView incomeExpenseView, ReportingView reportingView,
-            BudgetManagementView budgetManagementView, SettingsView settingsView,
+            SetupReminder setupReminder, DashboardView dashboardView, FinancialRecordView incomeExpenseView,
+            ReportingView reportingView, BudgetManagementView budgetManagementView, SettingsView settingsView,
             DataManagementView dataManagementView, ActivityLogView activityLogView,
             ProgramInfoView programInfoView) {
         this.userSessionHolder = userSessionHolder;
         this.fiscalYearSelector = fiscalYearSelector;
+        this.setupReminder = setupReminder;
         this.dashboardView = dashboardView;
         this.incomeExpenseView = incomeExpenseView;
         this.reportingView = reportingView;
@@ -107,7 +112,9 @@ public class MainView extends JFrame {
                 System.exit(0);
             }
         });
-        Dimension frameSize = new Dimension(900, 600);
+        // 창의 최소 크기. 1024×768 화면과 1920×1080 노트북의 150% 배율(1280×720)에도 들어가도록 높이는 600으로 둔다.
+        // 콘텐츠 영역은 사이드바(180)를 뺀 820 x 600이다.
+        Dimension frameSize = new Dimension(1000, 600);
         setSize(frameSize);
         setMinimumSize(frameSize);
         setLocationRelativeTo(null);
@@ -174,6 +181,8 @@ public class MainView extends JFrame {
         // 회계 연도를 불러오면 변경 알림이 와서 첫 화면(대시보드)의 데이터를 조회한다.
         fiscalYearSelector.addChangeListener(this::onFiscalYearChanged);
         fiscalYearSelector.setManageAction(this::showFiscalYearManagement);
+        setupReminder.setShortcutActions(this::showFiscalYearManagement, () -> selectMenu("BUDGET"));
+        incomeExpenseView.setColumnSettingsAction(this::showBudgetViewColumnSettings);
         fiscalYearSelector.reload();
 
         setVisible(true);
@@ -188,6 +197,17 @@ public class MainView extends JFrame {
     }
 
     /**
+     * 설정 메뉴의 프로그램 설정 화면으로 이동해 예산별 보기의 칸 설정 다이얼로그를 띄운다. 수입/지출 관리의 예산별 보기에서 칸 설정 버튼을
+     * 눌렀을 때 실행된다.
+     *
+     * @param table 다이얼로그에서 처음에 열어 둘 표. 칸 설정 버튼을 누른 표다.
+     */
+    private void showBudgetViewColumnSettings(BudgetViewTable table) {
+        selectMenu("SETTINGS");
+        settingsView.showBudgetViewColumnDialog(table);
+    }
+
+    /**
      * 회계 연도가 바뀌면 현재 화면이 회계 연도에 영향을 받는 화면일 때만 다시 조회한다. 보이지 않는 화면은 메뉴를 선택할 때 바뀐 회계
      * 연도로 조회한다.
      */
@@ -198,6 +218,10 @@ public class MainView extends JFrame {
         MenuActivatable activatable = activatableViews.get(selectedCardName);
         if (activatable != null) {
             activatable.onMenuSelected();
+        }
+        // 수입/지출 관리에서 회계 연도를 바꾸면 그 회계 연도로 들어온 것과 같으므로 다시 확인한다.
+        if (INCOME_EXPENSE_CARD.equals(selectedCardName)) {
+            setupReminder.checkSelectedFiscalYear(this);
         }
     }
 
@@ -276,6 +300,10 @@ public class MainView extends JFrame {
         MenuActivatable activatable = activatableViews.get(cardName);
         if (activatable != null) {
             activatable.onMenuSelected();
+        }
+        // 수입/지출을 입력하기 전에 회계 연도와 예산이 준비되어 있는지 확인한다.
+        if (INCOME_EXPENSE_CARD.equals(cardName)) {
+            setupReminder.checkSelectedFiscalYear(this);
         }
     }
 

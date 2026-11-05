@@ -3,6 +3,7 @@ package org.church.steward.ui.util;
 import java.awt.Image;
 import java.awt.Taskbar;
 import java.awt.Window;
+import java.awt.image.BaseMultiResolutionImage;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,12 +11,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 프로그램 아이콘을 창(제목줄, 작업 표시줄)과 macOS의 Dock에 붙인다.
+ * 프로그램 아이콘을 창(제목줄, 작업 표시줄)과 macOS의 Dock에 붙이고, 화면에 그릴 아이콘({@link #createIcon})을
+ * 만든다.
  * <p>
  * 원본 그림은 src/main/packaging에 있고 빌드할 때 클래스패스의 icons/로 복사된다(build.gradle의
  * processResources). 실행 파일(exe)의 아이콘은 jpackage가 따로 붙이므로, 이 클래스는 실행 중인 창의 아이콘만
@@ -66,6 +70,29 @@ public final class AppIcons {
         if (!icons.isEmpty()) {
             window.setIconImages(icons);
         }
+    }
+
+    /**
+     * 화면에 그릴 프로그램 아이콘을 만든다(예: 프로그램 소개). 화면 배율이 큰 모니터에서 흐리지 않도록 그 크기의 2배, 4배 그림을 함께
+     * 넘긴다.
+     *
+     * @param size 아이콘 크기(px). 크기별 png가 있는 값(16, 24, 32, 48, 64, 128, 256)이어야 한다.
+     * @return 아이콘. 그림을 읽지 못하면 null
+     */
+    public static Icon createIcon(int size) {
+        BufferedImage base = read(String.format(WINDOW_ICON_RESOURCE, size));
+        if (base == null) {
+            return null;
+        }
+        List<Image> variants = new ArrayList<>();
+        variants.add(base);
+        for (int scale : new int[] { 2, 4 }) {
+            BufferedImage larger = read(String.format(WINDOW_ICON_RESOURCE, size * scale));
+            if (larger != null) {
+                variants.add(larger);
+            }
+        }
+        return new ImageIcon(new BaseMultiResolutionImage(variants.toArray(Image[]::new)));
     }
 
     private static synchronized List<Image> getWindowIcons() {

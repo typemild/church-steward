@@ -86,6 +86,26 @@ class BudgetControllerTest {
     }
 
     @Nested
+    @DisplayName("getMissingBudgetTypes 테스트")
+    class GetMissingBudgetTypesTest {
+
+        @Test
+        @DisplayName("서비스가 돌려준 구분 목록을 그대로 반환한다.")
+        void getMissingBudgetTypes_whenCalled_shouldReturnServiceResult() {
+            // Given
+            Long fiscalYearId = 7L;
+            List<BudgetType> missingTypes = List.of(BudgetType.EXPENSE);
+            when(budgetService.getMissingBudgetTypes(fiscalYearId)).thenReturn(missingTypes);
+
+            // When
+            List<BudgetType> result = budgetController.getMissingBudgetTypes(fiscalYearId);
+
+            // Then
+            assertThat(result).isSameAs(missingTypes);
+        }
+    }
+
+    @Nested
     @DisplayName("createBudget 테스트")
     class CreateBudgetTest {
 
@@ -97,13 +117,15 @@ class BudgetControllerTest {
             Long parentId = 1L;
             String name = "새 예산";
             long amount = 50000L;
+            String remarks = "비고";
             BudgetType type = BudgetType.EXPENSE;
 
             // When
-            budgetController.createBudget(fiscalYearId, parentId, name, amount, type);
+            budgetController.createBudget(fiscalYearId, parentId, name, amount, remarks, type);
 
             // Then
-            verify(budgetService).createBudget(eq(fiscalYearId), eq(parentId), eq(name), eq(amount), eq(type));
+            verify(budgetService).createBudget(eq(fiscalYearId), eq(parentId), eq(name), eq(amount), eq(remarks),
+                    eq(type));
         }
     }
 
@@ -118,12 +140,13 @@ class BudgetControllerTest {
             Long id = 1L;
             String newName = "수정된 이름";
             long newAmount = 60000L;
+            String newRemarks = "수정된 비고";
 
             // When
-            budgetController.updateBudget(id, newName, newAmount);
+            budgetController.updateBudget(id, newName, newAmount, newRemarks);
 
             // Then
-            verify(budgetService).updateBudget(id, newName, newAmount);
+            verify(budgetService).updateBudget(id, newName, newAmount, newRemarks);
         }
     }
 

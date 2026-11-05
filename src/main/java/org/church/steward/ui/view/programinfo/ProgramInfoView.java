@@ -33,8 +33,8 @@ public class ProgramInfoView extends JPanel implements MenuActivatable {
     public ProgramInfoView(ProgramInfoController programInfoController) {
         this.programInfoController = programInfoController;
 
-        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일): 720 x 600
-        setPreferredSize(new Dimension(720, 600));
+        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일): 820 x 600
+        setPreferredSize(new Dimension(820, 600));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         setLayout(new BorderLayout());
@@ -48,7 +48,7 @@ public class ProgramInfoView extends JPanel implements MenuActivatable {
         programInfoTab = new ProgramInfoTab();
         licenseTab = new LicenseTab();
 
-        tabbedPane.addTab("프로그램 정보", programInfoTab);
+        tabbedPane.addTab("프로그램 소개", programInfoTab);
         tabbedPane.addTab("오픈소스 라이선스", licenseTab);
 
         add(tabbedPane, BorderLayout.CENTER);

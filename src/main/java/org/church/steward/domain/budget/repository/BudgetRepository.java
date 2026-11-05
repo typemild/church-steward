@@ -26,6 +26,8 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
 
     boolean existsByParentId(Long parentId);
 
+    boolean existsByFiscalYearIdAndType(Long fiscalYearId, BudgetType type);
+
     @Query("""
             SELECT MAX(b.sortOrder)
               FROM Budget b

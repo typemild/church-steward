@@ -78,6 +78,7 @@ public class ReportMapper {
                 .actualAmount(actualAmount)
                 .shareRate(shareRate)
                 .executionRate(executionRate)
+                .remarks(entity.getRemarks())
                 .build();
     }
 
@@ -101,6 +102,7 @@ public class ReportMapper {
                 .amount(amount)
                 .shareRate(shareRate)
                 .previousAmount(previousAmount)
+                .remarks(entity.getRemarks())
                 .build();
     }
 }

@@ -78,8 +78,8 @@ public class ActivityLogView extends JPanel implements MenuActivatable {
     ActivityLogView(ActivityLogController activityLogController) {
         this.activityLogController = activityLogController;
 
-        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일) : 720 x 600
-        setPreferredSize(new Dimension(720, 600));
+        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일) : 820 x 600
+        setPreferredSize(new Dimension(820, 600));
         setBorder(BorderFactory.createEmptyBorder(30, 25, 25, 30));
 
         setLayout(new BorderLayout(10, 10));

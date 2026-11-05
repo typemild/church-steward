@@ -17,6 +17,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class WeeklySettlementReportDto {
     private String fiscalYearName;
+    /** 회계 연도의 기간. 머리 부분에 회계 연도와 함께 적는다. */
+    private LocalDate fiscalYearStartDate;
+    private LocalDate fiscalYearEndDate;
+    /** 결산 기간(주간). 회계 연도의 기간을 벗어난 부분은 잘려 있다. */
     private LocalDate startDate;
     private LocalDate endDate;
 

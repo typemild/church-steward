@@ -170,7 +170,7 @@ public class BudgetImportPanel extends AbstractImportPanel {
         runTask(() -> budgetImportController.importBudgets(fiscalYearId, request, selectedKeys, signature,
                 backupLogId, fileName),
                 result -> {
-                    showMessage(String.format("예산을 가져왔습니다.\n추가 %,d건, 금액 갱신 %,d건", result.getCreatedCount(),
+                    showMessage(String.format("예산을 가져왔습니다.\n추가 %,d건, 갱신 %,d건", result.getCreatedCount(),
                             result.getUpdatedCount()), JOptionPane.INFORMATION_MESSAGE);
                     close();
                 },
@@ -182,7 +182,7 @@ public class BudgetImportPanel extends AbstractImportPanel {
 
     private String createCommitSummary() {
         SelectionSummary summary = session.summarize();
-        return String.format("회계 연도 \"%s\"에 예산 추가 %,d건, 금액 갱신 %,d건을 반영합니다.",
+        return String.format("회계 연도 \"%s\"에 예산 추가 %,d건, 갱신 %,d건을 반영합니다.",
                 session.getFiscalYear().getName(), summary.createCount(), summary.updateCount());
     }
 

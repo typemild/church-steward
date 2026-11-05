@@ -36,6 +36,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -161,12 +162,10 @@ class ContactServiceImplTest {
         void createContact_success_returnsSavedDto() {
             // Given
             ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("New").build();
-            Contact contactToSave = Contact.builder().build();
             Contact savedContact = Contact.builder().id(1L).name("New").build();
             ContactDto savedDto = ContactDto.builder().id(1L).name("New").build();
 
-            when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
-            when(contactRepository.save(contactToSave)).thenReturn(savedContact);
+            when(contactRepository.save(any(Contact.class))).thenReturn(savedContact);
             when(contactMapper.toDto(savedContact)).thenReturn(savedDto);
 
             // When
@@ -177,20 +176,27 @@ class ContactServiceImplTest {
         }
 
         @Test
-        @DisplayName("관계자 생성_성공 시_Repository를 호출한다")
-        void createContact_success_callsRepository() {
+        @DisplayName("관계자 생성_성공 시_요청한 값으로 관계자를 저장한다")
+        void createContact_success_savesContact() {
             // Given
-            ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("New").build();
-            Contact contactToSave = Contact.builder().build();
-
-            when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
-            when(contactRepository.save(contactToSave)).thenReturn(contactToSave);
+            ContactDto dto = ContactDto.builder()
+                    .type(ContactType.INDIVIDUAL)
+                    .name("New")
+                    .remarks("New Remarks")
+                    .isHidden(true)
+                    .build();
+            ArgumentCaptor<Contact> contactCaptor = ArgumentCaptor.forClass(Contact.class);
 
             // When
             contactService.createContact(dto);
 
             // Then
-            verify(contactRepository).save(contactToSave);
+            verify(contactRepository).save(contactCaptor.capture());
+            Contact saved = contactCaptor.getValue();
+            assertThat(saved.getType()).isEqualTo(ContactType.INDIVIDUAL);
+            assertThat(saved.getName()).isEqualTo("New");
+            assertThat(saved.getRemarks()).isEqualTo("New Remarks");
+            assertThat(saved.isHidden()).isTrue();
         }
 
         @Test
@@ -198,16 +204,15 @@ class ContactServiceImplTest {
         void createContact_success_callsActivityLog() {
             // Given
             ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("New").build();
-            Contact contactToSave = Contact.builder().build();
+            Contact savedContact = Contact.builder().id(1L).name("New").build();
 
-            when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
-            when(contactRepository.save(contactToSave)).thenReturn(contactToSave);
+            when(contactRepository.save(any(Contact.class))).thenReturn(savedContact);
 
             // When
             contactService.createContact(dto);
 
             // Then
-            verify(activityLogService).logCreation(contactToSave);
+            verify(activityLogService).logCreation(savedContact);
         }
 
         @Test
@@ -258,16 +263,12 @@ class ContactServiceImplTest {
                     .name("가".repeat(ContactConstraints.NAME_MAX_LENGTH))
                     .remarks("나".repeat(ContactConstraints.REMARKS_MAX_LENGTH))
                     .build();
-            Contact contactToSave = Contact.builder().build();
-
-            when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
-            when(contactRepository.save(contactToSave)).thenReturn(contactToSave);
 
             // When
             contactService.createContact(dto);
 
             // Then
-            verify(contactRepository).save(contactToSave);
+            verify(contactRepository).save(any(Contact.class));
         }
 
         @Test
@@ -284,6 +285,69 @@ class ContactServiceImplTest {
             assertThatThrownBy(() -> contactService.createContact(dto))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("비고는 100자 이내로 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 생성_성공 시_이름의 앞뒤 공백(전각 공백 포함)을 지우고 저장하며 길이는 지운 값으로 검증한다")
+        void createContact_nameWithSurroundingSpaces_savesStripped() {
+            // Given
+            String name = "가".repeat(ContactConstraints.NAME_MAX_LENGTH);
+            ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("　" + name + " ").build();
+            ArgumentCaptor<Contact> contactCaptor = ArgumentCaptor.forClass(Contact.class);
+
+            // When
+            contactService.createContact(dto);
+
+            // Then
+            verify(contactRepository).save(contactCaptor.capture());
+            assertThat(contactCaptor.getValue().getName()).isEqualTo(name);
+        }
+
+        @Test
+        @DisplayName("관계자 생성_실패 시_이름이 전각 공백뿐이면 예외가 발생한다")
+        void createContact_fullWidthSpaceName_throwsException() {
+            // Given
+            ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("　").build();
+
+            // When & Then
+            assertThatThrownBy(() -> contactService.createContact(dto))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("이름을 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("관계자 생성_성공 시_비고가 공백뿐이면 null로 저장한다")
+        void createContact_blankRemarks_savesNull() {
+            // Given
+            ContactDto dto = ContactDto.builder().type(ContactType.INDIVIDUAL).name("New").remarks(" 　").build();
+            ArgumentCaptor<Contact> contactCaptor = ArgumentCaptor.forClass(Contact.class);
+
+            // When
+            contactService.createContact(dto);
+
+            // Then
+            verify(contactRepository).save(contactCaptor.capture());
+            assertThat(contactCaptor.getValue().getRemarks()).isNull();
+        }
+
+        @Test
+        @DisplayName("관계자 생성_성공 시_비고의 앞뒤 공백을 지우고 저장하며 길이는 지운 값으로 검증한다")
+        void createContact_remarksWithSurroundingSpaces_savesStripped() {
+            // Given
+            String remarks = "나".repeat(ContactConstraints.REMARKS_MAX_LENGTH);
+            ContactDto dto = ContactDto.builder()
+                    .type(ContactType.INDIVIDUAL)
+                    .name("New")
+                    .remarks("  " + remarks + "  ")
+                    .build();
+            ArgumentCaptor<Contact> contactCaptor = ArgumentCaptor.forClass(Contact.class);
+
+            // When
+            contactService.createContact(dto);
+
+            // Then
+            verify(contactRepository).save(contactCaptor.capture());
+            assertThat(contactCaptor.getValue().getRemarks()).isEqualTo(remarks);
         }
 
         @Test
@@ -313,11 +377,9 @@ class ContactServiceImplTest {
         void createContactWithoutLog_validInput_returnsSavedEntity() {
             // Given
             ContactDto dto = ContactDto.builder().type(ContactType.OTHER).name("무명").build();
-            Contact contactToSave = Contact.builder().build();
             Contact savedContact = Contact.builder().id(1L).name("무명").build();
 
-            when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
-            when(contactRepository.save(contactToSave)).thenReturn(savedContact);
+            when(contactRepository.save(any(Contact.class))).thenReturn(savedContact);
 
             // When
             Contact result = contactService.createContactWithoutLog(dto);
@@ -331,10 +393,6 @@ class ContactServiceImplTest {
         void createContactWithoutLog_validInput_doesNotLog() {
             // Given
             ContactDto dto = ContactDto.builder().type(ContactType.OTHER).name("무명").build();
-            Contact contactToSave = Contact.builder().build();
-
-            when(contactMapper.toEntity(dto)).thenReturn(contactToSave);
-            when(contactRepository.save(contactToSave)).thenReturn(contactToSave);
 
             // When
             contactService.createContactWithoutLog(dto);
@@ -382,6 +440,51 @@ class ContactServiceImplTest {
             assertThat(contact.getName()).isEqualTo("New");
             assertThat(contact.getRemarks()).isEqualTo("New Remarks");
             assertThat(contact.isHidden()).isFalse();
+        }
+
+        @Test
+        @DisplayName("관계자 수정_성공 시_이름의 앞뒤 공백(전각 공백 포함)을 지우고 저장한다")
+        void updateContact_nameWithSurroundingSpaces_setsStripped() {
+            // Given
+            Long id = 1L;
+            Contact contact = Contact.builder().id(id).name("Old").build();
+            when(contactRepository.findById(id)).thenReturn(Optional.of(contact));
+
+            // When
+            contactService.updateContact(id, ContactType.INDIVIDUAL, "　New ", null, false);
+
+            // Then
+            assertThat(contact.getName()).isEqualTo("New");
+        }
+
+        @Test
+        @DisplayName("관계자 수정_성공 시_비고를 비우면 null로 저장한다")
+        void updateContact_emptyRemarks_setsNull() {
+            // Given
+            Long id = 1L;
+            Contact contact = Contact.builder().id(id).remarks("Old Remarks").build();
+            when(contactRepository.findById(id)).thenReturn(Optional.of(contact));
+
+            // When
+            contactService.updateContact(id, ContactType.INDIVIDUAL, "New", "", false);
+
+            // Then
+            assertThat(contact.getRemarks()).isNull();
+        }
+
+        @Test
+        @DisplayName("관계자 수정_성공 시_비고의 앞뒤 공백을 지우고 저장한다")
+        void updateContact_remarksWithSurroundingSpaces_setsStripped() {
+            // Given
+            Long id = 1L;
+            Contact contact = Contact.builder().id(id).build();
+            when(contactRepository.findById(id)).thenReturn(Optional.of(contact));
+
+            // When
+            contactService.updateContact(id, ContactType.INDIVIDUAL, "New", "　New Remarks ", false);
+
+            // Then
+            assertThat(contact.getRemarks()).isEqualTo("New Remarks");
         }
 
         @Test

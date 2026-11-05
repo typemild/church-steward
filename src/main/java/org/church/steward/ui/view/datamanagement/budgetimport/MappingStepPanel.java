@@ -23,8 +23,8 @@ import org.church.steward.ui.component.label.FieldLabel;
 import org.church.steward.ui.component.label.SubFieldLabel;
 
 /**
- * 예산 가져오기의 2단계. 파일의 어느 열이 구분, 예산명, 금액인지 지정한다. 파일의 형식을 정해 두지 않으므로 사용자가 직접 연결하며,
- * 머리글 이름으로 추측한 값을 처음에 채워 둔다.
+ * 예산 가져오기의 2단계. 파일의 어느 열이 구분, 예산명, 금액, 비고인지 지정한다. 비고는 지정하지 않아도 된다. 파일의 형식을 정해
+ * 두지 않으므로 사용자가 직접 연결하며, 머리글 이름으로 추측한 값을 처음에 채워 둔다.
  */
 class MappingStepPanel extends JPanel {
 
@@ -60,9 +60,10 @@ class MappingStepPanel extends JPanel {
     private final List<StyledComboBox<ColumnOption>> levelColumnCombos = new ArrayList<>();
     private final StyledComboBox<ColumnOption> pathColumnCombo = new StyledComboBox<>(ComponentSize.MEDIUM);
     private final StyledComboBox<ColumnOption> amountColumnCombo = new StyledComboBox<>(ComponentSize.MEDIUM);
+    private final StyledComboBox<ColumnOption> remarksColumnCombo = new StyledComboBox<>(ComponentSize.MEDIUM);
     private final StyledCheckBox fillDownCheckBox = new StyledCheckBox("빈 칸(병합된 셀)은 윗 행의 값을 이어받음",
             ComponentSize.MEDIUM);
-    private final StyledCheckBox updateAmountCheckBox = new StyledCheckBox("이미 있는 예산의 금액을 파일의 값으로 갱신",
+    private final StyledCheckBox updateExistingCheckBox = new StyledCheckBox("이미 있는 예산의 금액과 비고를 파일의 값으로 갱신",
             ComponentSize.MEDIUM);
 
     MappingStepPanel(BudgetImportSession session) {
@@ -96,7 +97,7 @@ class MappingStepPanel extends JPanel {
         optionPanel.setOpaque(false);
         optionPanel.add(fillDownCheckBox);
         optionPanel.add(Box.createHorizontalStrut(20));
-        optionPanel.add(updateAmountCheckBox);
+        optionPanel.add(updateExistingCheckBox);
 
         int row = 0;
         addRow(formPanel, row++, "구분", typePanel);
@@ -104,6 +105,7 @@ class MappingStepPanel extends JPanel {
         addRow(formPanel, row++, "단계별 예산명", levelPanel);
         addRow(formPanel, row++, "전체 예산명", pathColumnCombo);
         addRow(formPanel, row++, "금액", amountColumnCombo);
+        addRow(formPanel, row++, "비고", remarksColumnCombo);
         addRow(formPanel, row++, "", optionPanel);
 
         add(formPanel, BorderLayout.NORTH);
@@ -156,9 +158,10 @@ class MappingStepPanel extends JPanel {
         }
         setOptions(pathColumnCombo, options, session.getPathColumn());
         setOptions(amountColumnCombo, options, session.getAmountColumn());
+        setOptions(remarksColumnCombo, options, session.getRemarksColumn());
 
         fillDownCheckBox.setSelected(session.isFillDown());
-        updateAmountCheckBox.setSelected(session.isUpdateExistingAmounts());
+        updateExistingCheckBox.setSelected(session.isUpdateExistingBudgets());
         updateEnabled();
     }
 
@@ -190,8 +193,9 @@ class MappingStepPanel extends JPanel {
                 .toList());
         session.setPathColumn(selectedColumn(pathColumnCombo));
         session.setAmountColumn(selectedColumn(amountColumnCombo));
+        session.setRemarksColumn(selectedColumn(remarksColumnCombo));
         session.setFillDown(fillDownCheckBox.isSelected());
-        session.setUpdateExistingAmounts(updateAmountCheckBox.isSelected());
+        session.setUpdateExistingBudgets(updateExistingCheckBox.isSelected());
 
         if (!describeMapping().equals(before)) {
             session.clearAnalysis();
@@ -210,7 +214,8 @@ class MappingStepPanel extends JPanel {
         return String.join("|", String.valueOf(session.getFixedType()), String.valueOf(session.getTypeColumn()),
                 String.valueOf(session.isPathMode()), String.valueOf(session.getLevelColumns()),
                 String.valueOf(session.getPathColumn()), String.valueOf(session.getAmountColumn()),
-                String.valueOf(session.isFillDown()), String.valueOf(session.isUpdateExistingAmounts()));
+                String.valueOf(session.getRemarksColumn()), String.valueOf(session.isFillDown()),
+                String.valueOf(session.isUpdateExistingBudgets()));
     }
 
     private void updateEnabled() {

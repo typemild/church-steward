@@ -108,6 +108,8 @@ class ContactReviewStepPanel extends JPanel {
      * 세션의 분석 결과와 선택을 화면에 반영한다.
      */
     void refresh() {
+        // 비고 열을 지정했을 때만 비고 칸을 보인다. 지정하지 않으면 빈 칸만 보이기 때문이다.
+        table.setColumnShown(COLUMN_REMARKS, session.getRemarksColumn() != null);
         tableModel.fireTableDataChanged();
         updateSummary();
     }
@@ -225,14 +227,16 @@ class ContactReviewStepPanel extends JPanel {
                 boolean hasFocus, int row, int column) {
             super.getTableCellRendererComponent(table, value, isSelected, false, row, column);
             ContactImportItemDto item = items().get(row);
+            // 비고 칸을 뺄 수 있으므로 표의 칸 번호가 아니라 모델의 칸 번호로 판단한다.
+            int modelColumn = table.convertColumnIndexToModel(column);
 
             setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
-            setHorizontalAlignment(switch (column) {
+            setHorizontalAlignment(switch (modelColumn) {
             case COLUMN_ROW_NUMBER, COLUMN_TYPE, COLUMN_HIDDEN, COLUMN_STATUS -> SwingConstants.CENTER;
             default -> SwingConstants.LEFT;
             });
             if (!isSelected) {
-                setForeground(colorOf(item, column));
+                setForeground(colorOf(item, modelColumn));
             }
             setToolTipText(value == null || value.toString().isEmpty() ? null : value.toString());
             return this;

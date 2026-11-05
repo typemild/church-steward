@@ -18,6 +18,8 @@ public class BudgetDto {
     private Long parentId;
     private String name;
     private Long amount;
+    /** 비고. 없으면 null */
+    private String remarks;
     private int sortOrder;
     private long totalAmount;
     /**

@@ -31,9 +31,9 @@ class BudgetImportSessionTest {
         BudgetImportSession session = new BudgetImportSession();
         session.setData(Path.of("예산.xlsx"), null, true, List.of("예산"), "예산", null,
                 new SpreadsheetData(List.of(
-                        Arrays.asList("구분", "예산 1단계", "예산 2단계", "예산액", "수입액/집행액"),
-                        Arrays.asList("수입", "헌금", null, 1300L, 0L),
-                        Arrays.asList("수입", "헌금", "십일조", 1000L, 0L)), null));
+                        Arrays.asList("구분", "예산 1단계", "예산 2단계", "예산액", "수입액/집행액", "비고"),
+                        Arrays.asList("수입", "헌금", null, 1300L, 0L, null),
+                        Arrays.asList("수입", "헌금", "십일조", 1000L, 0L, "매주 드리는 헌금")), null));
         return session;
     }
 
@@ -133,7 +133,7 @@ class BudgetImportSessionTest {
     class GuessMappingIfNeededTest {
 
         @Test
-        @DisplayName("프로그램이 내보낸 파일의 머리글에서 구분, 단계별 예산명, 예산액의 열을 알아본다")
+        @DisplayName("프로그램이 내보낸 파일의 머리글에서 구분, 단계별 예산명, 예산액, 비고의 열을 알아본다")
         void guessMappingIfNeeded_ExportedHeaders_GuessesAllColumns() {
             // Given
             BudgetImportSession session = createSessionWithExportedFile();
@@ -144,8 +144,22 @@ class BudgetImportSessionTest {
             // Then
             assertThat(session)
                     .extracting(BudgetImportSession::getFixedType, BudgetImportSession::getTypeColumn,
-                            BudgetImportSession::getLevelColumns, BudgetImportSession::getAmountColumn)
-                    .containsExactly(null, 0, List.of(1, 2), 3);
+                            BudgetImportSession::getLevelColumns, BudgetImportSession::getAmountColumn,
+                            BudgetImportSession::getRemarksColumn)
+                    .containsExactly(null, 0, List.of(1, 2), 3, 5);
+        }
+
+        @Test
+        @DisplayName("비고 열을 찾지 못하면 비고 열을 지정하지 않는다")
+        void guessMappingIfNeeded_NoRemarksHeader_LeavesRemarksColumnEmpty() {
+            // Given
+            BudgetImportSession session = createSessionWithHeaders("예산명", "금액");
+
+            // When
+            session.guessMappingIfNeeded();
+
+            // Then
+            assertThat(session.getRemarksColumn()).isNull();
         }
 
         @Test
@@ -293,6 +307,24 @@ class BudgetImportSessionTest {
             assertThat(request)
                     .extracting(BudgetImportRequestDto::getLevelColumns, BudgetImportRequestDto::getPathColumn)
                     .containsExactly(List.of(), 1);
+        }
+
+        @Test
+        @DisplayName("비고 열과 기존 예산의 갱신 여부를 함께 넘긴다")
+        void toRequest_RemarksColumnAndUpdateOption_PassesBoth() {
+            // Given
+            BudgetImportSession session = createSessionWithExportedFile();
+            session.guessMappingIfNeeded();
+            session.setUpdateExistingBudgets(true);
+
+            // When
+            BudgetImportRequestDto request = session.toRequest();
+
+            // Then
+            assertThat(request)
+                    .extracting(BudgetImportRequestDto::getRemarksColumn,
+                            BudgetImportRequestDto::isUpdateExistingBudgets)
+                    .containsExactly(5, true);
         }
     }
 
@@ -498,7 +530,7 @@ class BudgetImportSessionTest {
             session.applyAnalysis(analysisOf(
                     item(PARENT, null, false, 1000L, ImportItemStatus.OK, BudgetImportAction.CREATE),
                     item(CHILD, PARENT, true, 1000L, ImportItemStatus.OK, BudgetImportAction.CREATE),
-                    item(OTHER, null, true, 500L, ImportItemStatus.OK, BudgetImportAction.UPDATE_AMOUNT)));
+                    item(OTHER, null, true, 500L, ImportItemStatus.OK, BudgetImportAction.UPDATE)));
 
             // When
             SelectionSummary summary = session.summarize();

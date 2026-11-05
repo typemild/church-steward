@@ -222,7 +222,7 @@ public class UserManagementPanelView extends JPanel implements MenuActivatable {
         // Row 6: Remarks Field
         remarksTextArea = new StyledTextArea(5, 20, ComponentSize.MEDIUM);
         remarksTextArea.setMaxLength(UserConstraints.REMARKS_MAX_LENGTH);
-        JScrollPane remarksScrollPane = new JScrollPane(remarksTextArea);
+        JScrollPane remarksScrollPane = remarksTextArea.createScrollPane();
         remarksScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         gbc.gridx = 0;
         gbc.gridy = 5;

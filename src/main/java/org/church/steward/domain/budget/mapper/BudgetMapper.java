@@ -27,6 +27,7 @@ public class BudgetMapper {
                 .parentId(budget.getParent() != null ? budget.getParent().getId() : null)
                 .name(budget.getName())
                 .amount(budget.getAmount())
+                .remarks(budget.getRemarks())
                 .sortOrder(budget.getSortOrder())
                 .totalAmount(budget.getTotalAmount())
                 .actualAmount(actualAmount)

@@ -49,6 +49,7 @@ class BudgetMapperTest {
                     .type(BudgetType.INCOME)
                     .name("테스트 예산")
                     .amount(10000L)
+                    .remarks("테스트 비고")
                     .sortOrder(1)
                     .build();
 
@@ -57,6 +58,7 @@ class BudgetMapperTest {
 
             // Then
             assertThat(dto.getId()).isEqualTo(budget.getId());
+            assertThat(dto.getRemarks()).isEqualTo("테스트 비고");
             assertThat(dto.getFiscalYearId()).isEqualTo(7L);
             assertThat(dto.getType()).isEqualTo(budget.getType());
             assertThat(dto.getName()).isEqualTo(budget.getName());

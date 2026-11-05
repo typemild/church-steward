@@ -105,6 +105,7 @@ public class DataExportServiceImpl implements DataExportService {
             addLevelNames(row, budgetRow.levelNames(), levels);
             row.add(budgetRow.budget().getTotalAmount());
             row.add(budgetRow.budget().getActualAmount());
+            row.add(budgetRow.budget().getRemarks());
             rows.add(row);
         }
 
@@ -247,6 +248,7 @@ public class DataExportServiceImpl implements DataExportService {
         addLevelHeaders(headers, levels);
         headers.add(HEADER_BUDGET_AMOUNT);
         headers.add(HEADER_ACTUAL_AMOUNT);
+        headers.add(HEADER_REMARKS);
         return headers;
     }
 

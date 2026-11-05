@@ -26,18 +26,6 @@ public class ContactMapper {
                 .build();
     }
 
-    public Contact toEntity(ContactDto dto) {
-        if (dto == null) {
-            return null;
-        }
-        return Contact.builder()
-                .type(dto.getType())
-                .name(dto.getName())
-                .remarks(dto.getRemarks())
-                .isHidden(dto.isHidden())
-                .build();
-    }
-
     public ContactAutocompleteDto toAutocompleteDto(Contact contact, List<GroupInfoDto> groups) {
         if (contact == null) {
             return null;

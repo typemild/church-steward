@@ -24,12 +24,17 @@ public class BudgetController {
         return budgetService.getBudgetsWithActualAmount(fiscalYearId, type);
     }
 
-    public void createBudget(Long fiscalYearId, Long parentId, String name, long amount, BudgetType type) {
-        budgetService.createBudget(fiscalYearId, parentId, name, amount, type);
+    public List<BudgetType> getMissingBudgetTypes(Long fiscalYearId) {
+        return budgetService.getMissingBudgetTypes(fiscalYearId);
     }
 
-    public void updateBudget(Long id, String newName, long newAmount) {
-        budgetService.updateBudget(id, newName, newAmount);
+    public void createBudget(Long fiscalYearId, Long parentId, String name, long amount, String remarks,
+            BudgetType type) {
+        budgetService.createBudget(fiscalYearId, parentId, name, amount, remarks, type);
+    }
+
+    public void updateBudget(Long id, String newName, long newAmount, String newRemarks) {
+        budgetService.updateBudget(id, newName, newAmount, newRemarks);
     }
 
     public void deleteBudget(Long id) {

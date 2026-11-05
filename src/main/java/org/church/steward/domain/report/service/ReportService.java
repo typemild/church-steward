@@ -32,7 +32,7 @@ public interface ReportService {
     BudgetPlanReportDto getBudgetPlanReport(Long fiscalYearId, BudgetType type);
 
     /**
-     * 회계 연도 수입/지출 결산 보고서의 데이터를 집계한다.
+     * 회계 연도 결산 보고서의 데이터를 집계한다.
      */
     AnnualSettlementReportDto getAnnualSettlementReport(Long fiscalYearId);
 

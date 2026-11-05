@@ -2,12 +2,14 @@ package org.church.steward.ui.view.financialrecord;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.swing.BorderFactory;
@@ -30,6 +32,9 @@ import org.church.steward.domain.financialrecord.dto.FinancialRecordResponseDto;
 import org.church.steward.domain.financialrecord.dto.FinancialRecordSearchRequestDto;
 import org.church.steward.domain.financialrecord.entity.FinancialRecordType;
 import org.church.steward.domain.fiscalyear.dto.FiscalYearDto;
+import org.church.steward.domain.programsetting.controller.ProgramSettingController;
+import org.church.steward.domain.programsetting.dto.BudgetViewColumnsDto;
+import org.church.steward.domain.programsetting.entity.BudgetViewTable;
 import org.church.steward.infrastructure.annotation.UiView;
 import org.church.steward.ui.MenuActivatable;
 import org.church.steward.ui.component.ComponentSize;
@@ -61,6 +66,7 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     private final BudgetController budgetController;
     private final ContactController contactController;
     private final ContactGroupController contactGroupController;
+    private final ProgramSettingController programSettingController;
     private final FiscalYearSelector fiscalYearSelector;
 
     private final FinancialRecordSearchPanel searchPanel;
@@ -77,6 +83,12 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     private long searchSequence = 0;
     /** 마지막 추가 다이얼로그에서 확정한 입력값. 아직 추가한 적이 없거나 회계 연도가 바뀌면 null이다. */
     private LastAddInput lastAddInput;
+    /**
+     * 설정 메뉴의 프로그램 설정 화면으로 이동해 칸 설정 다이얼로그를 띄우는 동작. 인자는 처음에 열어 둘 표다. 순환 의존을 피하려고
+     * MainView가 넘긴다.
+     */
+    private Consumer<BudgetViewTable> columnSettingsAction = _ -> {
+    };
 
     /**
      * 추가 다이얼로그에서 확정한 구분, 날짜, 예산. 다음 추가 다이얼로그의 초기값으로 쓴다.
@@ -90,21 +102,29 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
     private record SearchResult(List<FinancialRecordResponseDto> records, Map<Long, Integer> budgetPositions) {
     }
 
+    /**
+     * 메뉴에 들어올 때마다 읽는 프로그램 설정. 설정 메뉴에서 바뀔 수 있다.
+     */
+    private record ViewSettings(DayOfWeek weeklyClosingDay, BudgetViewColumnsDto budgetViewColumns) {
+    }
+
     public FinancialRecordView(FinancialRecordController financialRecordController,
             BudgetController budgetController, ContactController contactController,
-            ContactGroupController contactGroupController, FiscalYearSelector fiscalYearSelector) {
+            ContactGroupController contactGroupController, ProgramSettingController programSettingController,
+            FiscalYearSelector fiscalYearSelector) {
         this.financialRecordController = financialRecordController;
         this.budgetController = budgetController;
         this.contactController = contactController;
         this.contactGroupController = contactGroupController;
+        this.programSettingController = programSettingController;
         this.fiscalYearSelector = fiscalYearSelector;
         this.searchPanel = new FinancialRecordSearchPanel(budgetController, contactController,
                 fiscalYearSelector::getSelectedFiscalYearId, this::search);
         this.budgetTabPanel = new BudgetTabPanel(this);
         this.itemizedTabPanel = new ItemizedTabPanel(this);
 
-        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일): 720 x 600
-        setPreferredSize(new Dimension(720, 600));
+        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일): 820 x 600
+        setPreferredSize(new Dimension(820, 600));
         setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         setBackground(UIColors.BACKGROUND);
         setLayout(new BorderLayout(0, 10));
@@ -168,7 +188,37 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
         closedNoticeLabel.setVisible(fiscalYear != null && fiscalYear.isClosed());
         budgetTabPanel.setEditable(editable);
         itemizedTabPanel.setEditable(editable);
-        search();
+        // 주간 결산 요일과 예산별 보기의 칸 설정은 설정 메뉴에서 바뀔 수 있으므로 매번 읽어 조회 기간과 표의 칸을 맞춘 뒤 조회한다.
+        AsyncTask.run(tabbedPane,
+                () -> new ViewSettings(programSettingController.getWeeklyClosingDay(),
+                        programSettingController.getBudgetViewColumns()),
+                settings -> {
+                    searchPanel.setWeeklyClosingDay(settings.weeklyClosingDay());
+                    budgetTabPanel.setColumns(settings.budgetViewColumns());
+                    search();
+                },
+                err -> {
+                    log.error("Failed to load program settings", err);
+                    JOptionPane.showMessageDialog(this, "프로그램 설정을 불러오는데 실패했습니다: " + err.getMessage());
+                    search();
+                });
+    }
+
+    /**
+     * 설정 메뉴의 프로그램 설정 화면으로 이동해 예산별 보기의 칸 설정 다이얼로그를 띄우는 동작을 정한다. 동작은 처음에 열어 둘 표를 받는다.
+     */
+    public void setColumnSettingsAction(Consumer<BudgetViewTable> columnSettingsAction) {
+        this.columnSettingsAction = columnSettingsAction;
+    }
+
+    @Override
+    public void showColumnSettings(BudgetViewTable table) {
+        int answer = JOptionPane.showConfirmDialog(this,
+                "예산별 보기의 화면 설정은 \"설정 > 프로그램 설정\"에서 변경할 수 있습니다.\n해당 메뉴로 이동할까요?", "칸 설정",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (answer == JOptionPane.OK_OPTION) {
+            columnSettingsAction.accept(table);
+        }
     }
 
     private void search() {
@@ -234,6 +284,10 @@ public class FinancialRecordView extends JPanel implements MenuActivatable, Fina
             dialog.setBudget(lastAddInput.budgetId(), lastAddInput.budgetPath());
         }
         dialog.enableContinuousEntry();
+        // 마지막 날짜를 이어 쓰지 않을 때만, 오늘이 회계 연도의 기간 밖이라 날짜를 다른 날로 정했으면 알린다.
+        if (lastAddInput == null) {
+            dialog.showDefaultDateNotice();
+        }
         dialog.setVisible(true);
 
         if (!dialog.isConfirmed()) {

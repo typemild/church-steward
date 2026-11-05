@@ -18,6 +18,7 @@ import org.church.steward.ui.component.label.FieldLabel;
 import org.church.steward.ui.component.label.SubFieldLabel;
 import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.util.UIFonts;
+import org.church.steward.ui.util.UIShapes;
 import org.church.steward.util.NumberUtils;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
@@ -29,7 +30,7 @@ public class FinancialSummaryPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    private static final int ARC = 12;
+    private static final int ARC = UIShapes.CARD_ARC;
     private static final int PADDING_VERTICAL = 9;
     private static final int PADDING_HORIZONTAL = 16;
     private static final int CAPTION_GAP = 3;

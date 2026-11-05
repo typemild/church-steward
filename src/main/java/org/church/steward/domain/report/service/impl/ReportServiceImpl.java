@@ -45,7 +45,10 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class ReportServiceImpl implements ReportService {
 
-    /** 한 예산 안의 내역은 날짜순으로, 같은 날짜는 입력순으로 정렬한다. */
+    /**
+     * 한 예산 안의 내역은 날짜순으로, 같은 날짜는 입력순으로 정렬한다. 같은 날짜의 순서는 화면이 양식에 따라 다시 정하며, 견준 값이 같은
+     * 내역은 이 순서로 남는다.
+     */
     private static final Comparator<FinancialRecord> RECORD_ORDER = Comparator.comparing(FinancialRecord::getDate)
             .thenComparing(FinancialRecord::getId, Comparator.nullsLast(Comparator.naturalOrder()));
 
@@ -81,6 +84,8 @@ public class ReportServiceImpl implements ReportService {
 
         return WeeklySettlementReportDto.builder()
                 .fiscalYearName(fiscalYear.getName())
+                .fiscalYearStartDate(fiscalYear.getStartDate())
+                .fiscalYearEndDate(fiscalYear.getEndDate())
                 .startDate(startDate)
                 .endDate(endDate)
                 .previousBalance(summarize(previousRecords).getDifference())
@@ -124,6 +129,8 @@ public class ReportServiceImpl implements ReportService {
 
         return BudgetPlanReportDto.builder()
                 .fiscalYearName(fiscalYear.getName())
+                .fiscalYearStartDate(fiscalYear.getStartDate())
+                .fiscalYearEndDate(fiscalYear.getEndDate())
                 .type(type)
                 .rows(rows)
                 .totalAmount(totalAmount)
@@ -166,7 +173,13 @@ public class ReportServiceImpl implements ReportService {
 
         return AnnualSettlementReportDto.builder()
                 .fiscalYearName(fiscalYear.getName())
+                .fiscalYearStartDate(fiscalYear.getStartDate())
+                .fiscalYearEndDate(fiscalYear.getEndDate())
                 .previousFiscalYearName(previousFiscalYear.map(FiscalYear::getName)
+                        .orElse(null))
+                .previousFiscalYearStartDate(previousFiscalYear.map(FiscalYear::getStartDate)
+                        .orElse(null))
+                .previousFiscalYearEndDate(previousFiscalYear.map(FiscalYear::getEndDate)
                         .orElse(null))
                 .previousYear(previousSummary)
                 .currentYear(summarize(records))
@@ -190,6 +203,8 @@ public class ReportServiceImpl implements ReportService {
 
         return SettlementDetailReportDto.builder()
                 .fiscalYearName(fiscalYear.getName())
+                .fiscalYearStartDate(fiscalYear.getStartDate())
+                .fiscalYearEndDate(fiscalYear.getEndDate())
                 .type(type)
                 .rows(toExecutionRows(tree, tree.flatten(), records, recordType))
                 .totalBudgetedAmount(totalBudgetedAmount)

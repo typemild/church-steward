@@ -19,6 +19,7 @@ import org.church.steward.domain.activitylog.util.EntitySnapshotCapturer;
 import org.church.steward.domain.budget.dto.BudgetAutocompleteDto;
 import org.church.steward.domain.budget.dto.BudgetDto;
 import org.church.steward.domain.budget.entity.Budget;
+import org.church.steward.domain.budget.entity.BudgetConstraints;
 import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.budget.mapper.BudgetMapper;
 import org.church.steward.domain.budget.repository.BudgetRepository;
@@ -277,6 +278,53 @@ class BudgetServiceImplTest {
     }
 
     @Nested
+    @DisplayName("getMissingBudgetTypes 테스트")
+    class GetMissingBudgetTypesTest {
+
+        @Test
+        @DisplayName("수입 예산과 지출 예산이 모두 있으면 빈 목록을 반환한다")
+        void getMissingBudgetTypes_whenBothTypesExist_returnsEmpty() {
+            // Given
+            when(budgetRepository.existsByFiscalYearIdAndType(FISCAL_YEAR_ID, BudgetType.INCOME)).thenReturn(true);
+            when(budgetRepository.existsByFiscalYearIdAndType(FISCAL_YEAR_ID, BudgetType.EXPENSE)).thenReturn(true);
+
+            // When
+            List<BudgetType> result = budgetService.getMissingBudgetTypes(FISCAL_YEAR_ID);
+
+            // Then
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("수입 예산만 있으면 지출만 반환한다")
+        void getMissingBudgetTypes_whenOnlyIncomeExists_returnsExpense() {
+            // Given
+            when(budgetRepository.existsByFiscalYearIdAndType(FISCAL_YEAR_ID, BudgetType.INCOME)).thenReturn(true);
+            when(budgetRepository.existsByFiscalYearIdAndType(FISCAL_YEAR_ID, BudgetType.EXPENSE)).thenReturn(false);
+
+            // When
+            List<BudgetType> result = budgetService.getMissingBudgetTypes(FISCAL_YEAR_ID);
+
+            // Then
+            assertThat(result).containsExactly(BudgetType.EXPENSE);
+        }
+
+        @Test
+        @DisplayName("예산이 하나도 없으면 수입, 지출 순으로 모두 반환한다")
+        void getMissingBudgetTypes_whenNoBudget_returnsAllTypesInOrder() {
+            // Given
+            when(budgetRepository.existsByFiscalYearIdAndType(FISCAL_YEAR_ID, BudgetType.INCOME)).thenReturn(false);
+            when(budgetRepository.existsByFiscalYearIdAndType(FISCAL_YEAR_ID, BudgetType.EXPENSE)).thenReturn(false);
+
+            // When
+            List<BudgetType> result = budgetService.getMissingBudgetTypes(FISCAL_YEAR_ID);
+
+            // Then
+            assertThat(result).containsExactly(BudgetType.INCOME, BudgetType.EXPENSE);
+        }
+    }
+
+    @Nested
     @DisplayName("createBudget 테스트")
     class CreateBudgetTest {
 
@@ -290,7 +338,7 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When
-            budgetService.createBudget(FISCAL_YEAR_ID, null, name, amount, type);
+            budgetService.createBudget(FISCAL_YEAR_ID, null, name, amount, null, type);
 
             // Then
             verify(budgetRepository, times(1)).save(any(Budget.class));
@@ -304,11 +352,100 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When
-            budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, BudgetType.INCOME);
+            budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, null, BudgetType.INCOME);
 
             // Then
             verify(budgetRepository).save(budgetCaptor.capture());
             assertThat(budgetCaptor.getValue().getFiscalYear()).isSameAs(fiscalYear);
+        }
+
+        @Test
+        @DisplayName("입력한 비고와 함께 예산을 추가한다")
+        void createBudget_WithRemarks_SavesRemarks() {
+            // Given
+            ArgumentCaptor<Budget> budgetCaptor = ArgumentCaptor.forClass(Budget.class);
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+
+            // When
+            budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, "매주 드리는 헌금", BudgetType.INCOME);
+
+            // Then
+            verify(budgetRepository).save(budgetCaptor.capture());
+            assertThat(budgetCaptor.getValue().getRemarks()).isEqualTo("매주 드리는 헌금");
+        }
+
+        @Test
+        @DisplayName("비고가 비어 있으면 비고가 없는 것(null)으로 추가한다")
+        void createBudget_BlankRemarks_SavesNull() {
+            // Given
+            ArgumentCaptor<Budget> budgetCaptor = ArgumentCaptor.forClass(Budget.class);
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+
+            // When
+            budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, " ", BudgetType.INCOME);
+
+            // Then
+            verify(budgetRepository).save(budgetCaptor.capture());
+            assertThat(budgetCaptor.getValue().getRemarks()).isNull();
+        }
+
+        @Test
+        @DisplayName("예산명의 앞뒤 공백(전각 공백 포함)을 지우고 추가하며, 길이는 공백을 지운 값으로 검증한다")
+        void createBudget_NameWithSurroundingSpaces_SavesStripped() {
+            // Given
+            String name = "가".repeat(BudgetConstraints.NAME_MAX_LENGTH);
+            ArgumentCaptor<Budget> budgetCaptor = ArgumentCaptor.forClass(Budget.class);
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+
+            // When
+            budgetService.createBudget(FISCAL_YEAR_ID, null, "　" + name + " ", 100L, null, BudgetType.INCOME);
+
+            // Then
+            verify(budgetRepository).save(budgetCaptor.capture());
+            assertThat(budgetCaptor.getValue().getName()).isEqualTo(name);
+        }
+
+        @Test
+        @DisplayName("예산명이 전각 공백뿐이면 예산을 추가할 수 없다")
+        void createBudget_FullWidthSpaceName_Failure() {
+            // Given
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+
+            // When & Then
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, "　", 100L, null, BudgetType.INCOME))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("예산명을 입력해주세요.");
+        }
+
+        @Test
+        @DisplayName("비고의 앞뒤 공백을 지우고 추가하며, 길이는 공백을 지운 값으로 검증한다")
+        void createBudget_RemarksWithSurroundingSpaces_SavesStripped() {
+            // Given
+            String remarks = "가".repeat(100);
+            ArgumentCaptor<Budget> budgetCaptor = ArgumentCaptor.forClass(Budget.class);
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+
+            // When
+            budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, "　" + remarks + " ", BudgetType.INCOME);
+
+            // Then
+            verify(budgetRepository).save(budgetCaptor.capture());
+            assertThat(budgetCaptor.getValue().getRemarks()).isEqualTo(remarks);
+        }
+
+        @Test
+        @DisplayName("비고가 100자를 넘으면 예산을 추가할 수 없다")
+        void createBudget_RemarksTooLong_Failure() {
+            // Given
+            String remarks = "가".repeat(101);
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+
+            // When & Then
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, remarks, BudgetType.INCOME))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("비고는 100자 이내로 입력해주세요.");
         }
 
         @Test
@@ -318,7 +455,8 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.empty());
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("존재하지 않는 회계 연도입니다.");
         }
@@ -331,7 +469,8 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, "새 예산", 100L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("마감된 회계 연도의 예산은 변경할 수 없습니다.");
         }
@@ -343,7 +482,8 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, null, " ", 100L, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, " ", 100L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("예산명을 입력해주세요.");
         }
@@ -356,7 +496,8 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, null, name, 100L, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, name, 100L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("예산명은 50자 이내로 입력해주세요.");
         }
@@ -369,7 +510,7 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When
-            budgetService.createBudget(FISCAL_YEAR_ID, null, name, 100L, BudgetType.INCOME);
+            budgetService.createBudget(FISCAL_YEAR_ID, null, name, 100L, null, BudgetType.INCOME);
 
             // Then
             verify(budgetRepository, times(1)).save(any(Budget.class));
@@ -382,7 +523,8 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, null, "헌금<일반", 100L, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, "헌금<일반", 100L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("예산명에는 '<', '>' 문자를 사용할 수 없습니다.");
         }
@@ -395,7 +537,7 @@ class BudgetServiceImplTest {
 
             // When & Then
             assertThatThrownBy(
-                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, "헌금 > 일반", 100L, BudgetType.INCOME))
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, null, "헌금 > 일반", 100L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("예산명에는 '<', '>' 문자를 사용할 수 없습니다.");
         }
@@ -416,7 +558,8 @@ class BudgetServiceImplTest {
             when(budgetRepository.findById(1L)).thenReturn(Optional.of(parentOfOtherFiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("상위 예산과 같은 회계 연도의 예산만 추가할 수 있습니다.");
         }
@@ -440,7 +583,7 @@ class BudgetServiceImplTest {
             when(budgetRepository.save(any(Budget.class))).thenReturn(newBudget);
 
             // When
-            budgetService.createBudget(FISCAL_YEAR_ID, null, name, amount, type);
+            budgetService.createBudget(FISCAL_YEAR_ID, null, name, amount, null, type);
 
             // Then
             verify(activityLogService).logCreation(any(Budget.class));
@@ -476,7 +619,7 @@ class BudgetServiceImplTest {
             when(budgetRepository.save(any(Budget.class))).thenReturn(newBudget);
 
             // When
-            budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, BudgetType.INCOME);
+            budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, null, BudgetType.INCOME);
 
             // Then
             verify(budgetRepository, times(2)).save(any(Budget.class));
@@ -501,7 +644,7 @@ class BudgetServiceImplTest {
             when(budgetRepository.findMaxSortOrder(FISCAL_YEAR_ID, 1L)).thenReturn(5);
 
             // When
-            budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, BudgetType.INCOME);
+            budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, null, BudgetType.INCOME);
 
             // Then
             assertThat(parentIncomeBudget.getAmount()).isNull();
@@ -537,7 +680,7 @@ class BudgetServiceImplTest {
             when(budgetRepository.save(any(Budget.class))).thenReturn(newBudget);
 
             // When
-            budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, BudgetType.INCOME);
+            budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, null, BudgetType.INCOME);
 
             // Then
             verify(activityLogService).logCreation(any(Budget.class));
@@ -561,7 +704,8 @@ class BudgetServiceImplTest {
             when(financialRecordRepository.existsByBudgetId(1L)).thenReturn(true);
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, BudgetType.INCOME))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, null, BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -583,7 +727,8 @@ class BudgetServiceImplTest {
             when(financialRecordRepository.existsByBudgetId(1L)).thenReturn(false);
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, BudgetType.EXPENSE))
+            assertThatThrownBy(
+                    () -> budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, null, BudgetType.EXPENSE))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -608,7 +753,7 @@ class BudgetServiceImplTest {
             ArgumentCaptor<Budget> budgetCaptor = ArgumentCaptor.forClass(Budget.class);
 
             // When
-            budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, BudgetType.INCOME);
+            budgetService.createBudget(FISCAL_YEAR_ID, 1L, "자식 예산", 50L, null, BudgetType.INCOME);
 
             // Then
             verify(budgetRepository, times(2)).save(budgetCaptor.capture());
@@ -634,7 +779,7 @@ class BudgetServiceImplTest {
             when(budgetRepository.save(any(Budget.class))).thenReturn(saved);
 
             // When
-            Budget result = budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "새 예산", 100L,
+            Budget result = budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "새 예산", 100L, null,
                     BudgetType.INCOME);
 
             // Then
@@ -648,7 +793,7 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When
-            budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "새 예산", 100L, BudgetType.INCOME);
+            budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "새 예산", 100L, null, BudgetType.INCOME);
 
             // Then
             verify(activityLogService, never()).logCreation(any());
@@ -662,7 +807,7 @@ class BudgetServiceImplTest {
             when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "새 예산", 100L,
+            assertThatThrownBy(() -> budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "새 예산", 100L, null,
                     BudgetType.INCOME))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("마감된 회계 연도의 예산은 변경할 수 없습니다.");
@@ -692,7 +837,7 @@ class BudgetServiceImplTest {
             when(budgetRepository.findById(1L)).thenReturn(Optional.of(budget));
 
             // When
-            Budget result = budgetService.updateBudgetWithoutLog(1L, "수정된 이름", 2000L);
+            Budget result = budgetService.updateBudgetWithoutLog(1L, "수정된 이름", 2000L, null);
 
             // Then
             assertThat(result)
@@ -707,7 +852,7 @@ class BudgetServiceImplTest {
             when(budgetRepository.findById(1L)).thenReturn(Optional.of(createLeafBudget()));
 
             // When
-            budgetService.updateBudgetWithoutLog(1L, "수정된 이름", 2000L);
+            budgetService.updateBudgetWithoutLog(1L, "수정된 이름", 2000L, null);
 
             // Then
             verify(activityLogService, never()).logUpdate(any(), any());
@@ -720,7 +865,7 @@ class BudgetServiceImplTest {
             when(budgetRepository.findById(1L)).thenReturn(Optional.of(createBudgetOfClosedFiscalYear(1L)));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.updateBudgetWithoutLog(1L, "수정된 이름", 2000L))
+            assertThatThrownBy(() -> budgetService.updateBudgetWithoutLog(1L, "수정된 이름", 2000L, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("마감된 회계 연도의 예산은 변경할 수 없습니다.");
         }
@@ -737,7 +882,7 @@ class BudgetServiceImplTest {
             when(budgetRepository.findById(1L)).thenReturn(Optional.of(createBudgetOfClosedFiscalYear(1L)));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.updateBudget(1L, "수정된 이름", 2000L))
+            assertThatThrownBy(() -> budgetService.updateBudget(1L, "수정된 이름", 2000L, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("마감된 회계 연도의 예산은 변경할 수 없습니다.");
         }
@@ -757,7 +902,7 @@ class BudgetServiceImplTest {
             when(budgetRepository.findById(1L)).thenReturn(Optional.of(budget));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.updateBudget(1L, "헌금 > 일반", 1000L))
+            assertThatThrownBy(() -> budgetService.updateBudget(1L, "헌금 > 일반", 1000L, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("예산명에는 '<', '>' 문자를 사용할 수 없습니다.");
         }
@@ -777,7 +922,7 @@ class BudgetServiceImplTest {
             when(budgetRepository.findById(1L)).thenReturn(Optional.of(budget));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.updateBudget(1L, "", 1000L))
+            assertThatThrownBy(() -> budgetService.updateBudget(1L, "", 1000L, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("예산명을 입력해주세요.");
         }
@@ -802,7 +947,7 @@ class BudgetServiceImplTest {
             when(snapshotCapturer.capture(parentIncomeBudget)).thenReturn(snapshot);
 
             // When
-            budgetService.updateBudget(1L, "수정된 이름", 2000L);
+            budgetService.updateBudget(1L, "수정된 이름", 2000L, null);
 
             // Then
             assertThat(parentIncomeBudget.getName()).isEqualTo("수정된 이름");
@@ -828,10 +973,121 @@ class BudgetServiceImplTest {
             when(snapshotCapturer.capture(parentIncomeBudget)).thenReturn(snapshot);
 
             // When
-            budgetService.updateBudget(1L, "수정된 이름", 2000L);
+            budgetService.updateBudget(1L, "수정된 이름", 2000L, null);
 
             // Then
             assertThat(parentIncomeBudget.getTotalAmount()).isEqualTo(2000L);
+        }
+
+        @Test
+        @DisplayName("예산의 비고를 바꿀 수 있다")
+        void updateBudget_NewRemarks_RemarksUpdated() {
+            // Given
+            Budget budget = Budget.builder()
+                    .id(1L)
+                    .fiscalYear(fiscalYear)
+                    .type(BudgetType.INCOME)
+                    .name("십일조")
+                    .amount(1000L)
+                    .remarks("기존 비고")
+                    .build();
+
+            @SuppressWarnings("unchecked")
+            EntitySnapshot<Budget> snapshot = mock(EntitySnapshot.class);
+
+            when(budgetRepository.findById(1L)).thenReturn(Optional.of(budget));
+            when(snapshotCapturer.capture(budget)).thenReturn(snapshot);
+
+            // When
+            budgetService.updateBudget(1L, "십일조", 1000L, "새 비고");
+
+            // Then
+            assertThat(budget.getRemarks()).isEqualTo("새 비고");
+        }
+
+        @Test
+        @DisplayName("비고를 비우면 비고가 없는 것(null)으로 저장한다")
+        void updateBudget_BlankRemarks_RemarksCleared() {
+            // Given
+            Budget budget = Budget.builder()
+                    .id(1L)
+                    .fiscalYear(fiscalYear)
+                    .type(BudgetType.INCOME)
+                    .name("십일조")
+                    .amount(1000L)
+                    .remarks("기존 비고")
+                    .build();
+
+            @SuppressWarnings("unchecked")
+            EntitySnapshot<Budget> snapshot = mock(EntitySnapshot.class);
+
+            when(budgetRepository.findById(1L)).thenReturn(Optional.of(budget));
+            when(snapshotCapturer.capture(budget)).thenReturn(snapshot);
+
+            // When
+            budgetService.updateBudget(1L, "십일조", 1000L, "");
+
+            // Then
+            assertThat(budget.getRemarks()).isNull();
+        }
+
+        @Test
+        @DisplayName("예산명의 앞뒤 공백(전각 공백 포함)을 지우고 저장한다")
+        void updateBudget_NameWithSurroundingSpaces_NameStripped() {
+            // Given
+            Budget budget = Budget.builder()
+                    .id(1L)
+                    .fiscalYear(fiscalYear)
+                    .type(BudgetType.INCOME)
+                    .name("십일조")
+                    .amount(1000L)
+                    .build();
+            when(budgetRepository.findById(1L)).thenReturn(Optional.of(budget));
+
+            // When
+            budgetService.updateBudget(1L, "　감사헌금 ", 1000L, null);
+
+            // Then
+            assertThat(budget.getName()).isEqualTo("감사헌금");
+        }
+
+        @Test
+        @DisplayName("비고의 앞뒤 공백을 지우고 저장한다")
+        void updateBudget_RemarksWithSurroundingSpaces_RemarksStripped() {
+            // Given
+            Budget budget = Budget.builder()
+                    .id(1L)
+                    .fiscalYear(fiscalYear)
+                    .type(BudgetType.INCOME)
+                    .name("십일조")
+                    .amount(1000L)
+                    .build();
+            when(budgetRepository.findById(1L)).thenReturn(Optional.of(budget));
+
+            // When
+            budgetService.updateBudget(1L, "십일조", 1000L, " 새 비고　");
+
+            // Then
+            assertThat(budget.getRemarks()).isEqualTo("새 비고");
+        }
+
+        @Test
+        @DisplayName("비고가 100자를 넘으면 예산을 수정할 수 없다")
+        void updateBudget_RemarksTooLong_Failure() {
+            // Given
+            Budget budget = Budget.builder()
+                    .id(1L)
+                    .fiscalYear(fiscalYear)
+                    .type(BudgetType.INCOME)
+                    .name("십일조")
+                    .amount(1000L)
+                    .build();
+            when(budgetRepository.findById(1L)).thenReturn(Optional.of(budget));
+
+            // When & Then
+            assertThatThrownBy(() -> budgetService.updateBudget(1L, "십일조", 1000L, "가".repeat(101)))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("비고는 100자 이내로 입력해주세요.");
         }
 
         @Test
@@ -854,7 +1110,7 @@ class BudgetServiceImplTest {
             when(snapshotCapturer.capture(parentIncomeBudget)).thenReturn(snapshot);
 
             // When
-            budgetService.updateBudget(1L, "수정된 이름", 2000L);
+            budgetService.updateBudget(1L, "수정된 이름", 2000L, null);
 
             // Then
             verify(budgetRepository).save(parentIncomeBudget);
@@ -880,7 +1136,7 @@ class BudgetServiceImplTest {
             when(snapshotCapturer.capture(parentIncomeBudget)).thenReturn(snapshot);
 
             // When
-            budgetService.updateBudget(1L, "수정된 이름", 2000L);
+            budgetService.updateBudget(1L, "수정된 이름", 2000L, null);
 
             // Then
             verify(activityLogService).logUpdate(snapshot, parentIncomeBudget);
@@ -914,7 +1170,7 @@ class BudgetServiceImplTest {
             when(budgetRepository.findById(1L)).thenReturn(Optional.of(parentIncomeBudget));
 
             // When & Then
-            assertThatThrownBy(() -> budgetService.updateBudget(1L, "수정된 이름", 2000L))
+            assertThatThrownBy(() -> budgetService.updateBudget(1L, "수정된 이름", 2000L, null))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }

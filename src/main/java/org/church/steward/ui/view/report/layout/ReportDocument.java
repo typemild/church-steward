@@ -11,14 +11,17 @@ public final class ReportDocument {
 
     private final String title;
     private final List<List<ReportElement>> pages;
+    private final int partCount;
     private final ReportStyle style;
     private final float smallestFontSize;
 
-    ReportDocument(String title, List<List<ReportElement>> pages, ReportStyle style, float smallestFontSize) {
+    ReportDocument(String title, List<List<ReportElement>> pages, int partCount, ReportStyle style,
+            float smallestFontSize) {
         this.title = title;
         this.pages = pages.stream()
                 .map(List::copyOf)
                 .toList();
+        this.partCount = partCount;
         this.style = style;
         this.smallestFontSize = smallestFontSize;
     }
@@ -68,6 +71,20 @@ public final class ReportDocument {
 
     public int getPageCount() {
         return pages.size();
+    }
+
+    /**
+     * 이 문서에 묶은 보고서의 수. 보고서 하나로 된 문서는 1이다.
+     */
+    public int getPartCount() {
+        return partCount;
+    }
+
+    /**
+     * 묶은 보고서마다 한 페이지에 담겼는지 여부. 보고서마다 새 페이지에서 시작하므로 페이지 수가 보고서 수를 넘지 않으면 모두 한 페이지다.
+     */
+    public boolean isOnePagePerPart() {
+        return pages.size() <= partCount;
     }
 
     /**

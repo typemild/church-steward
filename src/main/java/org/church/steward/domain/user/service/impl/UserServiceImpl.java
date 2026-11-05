@@ -18,6 +18,7 @@ import org.church.steward.infrastructure.security.InvalidPasswordException;
 import org.church.steward.infrastructure.security.LoggedInUser;
 import org.church.steward.infrastructure.security.UserNotFoundException;
 import org.church.steward.infrastructure.security.UserSessionHolder;
+import org.church.steward.util.TextUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,7 +45,8 @@ public class UserServiceImpl implements UserService {
     public void createUser(String id, String rawPassword, String remarks) {
         // 1. ID 패턴과 비고 길이 검증
         validateId(id);
-        validateRemarks(remarks);
+        String normalizedRemarks = TextUtils.normalize(remarks);
+        validateRemarks(normalizedRemarks);
 
         // 2. 중복 사용자 확인
         if (userRepository.existsById(id)) {
@@ -59,7 +61,7 @@ public class UserServiceImpl implements UserService {
                 .id(id)
                 .password(encodedPassword)
                 .role(UserRole.USER)
-                .remarks(remarks)
+                .remarks(normalizedRemarks)
                 .build();
 
         // 4. DatabaseManager의 설정 파일 내 DB 접근 키 재암호화 및 저장
@@ -73,7 +75,8 @@ public class UserServiceImpl implements UserService {
     public void createAdmin(String id, String rawPassword, String remarks) {
         // 1. ID 패턴과 비고 길이 검증
         validateId(id);
-        validateRemarks(remarks);
+        String normalizedRemarks = TextUtils.normalize(remarks);
+        validateRemarks(normalizedRemarks);
 
         // 2. 중복 사용자 확인
         if (userRepository.existsById(id)) {
@@ -88,7 +91,7 @@ public class UserServiceImpl implements UserService {
                 .id(id)
                 .password(encodedPassword)
                 .role(UserRole.ADMIN)
-                .remarks(remarks)
+                .remarks(normalizedRemarks)
                 .build();
 
         userRepository.save(user);
@@ -147,7 +150,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void updateUser(String id, String newPassword, String remarks) {
-        validateRemarks(remarks);
+        String normalizedRemarks = TextUtils.normalize(remarks);
+        validateRemarks(normalizedRemarks);
 
         // 1. 사용자 조회
         User user = userRepository.findById(id)
@@ -165,7 +169,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // 5. 비고 수정
-        user.setRemarks(remarks);
+        user.setRemarks(normalizedRemarks);
         userRepository.save(user);
         activityLogService.logUpdate(oldSnapshot, user);
     }

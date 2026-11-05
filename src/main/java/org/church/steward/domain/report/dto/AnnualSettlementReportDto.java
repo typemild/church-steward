@@ -1,5 +1,6 @@
 package org.church.steward.domain.report.dto;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.church.steward.domain.dashboard.dto.MonthlyTrendDto;
@@ -10,7 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 회계 연도 수입/지출 결산 보고서의 데이터
+ * 회계 연도 결산 보고서의 데이터
  */
 @Getter
 @Builder
@@ -18,9 +19,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AnnualSettlementReportDto {
     private String fiscalYearName;
+    /** 회계 연도의 기간. 제목 아래와 총괄 표에 적는다. */
+    private LocalDate fiscalYearStartDate;
+    private LocalDate fiscalYearEndDate;
 
     /** 직전 회계 연도의 이름. 직전 회계 연도가 없으면 null */
     private String previousFiscalYearName;
+    /** 직전 회계 연도의 기간. 직전 회계 연도가 없으면 null */
+    private LocalDate previousFiscalYearStartDate;
+    private LocalDate previousFiscalYearEndDate;
     /** 직전 회계 연도의 수입/지출 총액. 직전 회계 연도가 없으면 null */
     private ReportSummaryDto previousYear;
     private ReportSummaryDto currentYear;

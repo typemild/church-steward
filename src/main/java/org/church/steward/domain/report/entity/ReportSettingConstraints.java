@@ -31,8 +31,8 @@ public final class ReportSettingConstraints {
     public static final int DEFAULT_FONT_SIZE_STEP = 0;
     public static final int DEFAULT_LINE_SPACING = 130;
     public static final boolean DEFAULT_AUTO_FIT = false;
-    public static final boolean DEFAULT_THUMBNAILS_VISIBLE = false;
-    public static final ReportViewMode DEFAULT_VIEW_MODE = ReportViewMode.CONTINUOUS;
+    public static final boolean DEFAULT_THUMBNAILS_VISIBLE = true;
+    public static final ReportViewMode DEFAULT_VIEW_MODE = ReportViewMode.SINGLE_PAGE;
     public static final ReportZoomMode DEFAULT_ZOOM_MODE = ReportZoomMode.FIT_WIDTH;
     public static final int DEFAULT_ZOOM = 100;
 

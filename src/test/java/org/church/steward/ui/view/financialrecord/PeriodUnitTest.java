@@ -2,6 +2,7 @@ package org.church.steward.ui.view.financialrecord;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 
 import org.church.steward.ui.view.financialrecord.period.PeriodUnit;
@@ -11,6 +12,9 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("PeriodUnit 테스트")
 class PeriodUnitTest {
+
+    /** 주간이 아닌 단위는 결산 요일을 쓰지 않는다. */
+    private static final DayOfWeek CLOSING_DAY = DayOfWeek.SUNDAY;
 
     @Nested
     @DisplayName("startOf 테스트")
@@ -23,36 +27,62 @@ class PeriodUnitTest {
             LocalDate base = LocalDate.of(2026, 10, 6);
 
             // When
-            LocalDate result = PeriodUnit.DAY.startOf(base);
+            LocalDate result = PeriodUnit.DAY.startOf(base, CLOSING_DAY);
 
             // Then
             assertThat(result).isEqualTo(base);
         }
 
         @Test
-        @DisplayName("주간 단위는 기준일이 포함된 주의 일요일을 시작일로 반환한다")
-        void startOf_WeekWithWeekday_ReturnsPreviousSunday() {
+        @DisplayName("주간 단위는 결산 요일이 일요일이면 기준일이 포함된 주간의 월요일을 시작일로 반환한다")
+        void startOf_WeekWithWeekdayAndSundayClosing_ReturnsPreviousMonday() {
             // Given : 2026-10-06은 화요일이다.
             LocalDate tuesday = LocalDate.of(2026, 10, 6);
 
             // When
-            LocalDate result = PeriodUnit.WEEK.startOf(tuesday);
+            LocalDate result = PeriodUnit.WEEK.startOf(tuesday, DayOfWeek.SUNDAY);
 
             // Then
-            assertThat(result).isEqualTo(LocalDate.of(2026, 10, 4));
+            assertThat(result).isEqualTo(LocalDate.of(2026, 10, 5));
         }
 
         @Test
-        @DisplayName("주간 단위는 기준일이 일요일이면 그 날을 시작일로 반환한다")
-        void startOf_WeekWithSunday_ReturnsSameDay() {
-            // Given
-            LocalDate sunday = LocalDate.of(2026, 10, 4);
+        @DisplayName("주간 단위는 기준일이 결산 요일이면 그 날로 끝나는 주간의 시작일을 반환한다")
+        void startOf_WeekWithClosingDay_ReturnsStartOfWeekEndingThatDay() {
+            // Given : 2026-11-01은 일요일이다.
+            LocalDate sunday = LocalDate.of(2026, 11, 1);
 
             // When
-            LocalDate result = PeriodUnit.WEEK.startOf(sunday);
+            LocalDate result = PeriodUnit.WEEK.startOf(sunday, DayOfWeek.SUNDAY);
 
             // Then
-            assertThat(result).isEqualTo(sunday);
+            assertThat(result).isEqualTo(LocalDate.of(2026, 10, 26));
+        }
+
+        @Test
+        @DisplayName("주간 단위는 기준일이 결산 요일의 다음 날이면 그 날을 시작일로 반환한다")
+        void startOf_WeekWithDayAfterClosingDay_ReturnsSameDay() {
+            // Given : 2026-10-05는 월요일이다.
+            LocalDate monday = LocalDate.of(2026, 10, 5);
+
+            // When
+            LocalDate result = PeriodUnit.WEEK.startOf(monday, DayOfWeek.SUNDAY);
+
+            // Then
+            assertThat(result).isEqualTo(monday);
+        }
+
+        @Test
+        @DisplayName("주간 단위는 결산 요일이 토요일이면 기준일이 포함된 주간의 일요일을 시작일로 반환한다")
+        void startOf_WeekWithSaturdayClosing_ReturnsPreviousSunday() {
+            // Given : 2026-10-06은 화요일이다.
+            LocalDate tuesday = LocalDate.of(2026, 10, 6);
+
+            // When
+            LocalDate result = PeriodUnit.WEEK.startOf(tuesday, DayOfWeek.SATURDAY);
+
+            // Then
+            assertThat(result).isEqualTo(LocalDate.of(2026, 10, 4));
         }
 
         @Test
@@ -62,7 +92,7 @@ class PeriodUnitTest {
             LocalDate base = LocalDate.of(2024, 2, 15);
 
             // When
-            LocalDate result = PeriodUnit.MONTH.startOf(base);
+            LocalDate result = PeriodUnit.MONTH.startOf(base, CLOSING_DAY);
 
             // Then
             assertThat(result).isEqualTo(LocalDate.of(2024, 2, 1));
@@ -75,7 +105,7 @@ class PeriodUnitTest {
             LocalDate base = LocalDate.of(2026, 5, 20);
 
             // When
-            LocalDate result = PeriodUnit.QUARTER.startOf(base);
+            LocalDate result = PeriodUnit.QUARTER.startOf(base, CLOSING_DAY);
 
             // Then
             assertThat(result).isEqualTo(LocalDate.of(2026, 4, 1));
@@ -88,7 +118,7 @@ class PeriodUnitTest {
             LocalDate base = LocalDate.of(2026, 12, 31);
 
             // When
-            LocalDate result = PeriodUnit.QUARTER.startOf(base);
+            LocalDate result = PeriodUnit.QUARTER.startOf(base, CLOSING_DAY);
 
             // Then
             assertThat(result).isEqualTo(LocalDate.of(2026, 10, 1));
@@ -101,7 +131,7 @@ class PeriodUnitTest {
             LocalDate base = LocalDate.of(2026, 10, 6);
 
             // When
-            LocalDate result = PeriodUnit.YEAR.startOf(base);
+            LocalDate result = PeriodUnit.YEAR.startOf(base, CLOSING_DAY);
 
             // Then
             assertThat(result).isEqualTo(LocalDate.of(2026, 1, 1));
@@ -126,16 +156,16 @@ class PeriodUnitTest {
         }
 
         @Test
-        @DisplayName("주간 단위는 시작일인 일요일로부터 6일 뒤인 토요일을 종료일로 반환한다")
-        void endOf_Week_ReturnsSaturday() {
-            // Given
-            LocalDate sunday = LocalDate.of(2026, 10, 4);
+        @DisplayName("주간 단위는 시작일로부터 6일 뒤를 종료일로 반환한다")
+        void endOf_Week_ReturnsSixDaysLater() {
+            // Given : 결산 요일이 일요일인 주간의 시작일(월요일)
+            LocalDate monday = LocalDate.of(2026, 10, 26);
 
             // When
-            LocalDate result = PeriodUnit.WEEK.endOf(sunday);
+            LocalDate result = PeriodUnit.WEEK.endOf(monday);
 
             // Then
-            assertThat(result).isEqualTo(LocalDate.of(2026, 10, 10));
+            assertThat(result).isEqualTo(LocalDate.of(2026, 11, 1));
         }
 
         @Test

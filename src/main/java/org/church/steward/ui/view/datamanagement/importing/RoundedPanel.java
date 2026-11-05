@@ -9,6 +9,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 
 import org.church.steward.ui.util.UIColors;
+import org.church.steward.ui.util.UIShapes;
 
 /**
  * 흰 바탕에 테두리를 두른 둥근 모서리 사각형 영역. 가져오기 화면에서 진행 상황(제목과 단계)을 그 아래의 단계 화면과 구분하는 데 쓴다.
@@ -17,7 +18,7 @@ class RoundedPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    private static final int ARC = 12;
+    private static final int ARC = UIShapes.CARD_ARC;
     private static final int PADDING_VERTICAL = 10;
     private static final int PADDING_HORIZONTAL = 14;
 

@@ -36,6 +36,12 @@ public class BudgetImportItemDto {
     /** 저장할 금액. 하위 예산이 있으면 하위 예산의 합계 */
     private Long amount;
 
+    /**
+     * 파일의 비고 (100자를 넘으면 잘린 값). 빈 칸이거나, 비고 열을 지정하지 않았거나, 행 없이 만들어진 상위 예산이면 null이다.
+     * 파일에서 비고를 읽지 않았으면 새 예산은 비고 없이 추가하고 이미 있는 예산은 비고를 그대로 둔다.
+     */
+    private String remarks;
+
     /** 파일 안에서 하위 예산이 없는 예산인지 여부 */
     private boolean leaf;
 

@@ -8,6 +8,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.AbstractAction;
 import javax.swing.Icon;
@@ -21,6 +23,7 @@ import javax.swing.UIManager;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.field.StyledCheckBox;
@@ -60,6 +63,8 @@ public class CheckableImportTable extends ListTable {
     private final JCheckBox headerCheckBox = new JCheckBox();
     /** 마지막으로 누른 곳이 체크박스인지 여부. 그 누름에 이어지는 놓기, 클릭, 끌기도 표에 넘기지 않는다. */
     private boolean checkBoxPressed;
+    /** {@link #setColumnShown}으로 표에서 뺀 칸. 키는 모델 기준 칸 번호다. */
+    private final Map<Integer, TableColumn> hiddenColumns = new HashMap<>();
 
     public CheckableImportTable(CheckableTableModel model) {
         super(model);
@@ -132,6 +137,32 @@ public class CheckableImportTable extends ListTable {
         column.setPreferredWidth(width);
         column.setMinWidth(width);
         column.setMaxWidth(width * NON_GROWING_MAX_RATIO);
+    }
+
+    /**
+     * 칸을 표에서 빼거나 다시 넣는다. 뺀 칸은 폭과 렌더러째 잡아 두었다가 다시 넣을 때 모델 순서에 맞는 자리에 놓는다. 칸의 순서를 바꿀
+     * 수 없으므로 보이는 칸은 늘 모델 순서대로 놓여 있다.
+     * <p>
+     * 칸을 빼면 렌더러에 오는 표의 칸 번호가 당겨지므로, 칸을 뺄 수 있는 표의 렌더러는 모델 기준 칸 번호
+     * ({@link #convertColumnIndexToModel})로 판단해야 한다. 폭은 칸을 빼기 전에 정해 둔다.
+     */
+    public void setColumnShown(int modelColumn, boolean shown) {
+        TableColumnModel columns = getColumnModel();
+        int viewColumn = convertColumnIndexToView(modelColumn);
+        if (shown && viewColumn < 0) {
+            TableColumn column = hiddenColumns.remove(modelColumn);
+            int position = 0;
+            while (position < columns.getColumnCount()
+                    && columns.getColumn(position).getModelIndex() < modelColumn) {
+                position++;
+            }
+            columns.addColumn(column);
+            columns.moveColumn(columns.getColumnCount() - 1, position);
+        } else if (!shown && viewColumn >= 0) {
+            TableColumn column = columns.getColumn(viewColumn);
+            hiddenColumns.put(modelColumn, column);
+            columns.removeColumn(column);
+        }
     }
 
     /**

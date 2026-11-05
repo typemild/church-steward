@@ -173,9 +173,9 @@ class BudgetImportServiceImplTest {
             BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID,
                     createTitheRequest().build());
             when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
-            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "헌금", 0L, BudgetType.INCOME))
+            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "헌금", 0L, null, BudgetType.INCOME))
                     .thenReturn(createBudget(100L, "헌금", null));
-            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, 100L, "십일조", 1000L, BudgetType.INCOME))
+            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, 100L, "십일조", 1000L, null, BudgetType.INCOME))
                     .thenReturn(createBudget(101L, "십일조", 1000L));
 
             // When
@@ -183,7 +183,7 @@ class BudgetImportServiceImplTest {
                     analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME);
 
             // Then
-            verify(budgetService).createBudgetWithoutLog(FISCAL_YEAR_ID, 100L, "십일조", 1000L, BudgetType.INCOME);
+            verify(budgetService).createBudgetWithoutLog(FISCAL_YEAR_ID, 100L, "십일조", 1000L, null, BudgetType.INCOME);
         }
 
         @Test
@@ -195,9 +195,9 @@ class BudgetImportServiceImplTest {
             BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID,
                     createTitheRequest().build());
             when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
-            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "헌금", 0L, BudgetType.INCOME))
+            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "헌금", 0L, null, BudgetType.INCOME))
                     .thenReturn(createBudget(100L, "헌금", null));
-            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, 100L, "십일조", 1000L, BudgetType.INCOME))
+            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, 100L, "십일조", 1000L, null, BudgetType.INCOME))
                     .thenReturn(createBudget(101L, "십일조", 1000L));
 
             // When
@@ -219,9 +219,9 @@ class BudgetImportServiceImplTest {
             BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID,
                     createTitheRequest().build());
             when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
-            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "헌금", 0L, BudgetType.INCOME))
+            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "헌금", 0L, null, BudgetType.INCOME))
                     .thenReturn(createBudget(100L, "헌금", null));
-            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, 100L, "십일조", 1000L, BudgetType.INCOME))
+            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, 100L, "십일조", 1000L, null, BudgetType.INCOME))
                     .thenReturn(createBudget(101L, "십일조", 1000L));
             List<ActivityLogFieldDto> description = List.of(ActivityLogFieldDto.builder()
                     .name("예산명")
@@ -234,13 +234,13 @@ class BudgetImportServiceImplTest {
                     analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME);
 
             // Then
-            verify(activityLogService).logImport(eq("예산"), eq("2026년"), eq(FILE_NAME), eq("추가 2건, 금액 갱신 0건"),
+            verify(activityLogService).logImport(eq("예산"), eq("2026년"), eq(FILE_NAME), eq("추가 2건, 갱신 0건"),
                     logItemsCaptor.capture());
             assertThat(logItemsCaptor.getValue()).containsExactly(description, description);
         }
 
         @Test
-        @DisplayName("금액 갱신 대상은 기존 예산의 이름을 그대로 두고 금액만 파일의 값으로 바꾼다")
+        @DisplayName("금액이 다른 기존 예산의 갱신은 이름을 그대로 두고 금액만 파일의 값으로 바꾼다")
         void importBudgets_UpdateAmount_UpdatesExistingBudgetAmount() {
             // Given
             Budget offering = createBudget(1L, "헌금", null);
@@ -254,7 +254,7 @@ class BudgetImportServiceImplTest {
                     .build();
             offering.getChildren().add(tithe);
             BudgetImportRequestDto request = createTitheRequest()
-                    .updateExistingAmounts(true)
+                    .updateExistingBudgets(true)
                     .build();
             @SuppressWarnings("unchecked")
             EntitySnapshot<Budget> snapshot = mock(EntitySnapshot.class);
@@ -265,7 +265,7 @@ class BudgetImportServiceImplTest {
             when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
             when(budgetRepository.findById(2L)).thenReturn(Optional.of(tithe));
             when(snapshotCapturer.capture(tithe)).thenReturn(snapshot);
-            when(budgetService.updateBudgetWithoutLog(2L, "십일조", 1000L)).thenReturn(tithe);
+            when(budgetService.updateBudgetWithoutLog(2L, "십일조", 1000L, null)).thenReturn(tithe);
 
             // When
             ImportResultDto result = budgetImportService.importBudgets(FISCAL_YEAR_ID, request,
@@ -275,6 +275,116 @@ class BudgetImportServiceImplTest {
             assertThat(result)
                     .extracting(ImportResultDto::getCreatedCount, ImportResultDto::getUpdatedCount)
                     .containsExactly(0, 1);
+        }
+
+        @Test
+        @DisplayName("비고 열을 지정하면 새 예산을 파일의 비고와 함께 추가한다")
+        void importBudgets_RemarksColumn_CreatesBudgetWithRemarks() {
+            // Given
+            BudgetImportRequestDto request = BudgetImportRequestDto.builder()
+                    .rows(List.<List<Object>>of(Arrays.asList("수입", "십일조", 1000L, "매주 드리는 헌금")))
+                    .firstRowNumber(2)
+                    .typeColumn(0)
+                    .levelColumns(List.of(1))
+                    .amountColumn(2)
+                    .remarksColumn(3)
+                    .build();
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of());
+            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID, request);
+            when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
+            when(budgetService.createBudgetWithoutLog(FISCAL_YEAR_ID, null, "십일조", 1000L, "매주 드리는 헌금",
+                    BudgetType.INCOME)).thenReturn(createBudget(100L, "십일조", 1000L));
+
+            // When
+            budgetImportService.importBudgets(FISCAL_YEAR_ID, request, selectableKeys(analysis),
+                    analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME);
+
+            // Then
+            verify(budgetService).createBudgetWithoutLog(FISCAL_YEAR_ID, null, "십일조", 1000L, "매주 드리는 헌금",
+                    BudgetType.INCOME);
+        }
+
+        @Test
+        @DisplayName("하위 예산이 있는 기존 예산의 비고만 다르면 금액은 하위 예산의 합계 그대로 두고 비고만 바꾼다")
+        void importBudgets_ParentRemarksDiffer_UpdatesOnlyRemarks() {
+            // Given
+            Budget offering = createBudget(1L, "헌금", null);
+            Budget tithe = Budget.builder()
+                    .id(2L)
+                    .fiscalYear(fiscalYear)
+                    .type(BudgetType.INCOME)
+                    .name("십일조")
+                    .amount(500L)
+                    .parent(offering)
+                    .build();
+            offering.getChildren().add(tithe);
+            BudgetImportRequestDto request = BudgetImportRequestDto.builder()
+                    .rows(List.<List<Object>>of(Arrays.asList("수입", "헌금", 0L, "주일 헌금")))
+                    .firstRowNumber(2)
+                    .typeColumn(0)
+                    .levelColumns(List.of(1))
+                    .amountColumn(2)
+                    .remarksColumn(3)
+                    .updateExistingBudgets(true)
+                    .build();
+            @SuppressWarnings("unchecked")
+            EntitySnapshot<Budget> snapshot = mock(EntitySnapshot.class);
+
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of(offering, tithe));
+            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID, request);
+            when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
+            when(budgetRepository.findById(1L)).thenReturn(Optional.of(offering));
+            when(snapshotCapturer.capture(offering)).thenReturn(snapshot);
+            when(budgetService.updateBudgetWithoutLog(1L, "헌금", 500L, "주일 헌금")).thenReturn(offering);
+
+            // When
+            budgetImportService.importBudgets(FISCAL_YEAR_ID, request, selectableKeys(analysis),
+                    analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME);
+
+            // Then
+            verify(budgetService).updateBudgetWithoutLog(1L, "헌금", 500L, "주일 헌금");
+        }
+
+        @Test
+        @DisplayName("비고 열을 지정하지 않고 금액을 갱신하면 기존 예산의 비고를 그대로 둔다")
+        void importBudgets_NoRemarksColumn_KeepsExistingRemarks() {
+            // Given
+            Budget tithe = Budget.builder()
+                    .id(1L)
+                    .fiscalYear(fiscalYear)
+                    .type(BudgetType.INCOME)
+                    .name("십일조")
+                    .amount(500L)
+                    .remarks("작년 기준")
+                    .children(new ArrayList<>())
+                    .build();
+            BudgetImportRequestDto request = BudgetImportRequestDto.builder()
+                    .rows(List.<List<Object>>of(Arrays.asList("수입", "십일조", 1000L)))
+                    .firstRowNumber(2)
+                    .typeColumn(0)
+                    .levelColumns(List.of(1))
+                    .amountColumn(2)
+                    .updateExistingBudgets(true)
+                    .build();
+            @SuppressWarnings("unchecked")
+            EntitySnapshot<Budget> snapshot = mock(EntitySnapshot.class);
+
+            when(fiscalYearRepository.findById(FISCAL_YEAR_ID)).thenReturn(Optional.of(fiscalYear));
+            when(budgetRepository.findAllByFiscalYearId(FISCAL_YEAR_ID)).thenReturn(List.of(tithe));
+            BudgetImportAnalysisDto analysis = budgetImportService.analyze(FISCAL_YEAR_ID, request);
+            when(activityLogService.getLatestLogId()).thenReturn(BACKUP_LOG_ID);
+            when(budgetRepository.findById(1L)).thenReturn(Optional.of(tithe));
+            when(snapshotCapturer.capture(tithe)).thenReturn(snapshot);
+            when(budgetService.updateBudgetWithoutLog(1L, "십일조", 1000L, "작년 기준")).thenReturn(tithe);
+
+            // When
+            budgetImportService.importBudgets(FISCAL_YEAR_ID, request, selectableKeys(analysis),
+                    analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME);
+
+            // Then
+            verify(budgetService).updateBudgetWithoutLog(1L, "십일조", 1000L, "작년 기준");
         }
 
         @Test
@@ -330,7 +440,7 @@ class BudgetImportServiceImplTest {
                     selectableKeys(analysis), analysis.getSignature(), BACKUP_LOG_ID, FILE_NAME));
 
             // Then
-            verify(budgetService, never()).createBudgetWithoutLog(any(), any(), any(), anyLong(), any());
+            verify(budgetService, never()).createBudgetWithoutLog(any(), any(), any(), anyLong(), any(), any());
         }
 
         @Test

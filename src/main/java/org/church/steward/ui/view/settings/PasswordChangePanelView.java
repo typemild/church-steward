@@ -1,7 +1,7 @@
 package org.church.steward.ui.view.settings;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -9,7 +9,6 @@ import java.awt.event.ItemEvent;
 import java.util.List;
 
 import javax.swing.BorderFactory;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -23,10 +22,9 @@ import org.church.steward.ui.MenuActivatable;
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.button.PrimaryButton;
 import org.church.steward.ui.component.field.StyledCheckBox;
-import org.church.steward.ui.component.field.StyledTextField;
 import org.church.steward.ui.component.field.ValidatedPasswordField;
 import org.church.steward.ui.component.label.FieldLabel;
-import org.church.steward.ui.component.label.TitleLabel;
+import org.church.steward.ui.component.panel.CardPanel;
 import org.church.steward.ui.component.panel.WarningNoticePanel;
 import org.church.steward.ui.util.AsyncTask;
 import org.church.steward.ui.util.UIColors;
@@ -36,12 +34,18 @@ public class PasswordChangePanelView extends JPanel implements MenuActivatable {
 
     private static final long serialVersionUID = 1L;
 
+    private static final int PASSWORD_FIELD_COLUMNS = 20;
+    /** 카드와 주의사항 사이의 간격 */
+    private static final int SECTION_GAP = 15;
+    /** 주의사항과 버튼 사이의 간격 */
+    private static final int BUTTON_GAP = 20;
+
     private final UserSessionHolder userSessionHolder;
 
     private final ValidatedPasswordField oldPwField;
     private final ValidatedPasswordField newPwField;
     private final ValidatedPasswordField confirmPwField;
-    private final StyledTextField userIdField;
+    private final FieldLabel userIdLabel;
     private final StyledCheckBox confirmCheckbox;
     private final PrimaryButton changeButton;
 
@@ -52,20 +56,11 @@ public class PasswordChangePanelView extends JPanel implements MenuActivatable {
         setBackground(UIColors.BACKGROUND);
         setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
-        // Header
-        TitleLabel titleLabel = new TitleLabel("비밀번호 변경");
-        titleLabel.setHorizontalAlignment(JLabel.CENTER);
-        add(titleLabel, BorderLayout.NORTH);
-
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setOpaque(false);
-
-        oldPwField = new ValidatedPasswordField(20, ComponentSize.MEDIUM);
-        newPwField = new ValidatedPasswordField(20, ComponentSize.MEDIUM);
-        confirmPwField = new ValidatedPasswordField(20, ComponentSize.MEDIUM);
-        userIdField = new StyledTextField(20, ComponentSize.MEDIUM);
-        userIdField.setEditable(false);
-        userIdField.setEnabled(false);
+        oldPwField = new ValidatedPasswordField(PASSWORD_FIELD_COLUMNS, ComponentSize.MEDIUM);
+        newPwField = new ValidatedPasswordField(PASSWORD_FIELD_COLUMNS, ComponentSize.MEDIUM);
+        confirmPwField = new ValidatedPasswordField(PASSWORD_FIELD_COLUMNS, ComponentSize.MEDIUM);
+        // 사용자 ID는 바꿀 수 없으므로 입력란이 아니라 글자로 보여 준다.
+        userIdLabel = new FieldLabel("", ComponentSize.MEDIUM);
 
         changeButton = new PrimaryButton("비밀번호 변경", ComponentSize.MEDIUM);
         confirmCheckbox = new StyledCheckBox("위 주의사항을 확인하였습니다.", ComponentSize.MEDIUM);
@@ -75,86 +70,44 @@ public class PasswordChangePanelView extends JPanel implements MenuActivatable {
         });
         changeButton.setEnabled(false);
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        // 탭 이름이 있으므로 제목은 두지 않는다. 입력란은 프로그램 설정과 같은 카드에 한 줄씩 놓는다.
+        CardPanel card = new CardPanel();
+        card.addRow("사용자 ID", userIdLabel);
+        card.addRow("현재 비밀번호", oldPwField);
+        card.addRow("새 비밀번호", newPwField,
+                String.format("%d자 이상 %d자 이하로 입력해 주세요. 여러 단어를 이은 문장형 비밀번호를 권장합니다.",
+                        PasswordPolicy.MIN_LENGTH, PasswordPolicy.MAX_LENGTH),
+                "같은 문자나 문자열의 반복(aaaa, gogogo), 연속된 문자(abcd, 1234), 키보드 배열(qwer, asdf)을 주로 쓴 "
+                        + "비밀번호는 쓸 수 없습니다.");
+        card.addRow("새 비밀번호 확인", confirmPwField);
 
-        // User ID Row
-        gbc.gridy = 0;
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        gbc.insets = new Insets(30, 0, 15, 0);
-        formPanel.add(new FieldLabel("사용자 ID", ComponentSize.MEDIUM), gbc);
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        gbc.insets = new Insets(30, 10, 15, 0);
-        formPanel.add(userIdField, gbc);
-
-        // Current Password Row
-        gbc.gridy = 1;
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        gbc.insets = new Insets(0, 0, 15, 0);
-        formPanel.add(new FieldLabel("현재 비밀번호", ComponentSize.MEDIUM), gbc);
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        gbc.insets = new Insets(0, 10, 15, 0);
-        formPanel.add(oldPwField, gbc);
-
-        // New Password Row
-        gbc.gridy = 2;
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        gbc.insets = new Insets(0, 0, 15, 0);
-        formPanel.add(new FieldLabel("새 비밀번호", ComponentSize.MEDIUM), gbc);
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        gbc.insets = new Insets(0, 10, 15, 0);
-        formPanel.add(newPwField, gbc);
-
-        // Confirm Password Row
-        gbc.gridy = 3;
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        gbc.insets = new Insets(0, 0, 15, 0);
-        formPanel.add(new FieldLabel("새 비밀번호 확인", ComponentSize.MEDIUM), gbc);
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        gbc.insets = new Insets(0, 10, 15, 0);
-        formPanel.add(confirmPwField, gbc);
-
-        // Warning (Notice)
-        gbc.gridy = 4;
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(15, 0, 0, 0);
         WarningNoticePanel noticePanel = new WarningNoticePanel("""
                 비밀번호를 분실할 경우 데이터에 접근할 수 없으며, 비밀번호를 찾을 수 있는 방법이 없습니다.
                 비밀번호 관리에 각별히 유의하시기 바랍니다.""");
         noticePanel.add(confirmCheckbox, BorderLayout.SOUTH);
-        formPanel.add(noticePanel, gbc);
 
-        gbc.gridy = 5;
+        // 다른 다이얼로그와 같이 주 버튼은 가운데에 둔다.
+        JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        buttonRow.setOpaque(false);
+        buttonRow.add(changeButton);
+
+        // 카드, 주의사항, 버튼을 위에서부터 같은 폭으로 쌓고 남는 높이는 비워 둔다.
+        JPanel content = new JPanel(new GridBagLayout());
+        content.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(20, 0, 0, 0);
-        formPanel.add(changeButton, gbc);
-
-        formPanel.setPreferredSize(new Dimension(400, 0));
-        formPanel.setMaximumSize(new Dimension(400, 0));
-
-        JPanel centerWrapper = new JPanel(new GridBagLayout());
-        centerWrapper.setOpaque(false);
-        gbc.insets = new Insets(0, 0, 15, 0);
-        gbc.fill = GridBagConstraints.VERTICAL;
-        gbc.weightx = 0;
-        gbc.weighty = 1;
-        gbc.gridx = 0;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.gridy = 0;
-        gbc.gridwidth = 1;
-        centerWrapper.add(formPanel, gbc);
+        content.add(card, gbc);
+        gbc.gridy = 1;
+        gbc.insets = new Insets(SECTION_GAP, 0, 0, 0);
+        content.add(noticePanel, gbc);
+        gbc.gridy = 2;
+        gbc.insets = new Insets(BUTTON_GAP, 0, 0, 0);
+        content.add(buttonRow, gbc);
 
-        add(centerWrapper, BorderLayout.CENTER);
+        add(content, BorderLayout.NORTH);
 
         changeButton.addActionListener(_ -> {
             String userId = userSessionHolder.getLoggedInUser().id();
@@ -205,7 +158,7 @@ public class PasswordChangePanelView extends JPanel implements MenuActivatable {
 
     @Override
     public void onMenuSelected() {
-        userIdField.setText(userSessionHolder.getLoggedInUser().id());
+        userIdLabel.setText(userSessionHolder.getLoggedInUser().id());
 
         oldPwField.setText("");
         newPwField.setText("");

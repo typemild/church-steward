@@ -1,62 +1,39 @@
 package org.church.steward.ui.view.login;
 
 import java.awt.BorderLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.GridLayout;
-import java.awt.Insets;
 import java.awt.Window;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.nio.file.Path;
-import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
-import javax.swing.JFileChooser;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.SwingConstants;
-import javax.swing.filechooser.FileNameExtensionFilter;
 
-import org.church.steward.infrastructure.backup.BackupException;
 import org.church.steward.infrastructure.backup.BackupManager;
-import org.church.steward.infrastructure.backup.BackupManifest;
-import org.church.steward.infrastructure.config.AppHome;
 import org.church.steward.infrastructure.security.InvalidPasswordException;
-import org.church.steward.infrastructure.security.PasswordPolicy;
 import org.church.steward.infrastructure.security.UserNotFoundException;
 import org.church.steward.ui.component.ComponentSize;
 import org.church.steward.ui.component.button.PrimaryButton;
 import org.church.steward.ui.component.button.SecondaryButton;
-import org.church.steward.ui.component.field.StyledTextField;
-import org.church.steward.ui.component.field.ValidatedPasswordField;
-import org.church.steward.ui.component.label.FieldLabel;
-import org.church.steward.ui.component.label.SubFieldLabel;
 import org.church.steward.ui.component.label.SubTitleLabel;
 import org.church.steward.ui.component.label.TitleLabel;
-import org.church.steward.ui.component.panel.WarningNoticePanel;
 import org.church.steward.ui.util.AppIcons;
-import org.church.steward.ui.util.AsyncTask;
-import org.church.steward.ui.util.FocusIndicator;
 import org.church.steward.ui.util.UIColors;
 
-import lombok.extern.slf4j.Slf4j;
-
 /**
- * 백업 파일로 전체 데이터를 복원하는 화면이다. 복원은 데이터베이스 파일을 교체하므로 로그인하기 전(Spring 컨텍스트를 띄우기 전)에만
- * 띄운다. 최초 실행 화면에서 직접 열거나, 데이터 관리 화면에서 예약한 복원을 다음 실행 때 수행하는 데 쓴다.
+ * 데이터 관리 화면에서 예약한 복원을 다음 실행 때 수행하는 화면이다. 복원은 데이터베이스 파일을 교체하므로 로그인하기 전(Spring
+ * 컨텍스트를 띄우기 전)에만 띄운다. 입력부와 복원 실행은 최초 실행 화면과 함께 쓰는 {@link RestoreFormPanel}이
+ * 맡는다.
  */
-@Slf4j
 public class DatabaseRestoreView extends JDialog {
 
     private static final long serialVersionUID = 1L;
 
-    private static final DateTimeFormatter CREATED_AT_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final String NO_FILE_INFO = "백업 파일을 선택해주세요.";
-    private static final String ADMIN_ID = "관리자";
+    private static final int WINDOW_WIDTH = 450;
 
     /**
      * 복원과 그 기록을 수행하는 동작. 데이터베이스를 교체한 뒤 활동 기록까지 남기려면 Spring 컨텍스트가 필요하므로, 컨텍스트를 띄울 수
@@ -85,20 +62,11 @@ public class DatabaseRestoreView extends JDialog {
     public record RestoreOutcome(Optional<Path> preservedDir, boolean logged) {
     }
 
-    private final BackupManager backupManager;
-    private final RestoreAction restoreAction;
-
-    private final StyledTextField fileField;
-    private final SubFieldLabel fileInfoLabel;
-    private final StyledTextField userIdField;
-    private final ValidatedPasswordField passwordField;
-    private final JProgressBar progressBar;
-    private final SecondaryButton browseButton;
+    private final RestoreFormPanel formPanel;
+    private final StartupProgressBar progressBar;
     private final SecondaryButton cancelButton;
     private final PrimaryButton restoreButton;
 
-    /** 복원할 수 있다고 확인된 백업 파일. 아직 고르지 않았거나 복원할 수 없는 파일이면 null */
-    private Path backupFile;
     private boolean restored = false;
     /** 복원하는 중인지 여부. 복원하는 동안은 창을 닫을 수 없다. */
     private boolean busy = false;
@@ -111,34 +79,16 @@ public class DatabaseRestoreView extends JDialog {
         super(owner, "백업에서 복원", ModalityType.APPLICATION_MODAL);
         // 예약된 복원은 부모 창 없이 띄우므로 아이콘을 직접 붙인다.
         AppIcons.apply(this);
-        this.backupManager = backupManager;
-        this.restoreAction = restoreAction;
 
         getContentPane().setBackground(UIColors.BACKGROUND);
 
         // 1. 컴포넌트 초기화
         TitleLabel titleLabel = new TitleLabel("백업에서 복원", SwingConstants.CENTER);
         SubTitleLabel subTitleLabel = new SubTitleLabel("백업한 시점의 관리자 비밀번호로 확인합니다.", SwingConstants.CENTER);
+        formPanel = new RestoreFormPanel(backupManager, restoreAction);
 
-        fileField = new StyledTextField(ComponentSize.MEDIUM);
-        fileField.setEditable(false);
-        browseButton = new SecondaryButton("찾아보기", ComponentSize.MEDIUM);
-        fileInfoLabel = new SubFieldLabel(NO_FILE_INFO, ComponentSize.MEDIUM);
-
-        // 백업은 관리자만 할 수 있으므로 백업 파일에는 관리자 계정이 항상 있다. 그래서 관리자 계정으로만 복원한다.
-        userIdField = new StyledTextField(ComponentSize.MEDIUM);
-        userIdField.setText(ADMIN_ID);
-        userIdField.setEditable(false);
-        userIdField.setEnabled(false);
-        passwordField = new ValidatedPasswordField(ComponentSize.MEDIUM);
-        // 입력 화면이므로 포커스 테두리를 보인다(DialogKeyHandler를 쓰지 않아 직접 켠다).
-        FocusIndicator.show(fileField);
-        FocusIndicator.show(passwordField);
-
-        progressBar = new JProgressBar();
-        progressBar.setIndeterminate(true);
-        progressBar.setVisible(false);
-        progressBar.setForeground(UIColors.PRIMARY_BACKGROUND);
+        // 복원하는 동안 진행 표시가 나타나도 주의사항이 가려지지 않도록 자리를 비워 둔다.
+        progressBar = new StartupProgressBar();
 
         cancelButton = new SecondaryButton("취소", ComponentSize.LARGE);
         restoreButton = new PrimaryButton("복원", ComponentSize.LARGE);
@@ -153,84 +103,11 @@ public class DatabaseRestoreView extends JDialog {
         headerPanel.add(titleLabel, BorderLayout.NORTH);
         headerPanel.add(subTitleLabel, BorderLayout.SOUTH);
 
-        JPanel inputPanel = new JPanel(new GridBagLayout());
+        // 주의사항을 가운데(남는 높이를 모두 차지하는 자리)에 두면 창 높이에 따라 상자가 늘어나므로, 입력부 아래에 붙인다.
+        JPanel inputPanel = new JPanel(new BorderLayout(0, 20));
         inputPanel.setOpaque(false);
-
-        // 백업 파일
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 0, 8, 0);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        inputPanel.add(new FieldLabel("백업 파일", ComponentSize.MEDIUM, true), gbc);
-
-        gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 0, 8, 8);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.weightx = 1.0;
-        inputPanel.add(fileField, gbc);
-
-        gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 0, 8, 0);
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        inputPanel.add(browseButton, gbc);
-
-        gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 0, 20, 0);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.gridwidth = 2;
-        inputPanel.add(fileInfoLabel, gbc);
-
-        // 사용자 ID
-        gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 0, 8, 0);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 2;
-        inputPanel.add(new FieldLabel("사용자 ID", ComponentSize.MEDIUM, true), gbc);
-
-        gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 0, 20, 0);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        gbc.gridwidth = 2;
-        inputPanel.add(userIdField, gbc);
-
-        // 비밀번호
-        gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 0, 8, 0);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        gbc.gridwidth = 2;
-        inputPanel.add(new FieldLabel("비밀번호", ComponentSize.MEDIUM, true), gbc);
-
-        gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0;
-        gbc.gridy = 6;
-        gbc.gridwidth = 2;
-        inputPanel.add(passwordField, gbc);
-
-        // 복원은 백업 파일의 덤프를 그대로 실행하므로, 조작된 백업은 이 PC에서 코드를 실행할 수 있다.
-        // 남이 준 실행 파일을 실행하는 것과 같은 위험으로 보고 받아들였으므로, 막는 대신 신뢰할 수 있는 파일만 쓰도록 알린다.
-        gbc = new GridBagConstraints();
-        gbc.insets = new Insets(20, 0, 0, 0);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0;
-        gbc.gridy = 7;
-        gbc.gridwidth = 2;
-        inputPanel.add(new WarningNoticePanel("""
-                직접 만들었거나 믿을 수 있는 사람에게 받은 백업 파일만 복원하세요. \
-                조작된 백업 파일을 복원하면 이 PC가 악성 프로그램에 감염될 수 있습니다."""), gbc);
+        inputPanel.add(formPanel, BorderLayout.NORTH);
+        inputPanel.add(RestoreFormPanel.createWarningNotice(), BorderLayout.SOUTH);
 
         JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 12, 0));
         buttonPanel.setOpaque(false);
@@ -243,15 +120,18 @@ public class DatabaseRestoreView extends JDialog {
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         mainPanel.add(headerPanel, BorderLayout.NORTH);
-        mainPanel.add(inputPanel, BorderLayout.CENTER);
+        mainPanel.add(wrapAtTop(inputPanel), BorderLayout.CENTER);
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
         getContentPane().add(mainPanel);
 
         // 3. 동작 연결
-        browseButton.addActionListener(_ -> chooseBackupFile());
-        passwordField.addActionListener(_ -> restoreButton.doClick());
+        formPanel.getPasswordField()
+                .addActionListener(_ -> restoreButton.doClick());
         cancelButton.addActionListener(_ -> dispose());
-        restoreButton.addActionListener(_ -> restore());
+        restoreButton.addActionListener(_ -> formPanel.restore(this::setBusy, () -> {
+            restored = true;
+            dispose();
+        }));
 
         // 복원하는 중에 창을 닫으면 복원이 끝나기 전에 취소한 것으로 반환되어 로그인이 이어지므로, 그동안은 닫지 않는다.
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -273,100 +153,37 @@ public class DatabaseRestoreView extends JDialog {
      */
     public boolean showRestoreDialog(Path initialFile) {
         restored = false;
-        setSize(450, 660);
         setResizable(false);
-        setLocationRelativeTo(getOwner());
 
         if (initialFile != null) {
-            selectBackupFile(initialFile);
+            formPanel.selectBackupFile(initialFile);
         }
+
+        // 주의사항의 글은 폭에 따라 줄 수가 달라지므로, 정한 폭으로 배치한 뒤 내용에 맞는 높이를 잰다.
+        StartupWindows.layoutAtWidth(this, WINDOW_WIDTH);
+        setSize(WINDOW_WIDTH, getPreferredSize().height);
+        validate();
+        setLocationRelativeTo(getOwner());
 
         setVisible(true);
         return restored;
     }
 
-    private void chooseBackupFile() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("백업 파일 선택");
-        chooser.setFileFilter(new FileNameExtensionFilter("청지기 백업 파일 (*." + BackupManager.FILE_EXTENSION + ")",
-                BackupManager.FILE_EXTENSION));
-        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
-            return;
-        }
-        selectBackupFile(chooser.getSelectedFile().toPath());
+    private void setBusy(boolean busy) {
+        this.busy = busy;
+        cancelButton.setEnabled(!busy);
+        restoreButton.setEnabled(!busy);
+        progressBar.setRunning(busy);
     }
 
     /**
-     * 백업 파일의 정보를 읽어 보여준다. 복원할 수 없는 파일이면 사유를 보여주고 선택하지 않은 상태로 둔다.
+     * 내용을 위쪽에 붙이고 남는 높이는 비워 둔다.
      */
-    private void selectBackupFile(Path file) {
-        fileField.setText(file.toString());
-        fileField.setCaretPosition(0);
-        try {
-            BackupManifest manifest = backupManager.inspect(file);
-            backupFile = file;
-            fileInfoLabel.setText("백업 일시: " + manifest.createdAt().format(CREATED_AT_FORMAT) + "  /  프로그램 버전: "
-                    + manifest.programVersion());
-        } catch (BackupException e) {
-            backupFile = null;
-            fileInfoLabel.setText(NO_FILE_INFO);
-            JOptionPane.showMessageDialog(this, e.getMessage(), "백업에서 복원", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void restore() {
-        if (backupFile == null) {
-            JOptionPane.showMessageDialog(this, NO_FILE_INFO, "백업에서 복원", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        String userId = ADMIN_ID;
-        String password = PasswordPolicy.normalize(new String(passwordField.getPassword()));
-        Path file = backupFile;
-
-        setBusy(true);
-        AsyncTask.run(this,
-                () -> restoreAction.restore(file, userId, password),
-                outcome -> {
-                    JOptionPane.showMessageDialog(this, createSuccessMessage(outcome));
-                    restored = true;
-                    dispose();
-                },
-                err -> {
-                    // 틀린 비밀번호는 흔한 입력 실수이므로 스택 트레이스 없이 남긴다.
-                    if (err instanceof InvalidPasswordException) {
-                        log.warn("Restore failed for user {}: {}", userId, err.getMessage());
-                    } else {
-                        log.error("Failed to restore from backup", err);
-                    }
-                    JOptionPane.showMessageDialog(this, "복원 실패: " + err.getMessage(), "백업에서 복원",
-                            JOptionPane.ERROR_MESSAGE);
-
-                    setBusy(false);
-                    if (err instanceof InvalidPasswordException) {
-                        passwordField.requestFocus();
-                    }
-                });
-    }
-
-    private String createSuccessMessage(RestoreOutcome outcome) {
-        // 최초 실행 화면에서 복원한 경우처럼 기존 데이터가 없었으면 보관한 폴더도 없다.
-        String message = "복원이 완료되었습니다.";
-        if (outcome.preservedDir().isPresent()) {
-            message += "\n기존 데이터는 아래 폴더에 보관했습니다.\n" + outcome.preservedDir().get().toAbsolutePath();
-        }
-        if (!outcome.logged()) {
-            message += "\n\n복원한 내역을 활동 기록에 남기지 못했습니다. 자세한 내용은 아래 파일을 확인해주세요.\n"
-                    + AppHome.logFile();
-        }
-        return message;
-    }
-
-    private void setBusy(boolean busy) {
-        this.busy = busy;
-        browseButton.setEnabled(!busy);
-        cancelButton.setEnabled(!busy);
-        restoreButton.setEnabled(!busy);
-        progressBar.setVisible(busy);
+    private static JPanel wrapAtTop(JPanel content) {
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.add(content, BorderLayout.NORTH);
+        return wrapper;
     }
 
 }

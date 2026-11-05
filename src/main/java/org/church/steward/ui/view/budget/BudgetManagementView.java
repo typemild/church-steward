@@ -35,8 +35,8 @@ public class BudgetManagementView extends JPanel implements MenuActivatable {
     public BudgetManagementView(BudgetController budgetController, FiscalYearSelector fiscalYearSelector) {
         this.fiscalYearSelector = fiscalYearSelector;
 
-        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일) : 720 x 600
-        setPreferredSize(new Dimension(720, 600));
+        // MainView의 컨텐츠 영역 기본 크기(최소 크기도 동일) : 820 x 600
+        setPreferredSize(new Dimension(820, 600));
         setLayout(new BorderLayout(0, 10));
         setBackground(UIColors.BACKGROUND);
         setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));

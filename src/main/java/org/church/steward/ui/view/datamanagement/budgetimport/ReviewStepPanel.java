@@ -41,9 +41,10 @@ class ReviewStepPanel extends JPanel {
     private static final int COLUMN_TYPE = 2;
     private static final int COLUMN_NAME = 3;
     private static final int COLUMN_AMOUNT = 4;
-    private static final int COLUMN_STATE = 5;
-    private static final int COLUMN_MESSAGE = 6;
-    private static final String[] COLUMN_NAMES = { "선택", "행", "구분", "예산", "금액", "상태", "설명" };
+    private static final int COLUMN_REMARKS = 5;
+    private static final int COLUMN_STATE = 6;
+    private static final int COLUMN_MESSAGE = 7;
+    private static final String[] COLUMN_NAMES = { "선택", "행", "구분", "예산", "금액", "비고", "상태", "설명" };
 
     private static final int CELL_PADDING = 6;
 
@@ -90,14 +91,15 @@ class ReviewStepPanel extends JPanel {
         for (int column = COLUMN_ROW_NUMBER; column < COLUMN_NAMES.length; column++) {
             columns.getColumn(column).setCellRenderer(renderer);
         }
-        // 창이 커지면 예산과 설명 칸만 넓어진다. 나머지 칸도 사용자가 넓힐 수 있다.
+        // 창이 커지면 예산, 비고, 설명 칸만 넓어진다. 나머지 칸도 사용자가 넓힐 수 있다.
         table.setCheckColumnWidth(40);
         table.setNonGrowingColumnWidth(COLUMN_ROW_NUMBER, 40);
         table.setNonGrowingColumnWidth(COLUMN_TYPE, 45);
-        table.setGrowingColumnWidth(COLUMN_NAME, 170);
+        table.setGrowingColumnWidth(COLUMN_NAME, 140);
         table.setNonGrowingColumnWidth(COLUMN_AMOUNT, 95);
+        table.setGrowingColumnWidth(COLUMN_REMARKS, 100);
         table.setNonGrowingColumnWidth(COLUMN_STATE, 70);
-        table.setGrowingColumnWidth(COLUMN_MESSAGE, 190);
+        table.setGrowingColumnWidth(COLUMN_MESSAGE, 150);
 
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createLineBorder(UIColors.BORDER));
@@ -110,6 +112,9 @@ class ReviewStepPanel extends JPanel {
      * 세션의 분석 결과와 선택을 화면에 반영한다.
      */
     void refresh() {
+        // 비고 열을 지정했을 때만 비고 칸을 보인다. 지정하지 않으면 파일에 비고가 없으므로 칸이 비어 있기만 하고, 이미 있는 예산의
+        // 비고는 그대로 두는데도 지우는 것처럼 보이기 때문이다.
+        table.setColumnShown(COLUMN_REMARKS, session.getRemarksColumn() != null);
         tableModel.fireTableDataChanged();
         updateSummary();
     }
@@ -142,7 +147,7 @@ class ReviewStepPanel extends JPanel {
         }
 
         SelectionSummary summary = session.summarize();
-        summaryLabel.setText(String.format("선택: 추가 %,d건, 금액 갱신 %,d건 / 금액 합계 %,d원", summary.createCount(),
+        summaryLabel.setText(String.format("선택: 추가 %,d건, 갱신 %,d건 / 금액 합계 %,d원", summary.createCount(),
                 summary.updateCount(), summary.totalAmount()));
 
         int errorCount = 0;
@@ -216,6 +221,7 @@ class ReviewStepPanel extends JPanel {
             // 계층이 한눈에 보이도록 하위 예산도 마지막 이름이 아니라 전체 경로로 적는다.
             case COLUMN_NAME -> String.join(" > ", item.getLevelNames());
             case COLUMN_AMOUNT -> item.getAmount() == null ? "" : String.format("%,d", item.getAmount());
+            case COLUMN_REMARKS -> item.getRemarks() == null ? "" : item.getRemarks();
             case COLUMN_STATE -> item.getAction() == BudgetImportAction.NONE ? item.getStatus().getLabel()
                     : item.getAction().getLabel();
             default -> item.getMessage();
@@ -234,15 +240,17 @@ class ReviewStepPanel extends JPanel {
                 boolean hasFocus, int row, int column) {
             super.getTableCellRendererComponent(table, value, isSelected, false, row, column);
             BudgetImportItemDto item = items().get(row);
+            // 비고 칸을 뺄 수 있으므로 표의 칸 번호가 아니라 모델의 칸 번호로 판단한다.
+            int modelColumn = table.convertColumnIndexToModel(column);
 
             setBorder(BorderFactory.createEmptyBorder(0, CELL_PADDING, 0, CELL_PADDING));
-            setHorizontalAlignment(switch (column) {
+            setHorizontalAlignment(switch (modelColumn) {
             case COLUMN_AMOUNT -> SwingConstants.RIGHT;
             case COLUMN_ROW_NUMBER, COLUMN_TYPE, COLUMN_STATE -> SwingConstants.CENTER;
             default -> SwingConstants.LEFT;
             });
             if (!isSelected) {
-                setForeground(colorOf(item, column));
+                setForeground(colorOf(item, modelColumn));
             }
             setToolTipText(value == null || value.toString().isEmpty() ? null : value.toString());
             return this;

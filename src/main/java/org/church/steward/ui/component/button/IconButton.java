@@ -5,9 +5,12 @@ import java.awt.Dimension;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+import javax.swing.Icon;
 import javax.swing.JButton;
+import javax.swing.Timer;
 
 import org.church.steward.ui.component.ComponentSize;
+import org.church.steward.ui.util.SuccessFeedback;
 import org.church.steward.ui.util.UIColors;
 import org.church.steward.ui.util.UIFonts;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
@@ -23,6 +26,10 @@ public class IconButton extends JButton {
 
     private final int iconSize;
     private boolean hovered;
+    /** 완료 표시({@link #showSuccess})를 보이는 동안 되돌릴 원래 아이콘. 보이지 않을 때는 null이다. */
+    private Icon iconBeforeSuccess;
+    /** 완료 표시를 거두는 타이머. 처음 쓸 때 만든다. */
+    private Timer successTimer;
 
     public IconButton(FontAwesomeSolid icon, ComponentSize componentSize) {
         super();
@@ -68,6 +75,25 @@ public class IconButton extends JButton {
     public void setIcon(FontAwesomeSolid icon) {
         setIcon(FontIcon.of(icon, iconSize, UIColors.TEXT_MAIN));
         setDisabledIcon(FontIcon.of(icon, iconSize, UIColors.ICON_DISABLED));
+    }
+
+    /**
+     * 작업이 끝났음을 알리도록 아이콘을 잠시({@link SuccessFeedback#DURATION_MILLIS}) 초록 체크로 바꿨다가 원래
+     * 아이콘으로 되돌린다. 보이는 동안 다시 부르면 시간만 새로 센다.
+     */
+    public void showSuccess() {
+        if (successTimer == null) {
+            successTimer = new Timer(SuccessFeedback.DURATION_MILLIS, _ -> {
+                setIcon(iconBeforeSuccess);
+                iconBeforeSuccess = null;
+            });
+            successTimer.setRepeats(false);
+        }
+        if (iconBeforeSuccess == null) {
+            iconBeforeSuccess = getIcon();
+            setIcon(SuccessFeedback.createIcon(iconSize));
+        }
+        successTimer.restart();
     }
 
     /**

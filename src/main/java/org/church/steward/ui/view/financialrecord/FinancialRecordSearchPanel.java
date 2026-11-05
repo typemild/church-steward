@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.function.Supplier;
 
@@ -321,6 +322,13 @@ public class FinancialRecordSearchPanel extends JPanel {
      */
     public void setFiscalYearPeriod(LocalDate startDate, LocalDate endDate) {
         periodSelector.setLimits(startDate, endDate);
+    }
+
+    /**
+     * 주간 결산 요일을 바꾼다. 단위가 주간이면 조회 기간이 새 기준의 주간으로 옮겨진다.
+     */
+    public void setWeeklyClosingDay(DayOfWeek weeklyClosingDay) {
+        periodSelector.setWeeklyClosingDay(weeklyClosingDay);
     }
 
     /**

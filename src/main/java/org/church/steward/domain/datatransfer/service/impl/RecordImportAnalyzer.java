@@ -739,6 +739,7 @@ final class RecordImportAnalyzer {
             if (budgetMapping != null && budgetMapping.targetId != null) {
                 row.budgetId = budgetMapping.targetId;
                 row.budgetLabel = budgetMapping.targetLabel;
+                fillExpenseDescription(row);
             } else if (budgetMapping != null) {
                 row.fail("예산이 지정되지 않았습니다: " + budgetMapping.label);
             }
@@ -760,6 +761,21 @@ final class RecordImportAnalyzer {
                 }
             }
         }
+    }
+
+    /**
+     * 지출은 내용이 필수이므로, 내용이 빈 지출 행은 연결된 예산의 이름(전체 경로가 아니라 말단 예산의 이름 하나)으로 채우고 경고로 알린다.
+     * 기존 데이터를 마이그레이션할 때와 같은 규칙이다. 중복 의심도 채운 값으로 비교한다.
+     */
+    private void fillExpenseDescription(Row row) {
+        if (row.type != FinancialRecordType.EXPENSE || !row.description.isEmpty()) {
+            return;
+        }
+        String budgetName = budgetsById.get(row.budgetId)
+                .names()
+                .getLast();
+        row.description = budgetName;
+        row.warnings.add("내용이 비어 있어 예산명(" + budgetName + ")으로 채웁니다.");
     }
 
     /**
