@@ -49,6 +49,8 @@ public class BudgetManagementView extends JPanel implements MenuActivatable {
 
         incomePanel = new BudgetTreePanel(budgetController, "수입 예산", BudgetType.INCOME);
         expensePanel = new BudgetTreePanel(budgetController, "지출 예산", BudgetType.EXPENSE);
+        incomePanel.setTotalVisible(true);
+        expensePanel.setTotalVisible(true);
 
         contentContainer.add(incomePanel);
         contentContainer.add(expensePanel);
