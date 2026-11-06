@@ -126,11 +126,12 @@ final class BudgetStatusSection {
         Font boldFont = style.bold(baseSize);
         double rateWidth = ReportText.width(WIDEST_RATE, boldFont);
         for (BudgetExecutionDto row : rows) {
-            table.addRow(RowStyle.NORMAL, 0, cellsOf(layout, rateWidth, row.getName(), row.getActualAmount(),
-                    row.getBudgetedAmount(), row.getExecutionRate()));
+            table.addRow(RowStyle.NORMAL, 0, cellsOf(layout, rateWidth, ReportTable.text(row.getName()),
+                    row.getActualAmount(), row.getBudgetedAmount(), row.getExecutionRate()));
         }
         Double totalRate = totalBudgeted > 0 ? totalActual * 100.0 / totalBudgeted : null;
-        table.addRow(RowStyle.TOTAL, 0, cellsOf(layout, rateWidth, "합계", totalActual, totalBudgeted, totalRate));
+        table.addRow(RowStyle.TOTAL, 0, cellsOf(layout, rateWidth, ReportTable.text("합계", ReportAlign.CENTER),
+                totalActual, totalBudgeted, totalRate));
         return table;
     }
 
@@ -142,12 +143,15 @@ final class BudgetStatusSection {
         };
     }
 
-    private static Cell[] cellsOf(Layout layout, double rateWidth, String name, long actual, long budgeted,
+    /**
+     * @param name 예산 항목 칸. 합계 행은 가운데 정렬한 "합계"다.
+     */
+    private static Cell[] cellsOf(Layout layout, double rateWidth, Cell name, long actual, long budgeted,
             Double rate) {
         return layout.columns()
                 .stream()
                 .map(column -> switch (column) {
-                case BUDGET_NAME -> ReportTable.text(name);
+                case BUDGET_NAME -> name;
                 case ACTUAL_AMOUNT -> ReportTable.text(ReportFormats.amount(actual));
                 case BUDGETED_AMOUNT -> ReportTable.text(ReportFormats.amount(budgeted));
                 case RATE -> layout.rateBarVisible()

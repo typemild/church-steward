@@ -38,7 +38,8 @@ final class BudgetListTable {
      *
      * @param depth    예산 계층에서의 깊이. 예산 항목을 그만큼 들여쓴다.
      * @param values   칸마다 적을 글자. 비어 있는 칸은 빠져 있어도 된다.
-     * @param centered 칸의 정렬 대신 가운데 정렬할 칸. 금액 칸에 숫자 대신 "신규" 같은 글자를 적는 경우다.
+     * @param centered 칸의 정렬 대신 가운데 정렬할 칸. 금액 칸에 숫자 대신 "신규" 같은 글자를 적는 경우와, 총계 행의 예산
+     *                 항목 칸("총계")이다.
      */
     record Row(RowStyle style, int depth, Map<ReportColumn, String> values, Set<ReportColumn> centered) {
 

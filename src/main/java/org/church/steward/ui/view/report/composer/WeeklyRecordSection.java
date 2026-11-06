@@ -430,7 +430,8 @@ final class WeeklyRecordSection {
         double right = left + layout.width();
 
         canvas.line(left, top, right, top, HEADER_LINE, UIColors.REPORT_LINE);
-        canvas.text("합계", bold, ReportAlign.LEFT, left + PADDING_X, top + baseline);
+        // 금액 칸 앞의 칸들을 합친 자리의 가운데에 적는다.
+        canvas.text("합계", bold, ReportAlign.CENTER, left + layout.budgetNameWidth() / 2, top + baseline);
         canvas.text(ReportFormats.amount(total), bold, ReportAlign.RIGHT, left + layout.amountRight(),
                 top + baseline);
         canvas.moveDown(lineHeight);

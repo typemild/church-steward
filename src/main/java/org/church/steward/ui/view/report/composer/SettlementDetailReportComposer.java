@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.church.steward.domain.budget.entity.BudgetType;
 import org.church.steward.domain.report.dto.BudgetExecutionDto;
@@ -59,11 +60,12 @@ public final class SettlementDetailReportComposer {
                             ReportFormats.rate(row.getShareRate()), ReportFormats.amount(row.getActualAmount()),
                             ReportFormats.rate(row.getExecutionRate()), row.getRemarks())));
         }
+        // "총계"는 예산 항목 칸의 가운데에 적는다.
         rows.add(new BudgetListTable.Row(RowStyle.TOTAL, 0, values("총계",
                 ReportFormats.amount(report.getTotalBudgetedAmount()),
                 report.getTotalBudgetedAmount() > 0 ? ReportFormats.rate(100.0) : ReportFormats.NONE,
                 ReportFormats.amount(report.getTotalActualAmount()),
-                ReportFormats.rate(report.getTotalExecutionRate()), null)));
+                ReportFormats.rate(report.getTotalExecutionRate()), null), Set.of(ReportColumn.BUDGET_NAME)));
 
         ReportTemplateTable table = report.getType() == BudgetType.INCOME
                 ? ReportTemplateTable.INCOME_SETTLEMENT_DETAIL
