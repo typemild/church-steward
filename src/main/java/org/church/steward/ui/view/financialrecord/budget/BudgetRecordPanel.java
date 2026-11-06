@@ -32,6 +32,7 @@ import org.church.steward.ui.component.button.IconButton;
 import org.church.steward.ui.component.label.FieldLabel;
 import org.church.steward.ui.component.label.SectionHeaderLabel;
 import org.church.steward.ui.component.table.AmountCellRenderer;
+import org.church.steward.ui.component.table.BlockCenteredCellRenderer;
 import org.church.steward.ui.component.table.ExpandCollapseAllButton;
 import org.church.steward.ui.component.table.PaddedCellRenderer;
 import org.church.steward.ui.component.table.TreeTable;
@@ -143,8 +144,9 @@ public class BudgetRecordPanel extends JPanel {
         table.getColumnModel()
                 .getColumn(BudgetRecordTableModel.COLUMN_NAME)
                 .setPreferredWidth(130);
-        // 관계자가 첫 번째 칸이면 트리 칸에 적으므로 이 칸은 첫 번째 칸이 아닐 때만 보인다. 이름은 짧아 가운데에 둔다.
-        setupColumn(ReportColumn.CONTACT, 70, new PaddedCellRenderer(SwingConstants.CENTER));
+        // 관계자가 첫 번째 칸이면 트리 칸에 적으므로 이 칸은 첫 번째 칸이 아닐 때만 보인다. 이름의 길이가 서로 달라도 시작 위치가
+        // 같도록 왼쪽 정렬하되, 칸이 넓어도 머리글과 멀어지지 않게 가장 긴 이름을 기준으로 칸 가운데에 모은다.
+        setupColumn(ReportColumn.CONTACT, 70, new BlockCenteredCellRenderer(tableModel::getContactTexts));
         setupColumn(ReportColumn.DESCRIPTION, 70, new PaddedCellRenderer(SwingConstants.LEADING));
         setupColumn(ReportColumn.AMOUNT, 70, new AmountCellRenderer());
         setupColumn(ReportColumn.REMARKS, 50, new PaddedCellRenderer(SwingConstants.LEADING));

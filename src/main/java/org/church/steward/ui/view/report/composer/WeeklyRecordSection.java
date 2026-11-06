@@ -24,9 +24,10 @@ import org.church.steward.ui.view.report.layout.ReportText;
  * 주간 회계 결산 보고서의 주간 수입 내역과 주간 지출 내역. "수입/지출 관리"의 "예산별 보기"처럼 왼쪽 단에 수입, 오른쪽 단에 지출을
  * 놓고, 예산 행 아래에 그 예산의 내역 행들을 둔다.
  * <p>
- * 칸의 순서와 숨김은 보고서 양식이 정하며, 일자는 항상 첫 번째 칸의 왼쪽에 붙여 적는다. 금액 칸까지는 내용에 맞춘 폭(상한
- * 안에서)이고, 금액 뒤의 칸들은 남은 폭을 내용의 길이에 비례해 나눠 갖는다. 그래서 내용이 짧으면 봉헌자와 금액처럼 금액 앞의 칸이
- * 가깝게 붙는다. 금액은 오른쪽 정렬이라 뒤 칸의 글자와 붙어 보이므로 금액 뒤에는 한 글자 폭의 간격을 둔다.
+ * 칸의 순서와 숨김은 보고서 양식이 정하며, 일자는 항상 첫 번째 칸의 왼쪽에 붙여 적는다. 금액 앞의 칸은 내용에 맞춘 폭(상한
+ * 안에서)이고, 금액 칸과 그 뒤의 칸들이 남은 폭을 나눠 갖는다(금액은 고른 몫, 뒤의 칸들은 나머지를 내용의 길이에 비례해). 첫 번째
+ * 칸이 아닌 칸(금액, 관계자, 내용, 비고)은 내용을 한 덩어리로 칸 가운데에 놓아, 칸이 넓어도 머리글과 멀어지지 않는다. 금액 칸이
+ * 내용에 맞춘 폭에 머물면 오른쪽 정렬한 금액이 뒤 칸의 글자와 붙어 보이므로 금액 뒤에는 한 글자 폭의 간격을 둔다.
  * <p>
  * 한 장에 많이 담기 위해 글자를 작게 쓰고 내역은 한 줄에 한 건씩 적는다. 줄 높이는 서식의 행 간격을 따른다. 칸에 다 들어가지 않는
  * 내용은 말줄임표로 줄이되, 바로 아랫줄에 들여써서 단의 전체 폭으로 내용을 모두 적는다(필요하면 여러 줄). 숨긴 칸도 값이 있으면 같은
@@ -48,6 +49,11 @@ final class WeeklyRecordSection {
     /** 내용에 맞춘 칸의 폭 상한(단의 폭에 대한 비율). 첫 번째 칸은 일자가 붙으므로 조금 더 넓게 둔다. */
     private static final double FIRST_MAX_RATIO = 0.45;
     private static final double TEXT_MAX_RATIO = 0.35;
+    /**
+     * 칸마다의 최소 폭(단의 폭에 대한 비율). 머리글이 이보다 넓으면 머리글의 폭이다. 내용이 비어 있는 칸(비고 등)도 내용의 길이로만 폭을
+     * 나누면 머리글 폭만 남아 지나치게 좁아 보이므로 둔다.
+     */
+    private static final double MIN_RATIO = 0.15;
     /** 금액 뒤의 칸들에 남겨 둘 최소 폭(단의 폭에 대한 비율) */
     private static final double TRAILING_MIN_RATIO = 0.25;
     /** 금액 뒤의 간격으로 쓸 글자. 글자 크기를 키우면 간격도 함께 커진다. */
@@ -98,31 +104,36 @@ final class WeeklyRecordSection {
     /**
      * 보이는 칸 하나
      *
-     * @param first  첫 번째 칸인지 여부. 첫 번째 칸은 일자를 붙여 적으므로 왼쪽 정렬이다.
-     * @param header 머리글
-     * @param left   단의 왼쪽 끝에서 칸의 왼쪽 끝까지의 거리
+     * @param first      첫 번째 칸인지 여부. 첫 번째 칸은 일자를 붙여 적으므로 왼쪽 정렬이다.
+     * @param header     머리글
+     * @param left       단의 왼쪽 끝에서 칸의 왼쪽 끝까지의 거리
+     * @param blockWidth 칸의 내용 중 가장 넓은 글자의 폭(여백 제외). 첫 번째 칸이 아닌 칸은 내용을 이 폭의 덩어리로 보고
+     *                   칸 가운데에 놓는다.
      */
-    private record Cell(ReportColumn column, boolean first, String header, double left, double width) {
+    private record Cell(ReportColumn column, boolean first, String header, double left, double width,
+            double blockWidth) {
 
         /**
-         * 금액은 오른쪽, 첫 번째 칸이 아닌 관계자는 가운데(이름은 짧다), 나머지는 왼쪽 정렬이다. 수입/지출 관리의 예산별 보기와 같다.
+         * 금액은 오른쪽, 나머지(관계자, 내용, 비고)는 왼쪽 정렬이다. 수입/지출 관리의 예산별 보기와 같다.
          */
         ReportAlign align() {
-            if (column == ReportColumn.AMOUNT) {
-                return ReportAlign.RIGHT;
-            }
-            return column == ReportColumn.CONTACT && !first ? ReportAlign.CENTER : ReportAlign.LEFT;
+            return column == ReportColumn.AMOUNT ? ReportAlign.RIGHT : ReportAlign.LEFT;
         }
 
         /**
-         * 단의 왼쪽 끝에서 글자의 정렬 기준까지의 거리
+         * 단의 왼쪽 끝에서 글자의 정렬 기준까지의 거리. 첫 번째 칸이 아닌 칸은 내용을 덩어리로 칸 가운데에 놓으므로 덩어리의 끝(금액은 오른쪽
+         * 끝, 글자는 왼쪽 끝)이다. 그래서 칸이 넓어도 내용이 칸의 한쪽 끝에 붙어 머리글과 멀어지지 않고, 가장 넓은 내용은 머리글과 같은
+         * 가운데에 온다. 덩어리가 칸보다 넓으면(줄어든 내용이 있으면) 칸의 끝이다. 첫 번째 칸은 예산 행의 예산명과 시작 위치를 맞추므로 칸의
+         * 왼쪽 끝에서 시작한다.
          */
         double anchorX() {
-            return switch (align()) {
-            case RIGHT -> left + width - PADDING_X;
-            case CENTER -> left + width / 2;
-            default -> left + PADDING_X;
-            };
+            double textLeft = left + PADDING_X;
+            double textWidth = width - PADDING_X * 2;
+            double blockInset = Math.max(0, (textWidth - blockWidth) / 2);
+            if (align() == ReportAlign.RIGHT) {
+                return textLeft + textWidth - blockInset;
+            }
+            return first ? textLeft : textLeft + blockInset;
         }
     }
 
@@ -223,10 +234,11 @@ final class WeeklyRecordSection {
     }
 
     /**
-     * 칸의 폭을 정한다. 금액 칸까지는 머리글과 내용을 한 줄에 적는 폭(상한 안에서)이고, 첫 번째 칸은 예산 행의 예산명도 함께 잰다. 금액
-     * 뒤에 칸이 있으면 한 글자 폭을 띄우고, 금액 뒤의 칸들이 남은 폭을 내용의 길이에 비례해 나눠 갖는다(머리글의 폭보다는 좁히지 않는다).
-     * 금액이 마지막 칸이면 금액 칸이 남은 폭을 가져간다. 금액 뒤의 칸들에 남는 폭이 모자라면 금액 앞의 글자 칸들을 같은 비율로
-     * 줄인다(머리글의 폭보다는 줄이지 않는다).
+     * 칸의 폭을 정한다. 모든 칸은 최소 폭(머리글의 폭과 단 폭의 15% 중 넓은 쪽)보다 좁아지지 않는다. 금액 앞의 칸은 머리글과 내용을
+     * 한 줄에 적는 폭(상한 안에서)이고, 첫 번째 칸은 예산 행의 예산명도 함께 잰다. 금액 뒤에 칸이 있으면 한 글자 폭을 띄운다. 금액
+     * 칸과 그 뒤의 칸들은 남은 폭을 나눠 갖는다. 금액 칸은 그 칸들의 수로 나눈 고른 몫(가장 넓은 금액보다는 좁히지 않는다)을 받고, 금액
+     * 뒤의 칸들은 나머지를 내용의 길이에 비례해 나눠 갖는다. 금액이 마지막 칸이면 금액 칸이 남은 폭을 모두 가져간다. 금액 뒤의 칸들에 남는
+     * 폭이 모자라면 금액 앞의 글자 칸들을 같은 비율로 줄이고, 금액 칸은 고른 몫을 받지 않고 가장 넓은 금액의 폭에 머문다.
      */
     private Layout layOut(ReportTemplateTable table, List<ReportColumnDto> columns, List<ReportRecordGroupDto> groups,
             double width, long total) {
@@ -243,35 +255,31 @@ final class WeeklyRecordSection {
         int count = visible.size();
         int amountIndex = visible.indexOf(ReportColumn.AMOUNT);
         String[] headers = new String[count];
+        double[] contentWidths = new double[count];
         double[] minWidths = new double[count];
         double[] naturalWidths = new double[count];
         double[] widths = new double[count];
         for (int i = 0; i < count; i++) {
             ReportColumn column = visible.get(i);
             headers[i] = i == 0 ? "일자 · " + table.labelOf(column) : table.labelOf(column);
-            minWidths[i] = ReportText.width(headers[i], bold) + PADDING_X * 2;
-            naturalWidths[i] = Math.max(minWidths[i], measureContent(column, i == 0, groups, total) + PADDING_X * 2);
+            contentWidths[i] = measureContent(column, i == 0, groups, total);
+            minWidths[i] = Math.max(ReportText.width(headers[i], bold) + PADDING_X * 2, width * MIN_RATIO);
+            naturalWidths[i] = Math.max(minWidths[i], contentWidths[i] + PADDING_X * 2);
             double max = column == ReportColumn.AMOUNT ? naturalWidths[i]
                     : width * (i == 0 ? FIRST_MAX_RATIO : TEXT_MAX_RATIO);
             widths[i] = Math.max(minWidths[i], Math.min(naturalWidths[i], max));
         }
 
-        // 금액이 마지막 칸이면 뒤의 칸이 없으므로 간격 없이 금액 칸이 남은 폭을 가져간다.
-        if (amountIndex == count - 1) {
-            double used = 0;
-            for (int i = 0; i < amountIndex; i++) {
-                used += widths[i];
-            }
-            widths[amountIndex] = Math.max(widths[amountIndex], width - used);
-            return toLayout(table, width, visible, hidden, headers, widths, 0);
-        }
-
-        double amountGap = ReportText.width(AMOUNT_GAP_TEXT, regular);
+        // 금액이 마지막 칸이면 뒤의 칸이 없으므로 간격을 두지 않는다.
+        boolean hasTrailing = amountIndex < count - 1;
+        double amountGap = hasTrailing ? ReportText.width(AMOUNT_GAP_TEXT, regular) : 0;
         double trailingMin = 0;
-        for (int i = amountIndex + 1; i < count; i++) {
-            trailingMin += minWidths[i];
+        if (hasTrailing) {
+            for (int i = amountIndex + 1; i < count; i++) {
+                trailingMin += minWidths[i];
+            }
+            trailingMin = Math.max(trailingMin, width * TRAILING_MIN_RATIO);
         }
-        trailingMin = Math.max(trailingMin, width * TRAILING_MIN_RATIO);
 
         double used = amountGap;
         double shrinkable = 0;
@@ -291,13 +299,17 @@ final class WeeklyRecordSection {
             }
         }
 
-        divideByContent(widths, minWidths, naturalWidths, amountIndex + 1, Math.max(0, width - used));
-        return toLayout(table, width, visible, hidden, headers, widths, amountGap);
+        // 금액 칸의 몫은 금액 뒤의 칸들에 남길 최소 폭을 넘보지 않는다.
+        double remaining = width - (used - widths[amountIndex]);
+        double evenShare = remaining / (count - amountIndex);
+        widths[amountIndex] = Math.max(widths[amountIndex], Math.min(evenShare, remaining - trailingMin));
+        divideByContent(widths, minWidths, naturalWidths, amountIndex + 1,
+                Math.max(0, remaining - widths[amountIndex]));
+        return toLayout(table, width, visible, hidden, headers, widths, contentWidths, amountGap);
     }
 
     /**
-     * 남은 폭을 칸들에 내용의 길이에 비례해 나눠 준다. 비례로 나눈 폭이 머리글의 폭보다 좁은 칸은 머리글의 폭으로 두고 나머지를 다시
-     * 나눈다.
+     * 남은 폭을 칸들에 내용의 길이에 비례해 나눠 준다. 비례로 나눈 폭이 최소 폭보다 좁은 칸은 최소 폭으로 두고 나머지를 다시 나눈다.
      *
      * @param from  나눠 가질 첫 칸의 순번. 이 칸부터 마지막 칸까지 나눠 갖는다.
      * @param total 나눌 폭
@@ -334,16 +346,17 @@ final class WeeklyRecordSection {
     /**
      * 정한 폭으로 칸을 늘어놓는다.
      *
-     * @param amountGap 금액 칸 뒤에 띄울 간격
+     * @param contentWidths 칸마다 내용 중 가장 넓은 글자의 폭(여백 제외)
+     * @param amountGap     금액 칸 뒤에 띄울 간격
      */
     private static Layout toLayout(ReportTemplateTable table, double width, List<ReportColumn> visible,
-            List<ReportColumn> hidden, String[] headers, double[] widths, double amountGap) {
+            List<ReportColumn> hidden, String[] headers, double[] widths, double[] contentWidths, double amountGap) {
         List<Cell> cells = new ArrayList<>();
         double x = 0;
         double budgetNameWidth = 0;
         double amountRight = 0;
         for (int i = 0; i < visible.size(); i++) {
-            Cell cell = new Cell(visible.get(i), i == 0, headers[i], x, widths[i]);
+            Cell cell = new Cell(visible.get(i), i == 0, headers[i], x, widths[i], contentWidths[i]);
             cells.add(cell);
             x += widths[i];
             if (cell.column() == ReportColumn.AMOUNT) {

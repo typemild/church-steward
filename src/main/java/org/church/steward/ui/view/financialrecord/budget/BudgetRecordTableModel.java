@@ -42,6 +42,8 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
     private ReportColumn firstColumn = ReportColumn.CONTACT;
     /** 같은 날짜의 내역끼리의 순서 */
     private RecordOrder recordOrder = ProgramSettingConstraints.DEFAULT_RECORD_ORDER;
+    /** 모든 내역의 관계자 칸 글자. 접힌 예산의 내역도 포함한다. */
+    private List<String> contactTexts = List.of();
 
     public BudgetRecordTableModel() {
         super(false);
@@ -122,7 +124,18 @@ public class BudgetRecordTableModel extends AbstractTreeTableModel<BudgetRecordR
             budgetNodes.add(new TreeTableNode<>(budgetId,
                     BudgetRecordRow.ofBudget(budgetId, budgetNameOf(budgetRecords.getFirst()), total), recordNodes));
         }
+        contactTexts = records.stream()
+                .map(record -> FinancialRecordFormats.joinNames(record.getContactNames()))
+                .toList();
         setRoots(budgetNodes);
+    }
+
+    /**
+     * 모든 내역의 관계자 칸 글자를 반환한다. 접힌 예산의 내역도 포함하며, 내역을 넣을 때마다({@link #setRecords}) 새 목록이
+     * 된다.
+     */
+    public List<String> getContactTexts() {
+        return contactTexts;
     }
 
     /**

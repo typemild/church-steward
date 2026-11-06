@@ -132,4 +132,24 @@ class BudgetRecordTableModelTest {
             assertThat(recordIdsOf(model)).containsExactly(1L, 2L);
         }
     }
+
+    @Nested
+    @DisplayName("getContactTexts 테스트")
+    class GetContactTextsTest {
+
+        @Test
+        @DisplayName("예산이 접혀 있어도 모든 내역의 관계자를 돌려준다")
+        void getContactTexts_CollapsedBudget_ReturnsAllRecords() {
+            // Given
+            BudgetRecordTableModel model = new BudgetRecordTableModel();
+            model.setRecords(List.of(createRecord(1L, DATE, "홍길동", null), createRecord(2L, DATE, "OO설비 주식회사",
+                    null)), Map.of(BUDGET_ID, 0));
+
+            // When
+            List<String> texts = model.getContactTexts();
+
+            // Then
+            assertThat(texts).containsExactlyInAnyOrder("홍길동", "OO설비 주식회사");
+        }
+    }
 }

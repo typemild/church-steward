@@ -428,6 +428,26 @@ class BudgetPlanReportComposerTest {
         }
 
         @Test
+        @DisplayName("비고는 가장 넓은 비고가 머리글과 같은 가운데에 오도록 덩어리로 칸 가운데에 두고 서로 왼쪽 끝을 맞춘다")
+        void draw_ShortRemarks_CentersRemarksBlockUnderHeader() {
+            // Given
+            BudgetPlanReportDto report = report(3, "예산 ", "확인");
+
+            // When
+            ReportDocument document = drawAlone(report, DEFAULT_TEMPLATE, ReportStyle.DEFAULT);
+
+            // Then
+            List<ReportElement.Text> remarks = List.of(find(document, "0번 확인"), find(document, "1번 확인"),
+                    find(document, "2번 확인"));
+            ReportElement.Text widest = remarks.stream()
+                    .max((a, b) -> Double.compare(ReportText.width(a.text(), a.font()), ReportText.width(b.text(),
+                            b.font())))
+                    .orElseThrow();
+            assertThat(centerOf(widest)).isCloseTo(centerOf(find(document, "비고")), within(0.01));
+            assertThat(remarks).allSatisfy(text -> assertThat(text.x()).isCloseTo(widest.x(), within(0.01)));
+        }
+
+        @Test
         @DisplayName("칸에 들어가지 않는 비고는 말줄임표로 줄이고 예산 행 아래에 전체 내용을 다시 적는다")
         void draw_LongRemarks_ClipsAndRewritesBelowRow() {
             // Given

@@ -121,7 +121,8 @@ public final class AnnualSettlementReportComposer {
     }
 
     /**
-     * 월별 수입/지출. 왼쪽에 흐름을 보여주는 차트를, 오른쪽에 정확한 금액을 적은 표를 같은 높이로 놓는다.
+     * 월별 수입/지출. 왼쪽에 흐름을 보여주는 차트를, 오른쪽에 정확한 금액을 적은 표를 같은 높이로 놓는다. 금액은 오른쪽 정렬한 덩어리로 칸
+     * 가운데에 놓는다.
      */
     private static void drawMonthly(ReportCanvas canvas, AnnualSettlementReportDto report) {
         ReportTable table = new ReportTable(canvas.getStyle(), BODY_SIZE,
@@ -129,6 +130,9 @@ public final class AnnualSettlementReportComposer {
                 new Column("수입", 0, ReportAlign.RIGHT),
                 new Column("지출", 0, ReportAlign.RIGHT),
                 new Column("차액", 0, ReportAlign.RIGHT));
+        for (int i = 1; i <= 3; i++) {
+            table.setBlockCentered(i);
+        }
 
         boolean withYear = MonthlyTrendChart.needsYear(report.getMonthlyTrend());
         long totalIncome = 0;

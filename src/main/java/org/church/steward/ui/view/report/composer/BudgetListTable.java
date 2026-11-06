@@ -29,7 +29,8 @@ import org.church.steward.ui.view.report.layout.ReportText;
  * 멀어지지 않고, 가장 넓은 숫자는 머리글과 같은 가운데에 온다. 숫자 대신 적는 "신규"는 칸의 가운데에 적는다.
  * <p>
  * 비고는 줄을 바꾸지 않고, 칸에 들어가지 않으면 말줄임표로 줄인 뒤 그 예산 행 바로 아래에 "비고: …"처럼 전체 내용을 다시
- * 적는다(주간 회계 결산 보고서의 내역과 같은 방식). 예산 행과 다시 적는 줄은 페이지 사이에서 갈라지지 않는다.
+ * 적는다(주간 회계 결산 보고서의 내역과 같은 방식). 예산 행과 다시 적는 줄은 페이지 사이에서 갈라지지 않는다. 비고도 왼쪽 정렬한
+ * 덩어리로 칸의 가운데에 놓아, 비고가 짧으면 머리글 쪽으로 모인다(줄어든 비고가 있으면 칸의 왼쪽 끝에서 시작한다).
  */
 final class BudgetListTable {
 
@@ -78,7 +79,8 @@ final class BudgetListTable {
                 .regular(ReportStyles.BUDGET_TABLE_SIZE));
         for (int i = 0; i < visible.size(); i++) {
             reportTable.setPaddingX(i, padding);
-            if (!isText(visible.get(i))) {
+            // 예산 항목은 들여쓰기로 계층을 보이므로 칸의 왼쪽 끝에서 시작한다.
+            if (visible.get(i) != ReportColumn.BUDGET_NAME) {
                 reportTable.setBlockCentered(i);
             }
         }

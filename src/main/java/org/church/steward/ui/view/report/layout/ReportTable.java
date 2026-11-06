@@ -108,7 +108,7 @@ public final class ReportTable {
     private double[] fixedWidths;
     /** 열마다의 좌우 여백. 칸의 왼쪽과 오른쪽에 각각 이만큼 둔다. */
     private final double[] paddings;
-    /** 열마다 오른쪽 정렬한 내용을 한 덩어리로 칸 가운데에 놓는지 여부({@link #setBlockCentered}) */
+    /** 열마다 내용을 한 덩어리로 칸 가운데에 놓는지 여부({@link #setBlockCentered}) */
     private final boolean[] blockCentered;
 
     /**
@@ -170,10 +170,12 @@ public final class ReportTable {
     }
 
     /**
-     * 오른쪽 정렬하는 열의 내용을 한 덩어리로 보고 칸의 가운데에 놓는다. 덩어리의 폭은 그 열에서 가장 넓은 글자의 폭이므로, 가장 넓은
-     * 숫자는 가운데 정렬한 머리글과 같은 가운데에 오고 나머지 숫자는 그 오른쪽 끝에 맞춰진다. 고정폭 글꼴에서 숫자 앞에 공백을 채워 가운데
-     * 정렬한 것과 같다. 칸이 넓어도 숫자가 오른쪽 끝에 붙어 머리글과 멀어지지 않게 할 때 쓴다. 정렬을 따로 정한
-     * 칸({@link #text(String, ReportAlign)})은 덩어리에 넣지 않고 그 정렬을 따른다.
+     * 오른쪽이나 왼쪽으로 정렬하는 열의 내용을 한 덩어리로 보고 칸의 가운데에 놓는다. 덩어리의 폭은 그 열에서 가장 넓은 글자의 폭이므로,
+     * 가장 넓은 글자는 가운데 정렬한 머리글과 같은 가운데에 오고 나머지 글자는 덩어리 안에서 열의 정렬대로 끝을 맞춘다(오른쪽 정렬이면
+     * 덩어리의 오른쪽 끝, 왼쪽 정렬이면 왼쪽 끝). 고정폭 글꼴에서 숫자 앞에 공백을 채워 가운데 정렬한 것과 같다. 칸이 넓어도 숫자나 글이
+     * 칸의 한쪽 끝에 붙어 머리글과 멀어지지 않게 할 때 쓴다. 가장 넓은 글자가 칸에 들어가지 않으면(줄을 바꾸거나 줄이는 경우) 그냥 열의
+     * 정렬을 따른다. 정렬을 따로 정한 칸({@link #text(String, ReportAlign)})은 덩어리에 넣지 않고 그 정렬을
+     * 따른다.
      */
     public void setBlockCentered(int columnIndex) {
         blockCentered[columnIndex] = true;
@@ -375,8 +377,8 @@ public final class ReportTable {
     }
 
     /**
-     * 열마다 오른쪽 정렬한 내용을 한 덩어리로 가운데에 놓을 때의 덩어리 폭. 그 열의 글자 칸 중 가장 넓은 글자의 폭이며(머리글과 정렬을
-     * 따로 정한 칸은 빼고), 덩어리로 놓지 않는 열은 0이다.
+     * 열마다 내용을 한 덩어리로 가운데에 놓을 때의 덩어리 폭. 그 열의 글자 칸과 줄이는 칸 중 가장 넓은 글자의 폭이며(머리글과 정렬을 따로
+     * 정한 칸은 빼고, 줄이는 칸은 줄이지 않은 내용으로 잰다), 덩어리로 놓지 않는 열은 0이다.
      */
     private double[] measureBlockWidths() {
         double[] blockWidths = new double[columns.size()];
@@ -385,9 +387,14 @@ public final class ReportTable {
                 continue;
             }
             for (Row row : rows) {
-                if (row.cells()
-                        .get(i) instanceof TextCell textCell && textCell.align() == null && textCell.text() != null) {
-                    blockWidths[i] = Math.max(blockWidths[i], ReportText.width(textCell.text(), fontOf(row)));
+                String text = switch (row.cells()
+                        .get(i)) {
+                case TextCell textCell -> textCell.align() == null ? textCell.text() : null;
+                case ClippedCell clippedCell -> clippedCell.text();
+                case BarTextCell _ -> null;
+                };
+                if (text != null) {
+                    blockWidths[i] = Math.max(blockWidths[i], ReportText.width(text, fontOf(row)));
                 }
             }
         }
@@ -429,18 +436,25 @@ public final class ReportTable {
                         textLeft - BAR_GAP - (cellX + paddingX), laidOutRow.height(), ReportText.lineHeight(font));
             }
 
-            ReportAlign align = row.cells()
-                    .get(i) instanceof TextCell textCell && textCell.align() != null ? textCell.align()
-                            : columns.get(i)
-                                    .align();
+            ReportAlign ownAlign = row.cells()
+                    .get(i) instanceof TextCell textCell ? textCell.align() : null;
+            ReportAlign align = ownAlign != null ? ownAlign
+                    : columns.get(i)
+                            .align();
             double anchorX = switch (align) {
             case LEFT -> textLeft;
             case CENTER -> textLeft + textWidth / 2;
             case RIGHT -> textLeft + textWidth;
             };
-            // 덩어리로 가운데에 놓는 열은 덩어리의 오른쪽 끝에 맞춘다. 칸이 덩어리보다 좁으면 그냥 오른쪽 정렬이다.
-            if (align == ReportAlign.RIGHT && blockWidths[i] > 0) {
-                anchorX = Math.min(anchorX, textLeft + (textWidth + blockWidths[i]) / 2);
+            // 덩어리로 가운데에 놓는 열은 덩어리의 끝(오른쪽 정렬이면 오른쪽 끝, 왼쪽 정렬이면 왼쪽 끝)에 맞춘다. 칸이 덩어리보다
+            // 좁으면 그냥 열의 정렬이다.
+            if (ownAlign == null && blockWidths[i] > 0) {
+                double blockInset = Math.max(0, (textWidth - blockWidths[i]) / 2);
+                if (align == ReportAlign.RIGHT) {
+                    anchorX -= blockInset;
+                } else if (align == ReportAlign.LEFT) {
+                    anchorX += blockInset;
+                }
             }
             double baseline = top + style.baselineOffset(font);
             for (String line : laidOutRow.cellLines()

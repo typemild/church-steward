@@ -26,7 +26,8 @@ import org.church.steward.ui.view.report.layout.ReportText;
  * <p>
  * 칸의 순서와 비율 칸(달성률/집행률)의 막대는 보고서 양식이 정한다. 막대는 따로 칸을 두지 않고 비율 칸 안의 왼쪽에 그리며, 비율은
  * 가운데 정렬한다. 모든 칸이 폭을 고르게 나눠 갖는다(글자를 키워 금액이나 비율이 들어가지 않는 칸은 넓어지고 예산 항목이 그만큼
- * 좁아진다). 막대를 숨겨도 비율 칸은 그대로 고른 폭을 갖고 비율을 그 가운데에 적는다.
+ * 좁아진다). 막대를 숨겨도 비율 칸은 그대로 고른 폭을 갖고 비율을 그 가운데에 적는다. 금액은 오른쪽 정렬한 덩어리로 칸 가운데에
+ * 놓는다({@link ReportTable#setBlockCentered}).
  */
 final class BudgetStatusSection {
 
@@ -121,6 +122,14 @@ final class BudgetStatusSection {
                     .labelOf(column), width, alignOf(column)));
         }
         ReportTable table = new ReportTable(style, baseSize, columns.toArray(Column[]::new));
+        // 고른 폭을 받은 금액 칸에서 숫자가 오른쪽 끝에 붙어 머리글과 멀어지지 않게 한다.
+        for (int i = 0; i < layout.columns()
+                .size(); i++) {
+            if (alignOf(layout.columns()
+                    .get(i)) == ReportAlign.RIGHT) {
+                table.setBlockCentered(i);
+            }
+        }
 
         // 막대의 길이가 행마다 같도록, 비율을 적을 자리는 가장 넓은 비율에 맞춘다.
         Font boldFont = style.bold(baseSize);
