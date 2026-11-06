@@ -71,5 +71,26 @@ class ReportTableOptionRepositoryTest {
             // Then
             assertThat(found.getRecordOrder()).isEqualTo(RecordOrder.ENTRY);
         }
+
+        @Test
+        @DisplayName("저장한 일자 표시 여부를 그대로 읽어 온다")
+        void findById_Saved_ReadsDateVisible() {
+            // Given
+            reportTableOptionRepository.save(ReportTableOption.builder()
+                    .tableType(ReportTemplateTable.WEEKLY_INCOME_RECORDS)
+                    .rateBarVisible(true)
+                    .recordOrder(RecordOrder.FIRST_COLUMN)
+                    .dateVisible(false)
+                    .build());
+            entityManager.flush();
+            entityManager.clear();
+
+            // When
+            ReportTableOption found = reportTableOptionRepository.findById(ReportTemplateTable.WEEKLY_INCOME_RECORDS)
+                    .orElseThrow();
+
+            // Then
+            assertThat(found.isDateVisible()).isFalse();
+        }
     }
 }

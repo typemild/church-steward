@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -162,27 +163,37 @@ class WeeklySettlementReportComposerTest {
      */
     private static ReportTemplateDto createTemplate(ReportApprovalDto approval,
             Map<ReportTemplateTable, List<ReportColumnDto>> overrides, boolean rateBarVisible) {
-        return createTemplate(approval, overrides, rateBarVisible, RecordOrder.FIRST_COLUMN);
+        return createTemplate(approval, overrides, rateBarVisible, RecordOrder.FIRST_COLUMN, true);
     }
 
     /**
      * 기본 양식에서 내역 표의 같은 날짜의 순서만 바꾼다.
      */
     private static ReportTemplateDto createTemplate(RecordOrder recordOrder) {
-        return createTemplate(createApproval(true, null, null, null), Map.of(), true, recordOrder);
+        return createTemplate(createApproval(true, null, null, null), Map.of(), true, recordOrder, true);
+    }
+
+    /**
+     * 기본 양식에서 내역 표의 일자 표시만 바꾼다.
+     */
+    private static ReportTemplateDto createTemplate(boolean dateVisible) {
+        return createTemplate(createApproval(true, null, null, null), Map.of(), true, RecordOrder.FIRST_COLUMN,
+                dateVisible);
     }
 
     /**
      * @param overrides      기본 순서 대신 쓸 표의 칸
      * @param rateBarVisible 모든 현황 표의 비율 칸 왼쪽에 막대를 함께 그리는지 여부
      * @param recordOrder    모든 내역 표의 같은 날짜의 순서
+     * @param dateVisible    모든 내역 표에서 첫 번째 칸 앞에 일자를 붙여 표시하는지 여부
      */
     private static ReportTemplateDto createTemplate(ReportApprovalDto approval,
             Map<ReportTemplateTable, List<ReportColumnDto>> overrides, boolean rateBarVisible,
-            RecordOrder recordOrder) {
+            RecordOrder recordOrder, boolean dateVisible) {
         Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, Boolean> rateBars = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, RecordOrder> recordOrders = new EnumMap<>(ReportTemplateTable.class);
+        Map<ReportTemplateTable, Boolean> dateVisibles = new EnumMap<>(ReportTemplateTable.class);
         for (ReportTemplateTable table : ReportTemplateTable.of(ReportType.WEEKLY_SETTLEMENT)) {
             tables.put(table, overrides.getOrDefault(table, createColumns(table.getDefaultColumns())));
             if (table.hasRateBarOption()) {
@@ -191,6 +202,9 @@ class WeeklySettlementReportComposerTest {
             if (table.hasRecordOrderOption()) {
                 recordOrders.put(table, recordOrder);
             }
+            if (table.hasDateOption()) {
+                dateVisibles.put(table, dateVisible);
+            }
         }
         return ReportTemplateDto.builder()
                 .reportType(ReportType.WEEKLY_SETTLEMENT)
@@ -198,6 +212,7 @@ class WeeklySettlementReportComposerTest {
                 .tables(tables)
                 .rateBarVisible(rateBars)
                 .recordOrders(recordOrders)
+                .dateVisible(dateVisibles)
                 .build();
     }
 
@@ -520,6 +535,21 @@ class WeeklySettlementReportComposerTest {
             double headerCenter = header.x() + ReportText.width(header.text(), header.font()) / 2;
             assertThat(headerCenter).isCloseTo(ReportPaper.MARGIN + tableWidth * 3 / 8, within(0.01));
         }
+
+        @Test
+        @DisplayName("금액은 가장 넓은 금액(합계)이 머리글과 같은 가운데에 오도록 덩어리로 칸 가운데에 둔다")
+        void compose_StatusAmounts_CentersAmountBlockUnderHeader() {
+            // When
+            ReportDocument document = WeeklySettlementReportComposer.compose(report(List.of(), List.of()),
+                    createTemplate(), ReportStyle.DEFAULT);
+
+            // Then
+            // 수입 현황은 예산 여섯 개가 4,000,000씩이므로 합계는 24,000,000이다.
+            ReportElement.Text header = findLeftmost(document, "수입액");
+            ReportElement.Text total = findLeftmost(document, "24,000,000");
+            assertThat(total.x() + ReportText.width(total.text(), total.font()) / 2).isCloseTo(header.x()
+                    + ReportText.width(header.text(), header.font()) / 2, within(0.01));
+        }
     }
 
     @Nested
@@ -553,11 +583,27 @@ class WeeklySettlementReportComposerTest {
         }
 
         @Test
-        @DisplayName("첫 번째 칸이 아닌 관계자는 머리글과 같이 칸의 가운데에 적는다")
-        void compose_ContactNotFirst_CentersContactInColumn() {
+        @DisplayName("일자를 표시하지 않으면 첫 번째 칸의 머리글과 내용에 일자를 붙이지 않는다")
+        void compose_DateHidden_WritesFirstColumnWithoutDate() {
+            // Given
+            WeeklySettlementReportDto report = report(List.of(group("주일헌금", List.of(record("홍길동", "", "")))),
+                    List.of(group("관리비", List.of(record("OO설비", "수리비", "")))));
+
+            // When
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, createTemplate(false),
+                    ReportStyle.DEFAULT);
+
+            // Then
+            assertThat(textsOf(document)).contains("봉헌자", "내용", "홍길동", "수리비")
+                    .noneMatch(text -> text.startsWith("일자 · ") || text.startsWith("[10/4]"));
+        }
+
+        @Test
+        @DisplayName("첫 번째 칸이 아닌 관계자는 가장 긴 이름이 머리글과 같은 가운데에 오도록 덩어리로 칸 가운데에 두고 서로 왼쪽 끝을 맞춘다")
+        void compose_ContactNotFirst_CentersContactBlockUnderHeader() {
             // Given
             WeeklySettlementReportDto report = report(List.of(),
-                    List.of(group("관리비", List.of(record("OO설비", "수리비", "")))));
+                    List.of(group("관리비", List.of(record("OO설비 주식회사", "수리비", ""), record("김OO", "다과", "")))));
 
             // When
             ReportDocument document = WeeklySettlementReportComposer.compose(report, createTemplate(),
@@ -565,18 +611,19 @@ class WeeklySettlementReportComposerTest {
 
             // Then
             ReportElement.Text header = findLeftmost(document, "수취인");
-            ReportElement.Text contact = findLeftmost(document, "OO설비");
-            double headerCenter = header.x() + ReportText.width(header.text(), header.font()) / 2;
-            double contactCenter = contact.x() + ReportText.width(contact.text(), contact.font()) / 2;
-            assertThat(contactCenter).isCloseTo(headerCenter, within(0.01));
+            ReportElement.Text widest = findLeftmost(document, "OO설비 주식회사");
+            ReportElement.Text narrow = findLeftmost(document, "김OO");
+            assertThat(widest.x() + ReportText.width(widest.text(), widest.font()) / 2).isCloseTo(header.x()
+                    + ReportText.width(header.text(), header.font()) / 2, within(0.01));
+            assertThat(narrow.x()).isCloseTo(widest.x(), within(0.01));
         }
 
         @Test
-        @DisplayName("기본 양식에서는 수입 내역의 금액이 봉헌자 바로 옆에 붙는다")
-        void compose_DefaultIncomeRecords_PutsAmountNextToContact() {
+        @DisplayName("금액 칸은 금액 앞의 칸을 뺀 폭에서 금액 칸과 그 뒤의 칸 수로 나눈 고른 몫을 받는다")
+        void compose_DefaultIncomeRecords_GivesAmountEvenShare() {
             // Given
-            WeeklySettlementReportDto report = report(List.of(group("주일헌금", List.of(record("홍길동", "", "")))),
-                    List.of());
+            WeeklySettlementReportDto report = report(List.of(group("주일헌금", List.of(record("홍길동", "감사헌금",
+                    "")))), List.of());
             double columnWidth = (ReportPaper.WIDTH - ReportPaper.MARGIN * 2 - BudgetStatusSection.COLUMN_GAP) / 2;
 
             // When
@@ -584,9 +631,81 @@ class WeeklySettlementReportComposerTest {
                     ReportStyle.DEFAULT);
 
             // Then
+            // 기본 양식의 수입 내역은 봉헌자, 금액, 내용, 비고 순이다. 봉헌자 칸은 머리글과 내용 중 가장 넓은 것에 좌우 여백(2pt씩)을
+            // 더한 폭(단 폭의 15% 이상)이고, 금액 뒤에는 한 글자 폭을 띄운다.
+            Font regular = ReportStyle.DEFAULT.regular(ReportFonts.SIZE_DETAIL);
+            Font bold = ReportStyle.DEFAULT.bold(ReportFonts.SIZE_DETAIL);
+            double contact = Math.max(Math.max(Math.max(ReportText.width("일자 · 봉헌자", bold), ReportText.width("주일헌금",
+                    bold)), ReportText.width("[10/4] 홍길동", regular)) + 4, columnWidth * 0.15);
+            double amount = (columnWidth - contact - ReportText.width("가", regular)) / 3;
+            ReportElement.Text header = findLeftmost(document, "금액");
+            assertThat(header.x() + ReportText.width(header.text(), header.font()) / 2).isCloseTo(
+                    ReportPaper.MARGIN + contact + amount / 2, within(0.01));
+        }
+
+        @Test
+        @DisplayName("비고가 모두 비어 있어도 비고 칸은 단 폭의 15% 이상을 갖는다")
+        void compose_EmptyRemarks_KeepsMinimumWidth() {
+            // Given
+            WeeklySettlementReportDto report = report(List.of(), List.of(group("관리비", List.of(record("OO설비 주식회사",
+                    "냉난방기 정기 점검 수리비", ""), record("한국전력공사", "전기 요금", "")))));
+            double columnWidth = (ReportPaper.WIDTH - ReportPaper.MARGIN * 2 - BudgetStatusSection.COLUMN_GAP) / 2;
+
+            // When
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, createTemplate(),
+                    ReportStyle.DEFAULT);
+
+            // Then
+            // 기본 양식의 지출 내역은 비고가 마지막 칸이므로, 비고 칸은 머리글 가운데에서 단의 오른쪽 끝까지의 두 배다.
+            ReportElement.Text header = textElementsOf(document).stream()
+                    .filter(text -> text.text()
+                            .equals("비고"))
+                    .max((a, b) -> Double.compare(a.x(), b.x()))
+                    .orElseThrow();
+            double headerCenter = header.x() + ReportText.width(header.text(), header.font()) / 2;
+            double columnRight = ReportPaper.WIDTH - ReportPaper.MARGIN;
+            assertThat((columnRight - headerCenter) * 2).isGreaterThanOrEqualTo(columnWidth * 0.15 - 0.01);
+        }
+
+        @Test
+        @DisplayName("금액은 가장 넓은 금액(합계)이 머리글과 같은 가운데에 오도록 덩어리로 칸 가운데에 두고 서로 오른쪽 끝을 맞춘다")
+        void compose_RecordAmounts_CentersAmountBlockUnderHeader() {
+            // Given
+            WeeklySettlementReportDto report = report(List.of(group("주일헌금", List.of(record("홍길동", "", ""),
+                    record("김철수", "", "")))), List.of());
+
+            // When
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, createTemplate(),
+                    ReportStyle.DEFAULT);
+
+            // Then
+            ReportElement.Text header = findLeftmost(document, "금액");
+            ReportElement.Text total = findLeftmost(document, "100,000");
             ReportElement.Text amount = findLeftmost(document, "50,000");
-            assertThat(amount.x() + ReportText.width(amount.text(), amount.font()))
-                    .isLessThan(ReportPaper.MARGIN + columnWidth / 2);
+            assertThat(total.x() + ReportText.width(total.text(), total.font()) / 2).isCloseTo(header.x()
+                    + ReportText.width(header.text(), header.font()) / 2, within(0.01));
+            assertThat(amount.x() + ReportText.width(amount.text(), amount.font())).isCloseTo(total.x()
+                    + ReportText.width(total.text(), total.font()), within(0.01));
+        }
+
+        @Test
+        @DisplayName("첫 번째 칸이 아닌 내용은 가장 긴 내용이 머리글과 같은 가운데에 오도록 덩어리로 칸 가운데에 두고 서로 왼쪽 끝을 맞춘다")
+        void compose_DescriptionNotFirst_CentersDescriptionBlockUnderHeader() {
+            // Given
+            WeeklySettlementReportDto report = report(List.of(group("주일헌금", List.of(record("홍길동", "감사헌금", ""),
+                    record("김철수", "새가족 감사헌금", "")))), List.of());
+
+            // When
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, createTemplate(),
+                    ReportStyle.DEFAULT);
+
+            // Then
+            ReportElement.Text header = findLeftmost(document, "내용");
+            ReportElement.Text widest = findLeftmost(document, "새가족 감사헌금");
+            ReportElement.Text narrow = findLeftmost(document, "감사헌금");
+            assertThat(widest.x() + ReportText.width(widest.text(), widest.font()) / 2).isCloseTo(header.x()
+                    + ReportText.width(header.text(), header.font()) / 2, within(0.01));
+            assertThat(narrow.x()).isCloseTo(widest.x(), within(0.01));
         }
 
         @Test
@@ -773,6 +892,21 @@ class WeeklySettlementReportComposerTest {
 
             // Then
             assertThat(textsOf(document)).containsSubsequence("[10/4] 홍길동", "[10/5] 김철수");
+        }
+
+        @Test
+        @DisplayName("정렬 순서가 가나다순 + 날짜순이면 일자가 늦어도 첫 번째 칸의 가나다순이 앞선 내역을 먼저 적는다")
+        void compose_FirstColumnDateRecordOrder_SortsByFirstColumnFirst() {
+            // Given
+            WeeklySettlementReportDto report = report(List.of(group("주일헌금", List.of(
+                    record(WEEK_START, "홍길동", ""), record(WEEK_START.plusDays(1), "김철수", "")))), List.of());
+
+            // When
+            ReportDocument document = WeeklySettlementReportComposer.compose(report,
+                    createTemplate(RecordOrder.FIRST_COLUMN_DATE), ReportStyle.DEFAULT);
+
+            // Then
+            assertThat(textsOf(document)).containsSubsequence("[10/5] 김철수", "[10/4] 홍길동");
         }
 
         @Test

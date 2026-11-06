@@ -17,8 +17,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 수입/지출 관리의 "예산별 보기"에서 칸의 순서와 숨김 말고 표 단위로 정하는 것. 지금은 같은 날짜의 내역끼리의 순서뿐이다. 프로그램
- * 전체 설정이며 DB에 있으므로 백업에 함께 들어간다.
+ * 수입/지출 관리의 "예산별 보기"에서 칸의 순서와 숨김 말고 표 단위로 정하는 것. 내역의 정렬 순서와 첫 번째 칸 앞에 일자를 붙여
+ * 표시하는지 여부다. 프로그램 전체 설정이며 DB에 있으므로 백업에 함께 들어간다.
  */
 @Entity
 @Table(name = "BUDGET_VIEW_OPTION")
@@ -32,19 +32,25 @@ public class BudgetViewOption {
     @Column(name = "table_type", length = ProgramSettingConstraints.ENUM_MAX_LENGTH)
     private BudgetViewTable tableType;
 
-    /** 같은 날짜의 내역끼리의 순서 */
+    /** 내역의 정렬 순서 */
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(nullable = false, length = ReportTemplateConstraints.RECORD_ORDER_MAX_LENGTH)
     private RecordOrder recordOrder;
 
+    /** 첫 번째 칸 앞에 일자를 붙여 표시하는지 여부 */
+    @Column(nullable = false)
+    private boolean dateVisible;
+
     @Builder
-    public BudgetViewOption(BudgetViewTable tableType, RecordOrder recordOrder) {
+    public BudgetViewOption(BudgetViewTable tableType, RecordOrder recordOrder, boolean dateVisible) {
         this.tableType = tableType;
         this.recordOrder = recordOrder;
+        this.dateVisible = dateVisible;
     }
 
-    public void update(RecordOrder recordOrder) {
+    public void update(RecordOrder recordOrder, boolean dateVisible) {
         this.recordOrder = recordOrder;
+        this.dateVisible = dateVisible;
     }
 }

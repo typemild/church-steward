@@ -65,6 +65,9 @@ public final class UIColors {
     // Border
     public static final Color BORDER = new Color(210, 215, 220); // #D2D7DC
 
+    // Table (표 아래에 붙이는 총계 줄의 바탕)
+    public static final Color TABLE_TOTAL_BACKGROUND = new Color(236, 240, 241); // #ECF0F1
+
     // Report (흑백으로 인쇄해도 구분되도록 회색조만 쓴다)
     public static final Color REPORT_PAPER = Color.WHITE; // #FFFFFF
     public static final Color REPORT_TEXT = Color.BLACK; // #000000

@@ -46,8 +46,8 @@ import lombok.RequiredArgsConstructor;
 public class ReportServiceImpl implements ReportService {
 
     /**
-     * 한 예산 안의 내역은 날짜순으로, 같은 날짜는 입력순으로 정렬한다. 같은 날짜의 순서는 화면이 양식에 따라 다시 정하며, 견준 값이 같은
-     * 내역은 이 순서로 남는다.
+     * 한 예산 안의 내역은 날짜순으로, 같은 날짜는 입력순으로 정렬한다. 화면이 양식의 정렬 순서에 따라 안정 정렬로 다시 늘어놓으며, 견준
+     * 값이 모두 같은 내역은 이 순서(입력순)로 남는다.
      */
     private static final Comparator<FinancialRecord> RECORD_ORDER = Comparator.comparing(FinancialRecord::getDate)
             .thenComparing(FinancialRecord::getId, Comparator.nullsLast(Comparator.naturalOrder()));

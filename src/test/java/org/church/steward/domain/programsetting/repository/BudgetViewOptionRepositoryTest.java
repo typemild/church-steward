@@ -50,5 +50,25 @@ class BudgetViewOptionRepositoryTest {
             // Then
             assertThat(found.getRecordOrder()).isEqualTo(RecordOrder.ENTRY);
         }
+
+        @Test
+        @DisplayName("저장한 일자 표시 여부를 그대로 읽어 온다")
+        void findById_Saved_ReadsDateVisible() {
+            // Given
+            budgetViewOptionRepository.save(BudgetViewOption.builder()
+                    .tableType(BudgetViewTable.INCOME)
+                    .recordOrder(RecordOrder.FIRST_COLUMN)
+                    .dateVisible(false)
+                    .build());
+            entityManager.flush();
+            entityManager.clear();
+
+            // When
+            BudgetViewOption found = budgetViewOptionRepository.findById(BudgetViewTable.INCOME)
+                    .orElseThrow();
+
+            // Then
+            assertThat(found.isDateVisible()).isFalse();
+        }
     }
 }

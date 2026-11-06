@@ -156,6 +156,49 @@ class ReportTableTest {
         }
 
         @Test
+        @DisplayName("왼쪽 정렬하는 열을 덩어리로 가운데에 놓으면 가장 넓은 글자를 칸 가운데에 두고 나머지 글자를 그 왼쪽 끝에 맞춘다")
+        void render_BlockCenteredLeftColumn_CentersWidestAndLeftAlignsOthers() {
+            // Given
+            ReportCanvas canvas = new ReportCanvas("시험", ReportStyle.DEFAULT);
+            ReportTable table = new ReportTable(ReportStyle.DEFAULT, 9f,
+                    new Column("비고", 0, ReportAlign.LEFT));
+            table.setBlockCentered(0);
+            table.addRow(RowStyle.NORMAL, 0, ReportTable.clipped("감사 헌금 포함", "비고"));
+            table.addRow(RowStyle.NORMAL, 0, ReportTable.clipped("확인", "비고"));
+
+            // When
+            table.renderAt(canvas, canvas.getLeft(), canvas.getY(), 200);
+
+            // Then
+            ReportDocument document = canvas.finish();
+            ReportElement.Text widest = findText(document, "감사 헌금 포함");
+            ReportElement.Text narrow = findText(document, "확인");
+            assertThat(widest.x() + ReportText.width(widest.text(), widest.font()) / 2).isCloseTo(
+                    canvas.getLeft() + 100, within(1e-6));
+            assertThat(narrow.x()).isCloseTo(widest.x(), within(1e-6));
+        }
+
+        @Test
+        @DisplayName("덩어리로 가운데에 놓는 왼쪽 정렬 열에 칸보다 넓은 내용이 있으면 칸의 왼쪽 끝에서 시작한다")
+        void render_BlockCenteredLeftColumnOverflow_StartsAtCellLeft() {
+            // Given
+            ReportCanvas canvas = new ReportCanvas("시험", ReportStyle.DEFAULT);
+            ReportTable table = new ReportTable(ReportStyle.DEFAULT, 9f,
+                    new Column("항목", 0, ReportAlign.LEFT),
+                    new Column("비고", 0, ReportAlign.LEFT));
+            table.setBlockCentered(1);
+            table.addRow(RowStyle.NORMAL, 0, ReportTable.text("헌금"), ReportTable.clipped("아주 긴 비고입니다", "비고"));
+            table.addRow(RowStyle.NORMAL, 0, ReportTable.text("감사"), ReportTable.clipped("확인", "비고"));
+            table.setWidths(0, 40);
+
+            // When
+            table.renderAt(canvas, canvas.getLeft(), canvas.getY(), 200);
+
+            // Then
+            assertThat(findText(canvas.finish(), "확인").x()).isCloseTo(canvas.getLeft() + 160 + 3, within(1e-6));
+        }
+
+        @Test
         @DisplayName("한 열의 좌우 여백을 바꿔도 다른 열은 기본 여백(3pt)을 쓴다")
         void render_PaddingXOnOneColumn_KeepsOtherColumnsDefault() {
             // Given

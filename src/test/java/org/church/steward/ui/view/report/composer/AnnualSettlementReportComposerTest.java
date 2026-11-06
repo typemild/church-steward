@@ -240,6 +240,41 @@ class AnnualSettlementReportComposerTest {
         }
 
         @Test
+        @DisplayName("월별 표의 금액은 가장 큰 금액(합계)이 칸 가운데에 오도록 덩어리로 칸 가운데에 놓는다")
+        void compose_Monthly_CentersAmountBlockInColumn() {
+            // Given
+            AnnualSettlementReportDto report = report(previousSummary(), monthlyTrend(11_000_000L, 7_000_000L));
+
+            // When
+            ReportDocument document = AnnualSettlementReportComposer.compose(report, DEFAULT_TEMPLATE,
+                    ReportStyle.DEFAULT);
+
+            // Then
+            // 월별 표는 본문 폭의 48%로 오른쪽 끝에 놓이고, 월 칸(13mm)을 뺀 폭을 금액 세 칸이 똑같이 나눠 갖는다.
+            double contentWidth = ReportPaper.WIDTH - ReportPaper.MARGIN * 2;
+            double tableWidth = contentWidth * 0.48;
+            double monthWidth = ReportPaper.mm(13);
+            double amountWidth = (tableWidth - monthWidth) / 3;
+            double incomeCenter = ReportPaper.MARGIN + contentWidth - tableWidth + monthWidth + amountWidth / 2;
+            assertThat(centerOf(document, "132,000,000")).isCloseTo(incomeCenter, within(0.01));
+        }
+
+        @Test
+        @DisplayName("현황 표의 금액은 가장 큰 금액(합계)이 머리글과 같은 가운데에 오도록 덩어리로 칸 가운데에 놓는다")
+        void compose_Status_CentersAmountBlockUnderHeader() {
+            // Given
+            AnnualSettlementReportDto report = report(previousSummary(), monthlyTrend(10_000_000L, 8_000_000L));
+
+            // When
+            ReportDocument document = AnnualSettlementReportComposer.compose(report, DEFAULT_TEMPLATE,
+                    ReportStyle.DEFAULT);
+
+            // Then
+            // 수입 현황은 예산 여덟 개가 4,000,000씩이므로 합계는 32,000,000이다.
+            assertThat(centerOf(document, "32,000,000")).isCloseTo(centerOf(document, "수입액"), within(0.01));
+        }
+
+        @Test
         @DisplayName("현황 표의 막대를 숨겨도 비율 칸은 고른 폭을 그대로 갖고 비율을 그 가운데에 적는다")
         void compose_StatusBarHidden_KeepsRateColumnWidth() {
             // Given

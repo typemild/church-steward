@@ -94,6 +94,8 @@ class ReportTemplateDialog extends JDialog {
                             .get(table)),
                     template.getRecordOrders()
                             .get(table),
+                    !Boolean.FALSE.equals(template.getDateVisible()
+                            .get(table)),
                     createColumnHints(table));
             columnPanels.put(table, panel);
             tabbedPane.addTab(table.getLabel(), panel);
@@ -252,6 +254,7 @@ class ReportTemplateDialog extends JDialog {
         Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, Boolean> rateBarVisible = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, RecordOrder> recordOrders = new EnumMap<>(ReportTemplateTable.class);
+        Map<ReportTemplateTable, Boolean> dateVisible = new EnumMap<>(ReportTemplateTable.class);
         for (Map.Entry<ReportTemplateTable, ColumnOrderPanel> entry : columnPanels.entrySet()) {
             tables.put(entry.getKey(), entry.getValue()
                     .getColumns());
@@ -265,6 +268,11 @@ class ReportTemplateDialog extends JDialog {
                 recordOrders.put(entry.getKey(), entry.getValue()
                         .getRecordOrder());
             }
+            if (entry.getKey()
+                    .hasDateOption()) {
+                dateVisible.put(entry.getKey(), entry.getValue()
+                        .isDateVisible());
+            }
         }
 
         return ReportTemplateDto.builder()
@@ -273,6 +281,7 @@ class ReportTemplateDialog extends JDialog {
                 .tables(tables)
                 .rateBarVisible(rateBarVisible)
                 .recordOrders(recordOrders)
+                .dateVisible(dateVisible)
                 .build();
     }
 

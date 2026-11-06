@@ -86,7 +86,7 @@ class BudgetTableModel extends AbstractTreeTableModel<BudgetDto> implements Tool
     /**
      * 예산액. 하위 예산이 있으면 하위 예산의 합이다.
      */
-    private long getBudgetedAmount(BudgetDto dto) {
+    long getBudgetedAmount(BudgetDto dto) {
         return Objects.requireNonNullElse(dto.getAmount(), dto.getTotalAmount());
     }
 
@@ -94,11 +94,17 @@ class BudgetTableModel extends AbstractTreeTableModel<BudgetDto> implements Tool
      * 예산액 대비 수입액(집행액)의 비율을 "12.3%"처럼 적는다. 예산액이 0이면 비율을 구할 수 없으므로 "-"로 적는다.
      */
     private String formatRate(BudgetDto dto) {
-        long budgetedAmount = getBudgetedAmount(dto);
-        if (dto.getActualAmount() == null || budgetedAmount == 0) {
+        return formatRate(dto.getActualAmount(), getBudgetedAmount(dto));
+    }
+
+    /**
+     * 예산액 대비 실제 금액의 비율을 표의 비율 칸과 같은 형식으로 적는다. 총계 줄({@link BudgetTotalTable})에도 쓴다.
+     */
+    static String formatRate(Long actualAmount, long budgetedAmount) {
+        if (actualAmount == null || budgetedAmount == 0) {
             return NO_RATE;
         }
-        return String.format("%.1f%%", dto.getActualAmount() * 100.0 / budgetedAmount);
+        return String.format("%.1f%%", actualAmount * 100.0 / budgetedAmount);
     }
 
 }

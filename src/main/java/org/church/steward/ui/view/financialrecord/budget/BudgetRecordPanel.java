@@ -32,6 +32,7 @@ import org.church.steward.ui.component.button.IconButton;
 import org.church.steward.ui.component.label.FieldLabel;
 import org.church.steward.ui.component.label.SectionHeaderLabel;
 import org.church.steward.ui.component.table.AmountCellRenderer;
+import org.church.steward.ui.component.table.BlockCenteredCellRenderer;
 import org.church.steward.ui.component.table.ExpandCollapseAllButton;
 import org.church.steward.ui.component.table.PaddedCellRenderer;
 import org.church.steward.ui.component.table.TreeTable;
@@ -143,8 +144,9 @@ public class BudgetRecordPanel extends JPanel {
         table.getColumnModel()
                 .getColumn(BudgetRecordTableModel.COLUMN_NAME)
                 .setPreferredWidth(130);
-        // 관계자가 첫 번째 칸이면 트리 칸에 적으므로 이 칸은 첫 번째 칸이 아닐 때만 보인다. 이름은 짧아 가운데에 둔다.
-        setupColumn(ReportColumn.CONTACT, 70, new PaddedCellRenderer(SwingConstants.CENTER));
+        // 관계자가 첫 번째 칸이면 트리 칸에 적으므로 이 칸은 첫 번째 칸이 아닐 때만 보인다. 이름의 길이가 서로 달라도 시작 위치가
+        // 같도록 왼쪽 정렬하되, 칸이 넓어도 머리글과 멀어지지 않게 가장 긴 이름을 기준으로 칸 가운데에 모은다.
+        setupColumn(ReportColumn.CONTACT, 70, new BlockCenteredCellRenderer(tableModel::getContactTexts));
         setupColumn(ReportColumn.DESCRIPTION, 70, new PaddedCellRenderer(SwingConstants.LEADING));
         setupColumn(ReportColumn.AMOUNT, 70, new AmountCellRenderer());
         setupColumn(ReportColumn.REMARKS, 50, new PaddedCellRenderer(SwingConstants.LEADING));
@@ -177,8 +179,8 @@ public class BudgetRecordPanel extends JPanel {
     }
 
     /**
-     * 칸의 순서와 숨김을 정한다. 첫 번째 칸은 따로 두지 않고 트리 칸에 날짜와 함께 적으며, 나머지 칸은 정한 순서대로 트리 칸 뒤에 두고
-     * 숨긴 칸은 뺀다. 설정이 없거나 지금과 같으면 그대로 둔다.
+     * 칸의 순서와 숨김을 정한다. 첫 번째 칸은 따로 두지 않고 트리 칸에 날짜(표시할 때만)와 함께 적으며, 나머지 칸은 정한 순서대로 트리
+     * 칸 뒤에 두고 숨긴 칸은 뺀다. 설정이 없거나 지금과 같으면 그대로 둔다.
      */
     public void setColumns(List<ReportColumnDto> columns) {
         if (columns == null || columns.isEmpty() || columns.equals(appliedColumns)) {
@@ -201,14 +203,35 @@ public class BudgetRecordPanel extends JPanel {
                 columnModel.addColumn(tableColumn);
             }
         }
-        columnModel.getColumn(table.convertColumnIndexToView(BudgetRecordTableModel.COLUMN_NAME))
-                .setHeaderValue("일자 · " + viewTable.labelOf(first));
+        updateTreeHeader();
+    }
+
+    /**
+     * 트리 칸의 내역 행에서 첫 번째 칸의 값 앞에 일자를 붙일지 정한다. 칸 제목도 함께 바꾼다. null이면 그대로 둔다.
+     */
+    public void setDateVisible(Boolean dateVisible) {
+        if (dateVisible != null && dateVisible != tableModel.isDateVisible()) {
+            tableModel.setDateVisible(dateVisible);
+            updateTreeHeader();
+        }
+    }
+
+    /**
+     * 트리 칸의 제목을 "일자 · 봉헌자"처럼 일자(표시할 때만)와 첫 번째 칸의 이름으로 적는다.
+     */
+    private void updateTreeHeader() {
+        ReportColumn first = appliedColumns.getFirst()
+                .getColumn();
+        String header = tableModel.isDateVisible() ? "일자 · " + viewTable.labelOf(first) : viewTable.labelOf(first);
+        table.getColumnModel()
+                .getColumn(table.convertColumnIndexToView(BudgetRecordTableModel.COLUMN_NAME))
+                .setHeaderValue(header);
         table.getTableHeader()
                 .repaint();
     }
 
     /**
-     * 같은 날짜의 내역끼리의 순서를 정한다. 다음에 내역을 넣을 때({@link #setRecords}) 적용된다. null이면 그대로 둔다.
+     * 내역의 정렬 순서를 정한다. 다음에 내역을 넣을 때({@link #setRecords}) 적용된다. null이면 그대로 둔다.
      */
     public void setRecordOrder(RecordOrder recordOrder) {
         if (recordOrder != null) {

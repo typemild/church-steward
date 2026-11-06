@@ -69,7 +69,7 @@ public final class BudgetPlanReportComposer {
         rows.add(new BudgetListTable.Row(RowStyle.TOTAL, 0, values("총계",
                 ReportFormats.amount(report.getTotalAmount()),
                 report.getTotalAmount() > 0 ? ReportFormats.rate(100.0) : ReportFormats.NONE,
-                change(report.getTotalChange()), null), centeredOf(report.getTotalChange())));
+                change(report.getTotalChange()), null), totalCenteredOf(report.getTotalChange())));
 
         ReportTemplateTable table = report.getType() == BudgetType.INCOME ? ReportTemplateTable.INCOME_BUDGET_PLAN
                 : ReportTemplateTable.EXPENSE_BUDGET_PLAN;
@@ -100,5 +100,13 @@ public final class BudgetPlanReportComposer {
      */
     private static Set<ReportColumn> centeredOf(Long change) {
         return change == null ? Set.of(ReportColumn.CHANGE) : Set.of();
+    }
+
+    /**
+     * 총계 행에서 가운데 정렬할 칸. "총계"를 적는 예산 항목 칸과, 증감액이 "신규"이면 증감액 칸이다.
+     */
+    private static Set<ReportColumn> totalCenteredOf(Long change) {
+        return change == null ? Set.of(ReportColumn.BUDGET_NAME, ReportColumn.CHANGE)
+                : Set.of(ReportColumn.BUDGET_NAME);
     }
 }

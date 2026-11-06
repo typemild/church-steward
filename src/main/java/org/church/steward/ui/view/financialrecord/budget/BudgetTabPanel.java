@@ -44,8 +44,8 @@ public class BudgetTabPanel extends JPanel {
     }
 
     /**
-     * 수입 표와 지출 표의 칸 순서와 숨김, 같은 날짜의 내역끼리의 순서를 정한다. 설정에 빠진 표가 있으면 그 표는 그대로 둔다. 순서는
-     * 다음에 내역을 넣을 때({@link #setRecords}) 적용된다.
+     * 수입 표와 지출 표의 칸 순서와 숨김, 내역의 정렬 순서, 일자 표시 여부를 정한다. 설정에 빠진 표가 있으면 그 표는 그대로 둔다.
+     * 순서는 다음에 내역을 넣을 때({@link #setRecords}) 적용된다.
      */
     public void setColumns(BudgetViewColumnsDto columns) {
         incomePanel.setColumns(columns.getTables()
@@ -56,6 +56,12 @@ public class BudgetTabPanel extends JPanel {
             incomePanel.setRecordOrder(columns.getRecordOrders()
                     .get(BudgetViewTable.INCOME));
             expensePanel.setRecordOrder(columns.getRecordOrders()
+                    .get(BudgetViewTable.EXPENSE));
+        }
+        if (columns.getDateVisible() != null) {
+            incomePanel.setDateVisible(columns.getDateVisible()
+                    .get(BudgetViewTable.INCOME));
+            expensePanel.setDateVisible(columns.getDateVisible()
                     .get(BudgetViewTable.EXPENSE));
         }
     }

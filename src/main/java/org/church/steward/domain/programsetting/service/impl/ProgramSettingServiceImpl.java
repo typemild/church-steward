@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.church.steward.domain.programsetting.dto.BudgetViewColumnsDto;
 import org.church.steward.domain.programsetting.entity.BudgetViewColumn;
@@ -66,15 +67,19 @@ public class ProgramSettingServiceImpl implements ProgramSettingService {
     public BudgetViewColumnsDto getBudgetViewColumns() {
         Map<BudgetViewTable, List<ReportColumnDto>> tables = new EnumMap<>(BudgetViewTable.class);
         Map<BudgetViewTable, RecordOrder> recordOrders = new EnumMap<>(BudgetViewTable.class);
+        Map<BudgetViewTable, Boolean> dateVisible = new EnumMap<>(BudgetViewTable.class);
         for (BudgetViewTable table : BudgetViewTable.values()) {
             tables.put(table, findColumns(table));
-            recordOrders.put(table, budgetViewOptionRepository.findById(table)
-                    .map(BudgetViewOption::getRecordOrder)
+            Optional<BudgetViewOption> option = budgetViewOptionRepository.findById(table);
+            recordOrders.put(table, option.map(BudgetViewOption::getRecordOrder)
                     .orElse(ProgramSettingConstraints.DEFAULT_RECORD_ORDER));
+            dateVisible.put(table, option.map(BudgetViewOption::isDateVisible)
+                    .orElse(ProgramSettingConstraints.DEFAULT_DATE_VISIBLE));
         }
         return BudgetViewColumnsDto.builder()
                 .tables(tables)
                 .recordOrders(recordOrders)
+                .dateVisible(dateVisible)
                 .build();
     }
 
@@ -101,7 +106,8 @@ public class ProgramSettingServiceImpl implements ProgramSettingService {
 
     @Override
     public void updateBudgetViewColumns(BudgetViewColumnsDto columns) {
-        if (columns == null || columns.getTables() == null || columns.getRecordOrders() == null) {
+        if (columns == null || columns.getTables() == null || columns.getRecordOrders() == null
+                || columns.getDateVisible() == null) {
             throw new IllegalArgumentException("예산별 보기의 칸 설정에 빠진 항목이 있습니다.");
         }
 
@@ -110,7 +116,8 @@ public class ProgramSettingServiceImpl implements ProgramSettingService {
             List<ReportColumnDto> tableColumns = columns.getTables()
                     .get(table);
             if (ColumnOrderValidator.hasMissing(tableColumns) || columns.getRecordOrders()
-                    .get(table) == null) {
+                    .get(table) == null || columns.getDateVisible()
+                            .get(table) == null) {
                 throw new IllegalArgumentException("예산별 보기의 칸 설정에 빠진 항목이 있습니다.");
             }
             String error = ColumnOrderValidator.findError(table, tableColumns);
@@ -123,16 +130,18 @@ public class ProgramSettingServiceImpl implements ProgramSettingService {
             saveColumns(table, columns.getTables()
                     .get(table));
             saveOption(table, columns.getRecordOrders()
-                    .get(table));
+                    .get(table),
+                    columns.getDateVisible()
+                            .get(table));
         }
     }
 
-    private void saveOption(BudgetViewTable table, RecordOrder recordOrder) {
+    private void saveOption(BudgetViewTable table, RecordOrder recordOrder, boolean dateVisible) {
         BudgetViewOption option = budgetViewOptionRepository.findById(table)
                 .orElseGet(() -> BudgetViewOption.builder()
                         .tableType(table)
                         .build());
-        option.update(recordOrder);
+        option.update(recordOrder, dateVisible);
         budgetViewOptionRepository.save(option);
     }
 

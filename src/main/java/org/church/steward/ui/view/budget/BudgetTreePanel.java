@@ -11,8 +11,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
+import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -21,6 +23,10 @@ import javax.swing.JSeparator;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.TableColumnModelEvent;
+import javax.swing.event.TableColumnModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -37,6 +43,7 @@ import org.church.steward.ui.component.table.ExpandCollapseAllButton;
 import org.church.steward.ui.component.table.TreeTable;
 import org.church.steward.ui.component.table.TreeTableNode;
 import org.church.steward.ui.util.AsyncTask;
+import org.church.steward.ui.util.UIColors;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +67,10 @@ public class BudgetTreePanel extends JPanel {
      */
     private static final int[] FITTED_COLUMNS = { BudgetTableModel.COLUMN_AMOUNT,
             BudgetTableModel.COLUMN_ACTUAL_AMOUNT, BudgetTableModel.COLUMN_RATE };
+    /**
+     * 내용에 맞추는 칸의 최대 폭(내용 폭의 배수). 사용자가 넓힐 수 있는 한도이자, 창을 넓혔을 때 이 칸들이 늘어나지 않게 하는 값이다.
+     */
+    private static final int FITTED_MAX_WIDTH_RATIO = 3;
 
     private final String title;
     private final BudgetType type;
@@ -74,6 +85,12 @@ public class BudgetTreePanel extends JPanel {
     private boolean editable = true;
     private Long selectedIdToRestore = null;
     private Consumer<BudgetDto> selectionListener;
+    /** 예산 표 바로 아래에 붙이는 총계 줄. 진행 현황이 없는 읽기 전용 모드에서는 null이다. */
+    private BudgetTotalTable totalTable;
+    /** 총계 줄을 감싸 예산 표의 테두리에 이어 붙이는 패널. 기본으로 숨긴다. 읽기 전용 모드에서는 null이다. */
+    private JPanel totalPane;
+    /** 사용자가 머리글을 끌어 칸 폭을 바꿨는지 여부. 바꿨으면 예산을 다시 읽어도 칸 폭을 내용에 다시 맞추지 않는다. */
+    private boolean columnsResizedByUser;
 
     public BudgetTreePanel(BudgetController budgetController, String title, BudgetType type) {
         this(budgetController, title, type, false);
@@ -101,8 +118,39 @@ public class BudgetTreePanel extends JPanel {
             DefaultTableCellRenderer rateRenderer = new DefaultTableCellRenderer();
             rateRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
             columns.getColumn(BudgetTableModel.COLUMN_RATE).setCellRenderer(rateRenderer);
+            totalTable = new BudgetTotalTable(table);
             // 예산을 읽기 전에는 머리글에 맞춘다.
             fitColumnsToContent();
+            // 머리글을 끄는 동안에만 끌고 있는 칸이 있으므로, 그때의 폭 변경을 사용자의 조정으로 본다.
+            columns.addColumnModelListener(new TableColumnModelListener() {
+                @Override
+                public void columnMarginChanged(ChangeEvent e) {
+                    if (table.getTableHeader()
+                            .getResizingColumn() != null) {
+                        columnsResizedByUser = true;
+                    }
+                }
+
+                @Override
+                public void columnAdded(TableColumnModelEvent e) {
+                    // 칸 구성은 바뀌지 않는다.
+                }
+
+                @Override
+                public void columnRemoved(TableColumnModelEvent e) {
+                    // 칸 구성은 바뀌지 않는다.
+                }
+
+                @Override
+                public void columnMoved(TableColumnModelEvent e) {
+                    // 칸 순서는 바꿀 수 없다.
+                }
+
+                @Override
+                public void columnSelectionChanged(ListSelectionEvent e) {
+                    // 칸 선택은 쓰지 않는다.
+                }
+            });
         }
         table.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && selectionListener != null) {
@@ -121,9 +169,55 @@ public class BudgetTreePanel extends JPanel {
             });
         }
 
-        JScrollPane tableScrollPane = new JScrollPane(table);
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.setOpaque(false);
+        tablePanel.add(new JScrollPane(table), BorderLayout.CENTER);
+        if (totalTable != null) {
+            // 예산 표의 테두리(위쪽 포함)에 이어지도록 위쪽 선 없이 감싼다. 예산 표의 아래쪽 선이 예산과 총계를 나눈다.
+            totalPane = new JPanel(new BorderLayout());
+            totalPane.setBackground(UIColors.TABLE_TOTAL_BACKGROUND);
+            totalPane.setBorder(BorderFactory.createMatteBorder(0, 1, 1, 1, UIColors.BORDER));
+            totalPane.add(totalTable, BorderLayout.CENTER);
+            totalPane.setVisible(false);
+            tablePanel.add(totalPane, BorderLayout.SOUTH);
+        }
         add(createHeaderPanel(), BorderLayout.NORTH);
-        add(tableScrollPane, BorderLayout.CENTER);
+        add(tablePanel, BorderLayout.CENTER);
+    }
+
+    /**
+     * 예산 표 바로 아래에 총계 줄(예산액, 수입액/집행액, 달성률/집행률)을 보일지 정한다. 예산 관리 화면만 켠다. 읽기 전용 모드에서는
+     * 진행 현황이 없으므로 아무 효과가 없다.
+     */
+    public void setTotalVisible(boolean visible) {
+        if (totalPane == null) {
+            return;
+        }
+        totalPane.setVisible(visible);
+        // 총계가 예산 하나보다 넓을 수 있으므로 칸 폭을 다시 잰다.
+        fitColumnsToContent();
+    }
+
+    private boolean isTotalVisible() {
+        return totalPane != null && totalPane.isVisible();
+    }
+
+    /**
+     * 총계 줄을 갱신한다. 상위 예산의 예산액과 수입액(집행액)은 하위 예산까지 합한 값이므로 최상위 예산만 더한다.
+     */
+    private void updateTotal() {
+        if (totalTable == null) {
+            return;
+        }
+        long budgetedTotal = 0;
+        long actualTotal = 0;
+        for (BudgetDto dto : allDtos) {
+            if (dto.getParentId() == null) {
+                budgetedTotal += tableModel.getBudgetedAmount(dto);
+                actualTotal += Objects.requireNonNullElse(dto.getActualAmount(), 0L);
+            }
+        }
+        totalTable.setTotals(budgetedTotal, actualTotal);
     }
 
     /**
@@ -191,19 +285,21 @@ public class BudgetTreePanel extends JPanel {
     }
 
     /**
-     * 금액과 비율 칸의 폭을 머리글과 모든 예산의 값 중 가장 넓은 것에 맞춰 고정하고, 남는 폭은 항목명 칸이 모두 쓰게 한다. 접힌 예산의
-     * 값도 재므로 펼치거나 접어도 폭이 바뀌지 않는다. 창을 넓혀도 금액이 잘리지 않고, 금액이 작으면 항목명에 폭을 더 남긴다.
+     * 금액과 비율 칸의 폭을 머리글과 모든 예산의 값 중 가장 넓은 것에 맞추고, 남는 폭은 항목명 칸이 모두 쓰게 한다. 접힌 예산의 값도
+     * 재므로 펼치거나 접어도 폭이 바뀌지 않는다. 창을 넓혀도 금액이 잘리지 않고, 금액이 작으면 항목명에 폭을 더 남긴다. 총계 줄이 보이면
+     * 총계도 함께 잰다.
+     * <p>
+     * 사용자는 머리글의 경계를 끌어 칸 폭을 바꿀 수 있다(머리글 폭까지 줄일 수 있다). 한 번 바꾼 뒤에는 예산을 다시 읽어도 사용자가 정한
+     * 폭을 그대로 둔다. 표는 늘어난 폭을 칸마다 최대 폭까지 남은 여유에 비례해 나누므로, 금액과 비율 칸의 최대 폭을 내용 폭의 몇 배로
+     * 묶어 두면 창을 넓혀도 이 칸들은 사실상 늘어나지 않고 최대 폭이 없는 항목명 칸이 늘어난 폭을 가져간다.
      */
     private void fitColumnsToContent() {
         TableColumnModel columns = table.getColumnModel();
-        TableCellRenderer headerRenderer = table.getTableHeader()
-                .getDefaultRenderer();
         for (int modelColumn : FITTED_COLUMNS) {
             int viewColumn = table.convertColumnIndexToView(modelColumn);
             TableColumn column = columns.getColumn(viewColumn);
-            int width = headerRenderer
-                    .getTableCellRendererComponent(table, column.getHeaderValue(), false, false, -1, viewColumn)
-                    .getPreferredSize().width;
+            int headerWidth = measureHeaderWidth(viewColumn);
+            int width = headerWidth;
             TableCellRenderer cellRenderer = column.getCellRenderer();
             for (BudgetDto dto : allDtos) {
                 Object value = tableModel.valueOf(dto, modelColumn);
@@ -211,10 +307,32 @@ public class BudgetTreePanel extends JPanel {
                         .getTableCellRendererComponent(table, value, false, false, 0, viewColumn)
                         .getPreferredSize().width);
             }
-            column.setMinWidth(width);
-            column.setMaxWidth(width);
-            column.setPreferredWidth(width);
+            if (isTotalVisible()) {
+                width = Math.max(width, totalTable.measureWidth(viewColumn));
+            }
+            // 최소 폭을 바꾸면 폭이 최대 폭에 묶이지 않도록 최대 폭을 먼저 푼다.
+            column.setMaxWidth(Integer.MAX_VALUE);
+            column.setMinWidth(headerWidth);
+            if (!columnsResizedByUser) {
+                column.setPreferredWidth(width);
+            }
+            column.setMaxWidth(Math.max(width * FITTED_MAX_WIDTH_RATIO, column.getPreferredWidth()));
         }
+        int nameViewColumn = table.convertColumnIndexToView(BudgetTableModel.COLUMN_NAME);
+        columns.getColumn(nameViewColumn)
+                .setMinWidth(measureHeaderWidth(nameViewColumn));
+    }
+
+    /**
+     * 칸의 머리글을 줄이지 않고 적는 데 필요한 폭. 사용자가 칸을 줄일 수 있는 최소 폭이다.
+     */
+    private int measureHeaderWidth(int viewColumn) {
+        TableColumn column = table.getColumnModel()
+                .getColumn(viewColumn);
+        return table.getTableHeader()
+                .getDefaultRenderer()
+                .getTableCellRendererComponent(table, column.getHeaderValue(), false, false, -1, viewColumn)
+                .getPreferredSize().width;
     }
 
     /**
@@ -251,6 +369,7 @@ public class BudgetTreePanel extends JPanel {
         this.allDtos = dtos;
         this.tableModel.setRoots(buildTree(dtos));
         if (!readOnly) {
+            updateTotal();
             fitColumnsToContent();
         }
 

@@ -61,15 +61,7 @@ public final class WeeklySettlementReportComposer {
                 statusSuffix);
         canvas.moveDown(SECTION_SPACING);
 
-        new WeeklyRecordSection(style).render(canvas, report.getIncomeRecords(), report.getExpenseRecords(),
-                template.getTables()
-                        .get(ReportTemplateTable.WEEKLY_INCOME_RECORDS),
-                template.getTables()
-                        .get(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS),
-                template.getRecordOrders()
-                        .get(ReportTemplateTable.WEEKLY_INCOME_RECORDS),
-                template.getRecordOrders()
-                        .get(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS));
+        new WeeklyRecordSection(style).render(canvas, report.getIncomeRecords(), report.getExpenseRecords(), template);
         return canvas.finish();
     }
 
