@@ -4,12 +4,12 @@ import java.awt.Color;
 import java.awt.Font;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import org.church.steward.domain.report.dto.ReportColumnDto;
 import org.church.steward.domain.report.dto.ReportRecordDto;
 import org.church.steward.domain.report.dto.ReportRecordGroupDto;
+import org.church.steward.domain.report.dto.ReportTemplateDto;
 import org.church.steward.domain.report.entity.RecordOrder;
 import org.church.steward.domain.report.entity.ReportColumn;
 import org.church.steward.domain.report.entity.ReportTemplateTable;
@@ -24,10 +24,10 @@ import org.church.steward.ui.view.report.layout.ReportText;
  * 주간 회계 결산 보고서의 주간 수입 내역과 주간 지출 내역. "수입/지출 관리"의 "예산별 보기"처럼 왼쪽 단에 수입, 오른쪽 단에 지출을
  * 놓고, 예산 행 아래에 그 예산의 내역 행들을 둔다.
  * <p>
- * 칸의 순서와 숨김은 보고서 양식이 정하며, 일자는 항상 첫 번째 칸의 왼쪽에 붙여 적는다. 금액 앞의 칸은 내용에 맞춘 폭(상한
- * 안에서)이고, 금액 칸과 그 뒤의 칸들이 남은 폭을 나눠 갖는다(금액은 고른 몫, 뒤의 칸들은 나머지를 내용의 길이에 비례해). 첫 번째
- * 칸이 아닌 칸(금액, 관계자, 내용, 비고)은 내용을 한 덩어리로 칸 가운데에 놓아, 칸이 넓어도 머리글과 멀어지지 않는다. 금액 칸이
- * 내용에 맞춘 폭에 머물면 오른쪽 정렬한 금액이 뒤 칸의 글자와 붙어 보이므로 금액 뒤에는 한 글자 폭의 간격을 둔다.
+ * 칸의 순서와 숨김은 보고서 양식이 정하며, 일자는 표시하도록 정했으면(기본) 첫 번째 칸의 왼쪽에 붙여 적는다. 금액 앞의 칸은 내용에
+ * 맞춘 폭(상한 안에서)이고, 금액 칸과 그 뒤의 칸들이 남은 폭을 나눠 갖는다(금액은 고른 몫, 뒤의 칸들은 나머지를 내용의 길이에
+ * 비례해). 첫 번째 칸이 아닌 칸(금액, 관계자, 내용, 비고)은 내용을 한 덩어리로 칸 가운데에 놓아, 칸이 넓어도 머리글과 멀어지지
+ * 않는다. 금액 칸이 내용에 맞춘 폭에 머물면 오른쪽 정렬한 금액이 뒤 칸의 글자와 붙어 보이므로 금액 뒤에는 한 글자 폭의 간격을 둔다.
  * <p>
  * 한 장에 많이 담기 위해 글자를 작게 쓰고 내역은 한 줄에 한 건씩 적는다. 줄 높이는 서식의 행 간격을 따른다. 칸에 다 들어가지 않는
  * 내용은 말줄임표로 줄이되, 바로 아랫줄에 들여써서 단의 전체 폭으로 내용을 모두 적는다(필요하면 여러 줄). 숨긴 칸도 값이 있으면 같은
@@ -104,7 +104,7 @@ final class WeeklyRecordSection {
     /**
      * 보이는 칸 하나
      *
-     * @param first      첫 번째 칸인지 여부. 첫 번째 칸은 일자를 붙여 적으므로 왼쪽 정렬이다.
+     * @param first      첫 번째 칸인지 여부. 첫 번째 칸은 예산 행의 예산명과 시작 위치를 맞춘다.
      * @param header     머리글
      * @param left       단의 왼쪽 끝에서 칸의 왼쪽 끝까지의 거리
      * @param blockWidth 칸의 내용 중 가장 넓은 글자의 폭(여백 제외). 첫 번째 칸이 아닌 칸은 내용을 이 폭의 덩어리로 보고
@@ -142,13 +142,14 @@ final class WeeklyRecordSection {
      *
      * @param width           단의 폭
      * @param table           단의 표. 칸의 이름을 정한다.
-     * @param cells           보이는 칸. 순서대로이며 첫 번째 칸에 일자를 붙인다.
+     * @param cells           보이는 칸. 순서대로이며 일자를 표시하면 첫 번째 칸에 붙인다.
      * @param hiddenColumns   숨긴 칸. 값이 있으면 아랫줄에 적는다.
+     * @param dateVisible     첫 번째 칸의 값 앞에 일자를 붙이는지 여부
      * @param budgetNameWidth 예산 행에서 예산명을 적을 폭(금액 칸의 왼쪽까지)
      * @param amountRight     단의 왼쪽 끝에서 금액의 오른쪽 끝까지의 거리
      */
     private record Layout(double width, ReportTemplateTable table, List<Cell> cells, List<ReportColumn> hiddenColumns,
-            double budgetNameWidth, double amountRight) {
+            boolean dateVisible, double budgetNameWidth, double amountRight) {
     }
 
     WeeklyRecordSection(ReportStyle style) {
@@ -162,15 +163,12 @@ final class WeeklyRecordSection {
     /**
      * 현재 위치부터 주간 수입 내역과 주간 지출 내역을 좌우 두 단으로 그리고, 더 길게 내려간 단의 아래로 이동한다.
      *
-     * @param incomeRecords  예산별 수입 내역. 예산 안의 내역은 일자순, 같은 날짜는 입력순이어야 한다.
-     * @param incomeColumns  주간 수입 내역의 칸 순서와 숨김
-     * @param expenseColumns 주간 지출 내역의 칸 순서와 숨김
-     * @param incomeOrder    주간 수입 내역에서 같은 날짜의 내역끼리의 순서
-     * @param expenseOrder   주간 지출 내역에서 같은 날짜의 내역끼리의 순서
+     * @param incomeRecords 예산별 수입 내역. 예산 안의 내역은 일자순, 같은 날짜는 입력순이어야 한다.
+     * @param template      보고서 양식. 주간 수입 내역과 주간 지출 내역의 칸 순서와 숨김, 내역의 정렬 순서, 일자 표시
+     *                      여부를 쓴다.
      */
     void render(ReportCanvas canvas, List<ReportRecordGroupDto> incomeRecords,
-            List<ReportRecordGroupDto> expenseRecords, List<ReportColumnDto> incomeColumns,
-            List<ReportColumnDto> expenseColumns, RecordOrder incomeOrder, RecordOrder expenseOrder) {
+            List<ReportRecordGroupDto> expenseRecords, ReportTemplateDto template) {
         // 절 제목과 머리글만 페이지 끝에 남지 않도록, 내역이 몇 줄은 들어갈 공간이 없으면 다음 페이지에서 시작한다.
         if (!canvas.fits(lineHeight * 6)) {
             canvas.newPage();
@@ -182,10 +180,10 @@ final class WeeklyRecordSection {
         double startY = canvas.getY();
 
         End incomeEnd = renderColumn(canvas, canvas.getLeft(), columnWidth, ReportTemplateTable.WEEKLY_INCOME_RECORDS,
-                incomeColumns, incomeOrder, incomeRecords);
+                template, incomeRecords);
         canvas.setPosition(startPage, startY);
         End expenseEnd = renderColumn(canvas, expenseLeft, columnWidth, ReportTemplateTable.WEEKLY_EXPENSE_RECORDS,
-                expenseColumns, expenseOrder, expenseRecords);
+                template, expenseRecords);
 
         if (incomeEnd.isAfter(expenseEnd)) {
             canvas.setPosition(incomeEnd.pageIndex(), incomeEnd.y());
@@ -193,12 +191,17 @@ final class WeeklyRecordSection {
     }
 
     private End renderColumn(ReportCanvas canvas, double left, double width, ReportTemplateTable table,
-            List<ReportColumnDto> columns, RecordOrder recordOrder, List<ReportRecordGroupDto> groups) {
+            ReportTemplateDto template, List<ReportRecordGroupDto> groups) {
         long total = 0;
         for (ReportRecordGroupDto group : groups) {
             total += group.getTotalAmount();
         }
-        Layout layout = layOut(table, columns, groups, width, total);
+        RecordOrder recordOrder = template.getRecordOrders()
+                .get(table);
+        boolean dateVisible = !Boolean.FALSE.equals(template.getDateVisible()
+                .get(table));
+        Layout layout = layOut(table, template.getTables()
+                .get(table), groups, width, total, dateVisible);
 
         canvas.section(table.getLabel(), ReportFonts.SIZE_SECTION, left);
         drawHeader(canvas, left, layout);
@@ -239,9 +242,11 @@ final class WeeklyRecordSection {
      * 칸과 그 뒤의 칸들은 남은 폭을 나눠 갖는다. 금액 칸은 그 칸들의 수로 나눈 고른 몫(가장 넓은 금액보다는 좁히지 않는다)을 받고, 금액
      * 뒤의 칸들은 나머지를 내용의 길이에 비례해 나눠 갖는다. 금액이 마지막 칸이면 금액 칸이 남은 폭을 모두 가져간다. 금액 뒤의 칸들에 남는
      * 폭이 모자라면 금액 앞의 글자 칸들을 같은 비율로 줄이고, 금액 칸은 고른 몫을 받지 않고 가장 넓은 금액의 폭에 머문다.
+     *
+     * @param dateVisible 첫 번째 칸의 값 앞에 일자를 붙이는지 여부. 붙이면 머리글과 내용의 폭에 일자도 함께 잰다.
      */
     private Layout layOut(ReportTemplateTable table, List<ReportColumnDto> columns, List<ReportRecordGroupDto> groups,
-            double width, long total) {
+            double width, long total, boolean dateVisible) {
         List<ReportColumn> visible = new ArrayList<>();
         List<ReportColumn> hidden = new ArrayList<>();
         for (ReportColumnDto column : columns) {
@@ -261,8 +266,8 @@ final class WeeklyRecordSection {
         double[] widths = new double[count];
         for (int i = 0; i < count; i++) {
             ReportColumn column = visible.get(i);
-            headers[i] = i == 0 ? "일자 · " + table.labelOf(column) : table.labelOf(column);
-            contentWidths[i] = measureContent(column, i == 0, groups, total);
+            headers[i] = i == 0 && dateVisible ? "일자 · " + table.labelOf(column) : table.labelOf(column);
+            contentWidths[i] = measureContent(column, i == 0, dateVisible, groups, total);
             minWidths[i] = Math.max(ReportText.width(headers[i], bold) + PADDING_X * 2, width * MIN_RATIO);
             naturalWidths[i] = Math.max(minWidths[i], contentWidths[i] + PADDING_X * 2);
             double max = column == ReportColumn.AMOUNT ? naturalWidths[i]
@@ -305,7 +310,7 @@ final class WeeklyRecordSection {
         widths[amountIndex] = Math.max(widths[amountIndex], Math.min(evenShare, remaining - trailingMin));
         divideByContent(widths, minWidths, naturalWidths, amountIndex + 1,
                 Math.max(0, remaining - widths[amountIndex]));
-        return toLayout(table, width, visible, hidden, headers, widths, contentWidths, amountGap);
+        return toLayout(table, width, visible, hidden, dateVisible, headers, widths, contentWidths, amountGap);
     }
 
     /**
@@ -346,11 +351,13 @@ final class WeeklyRecordSection {
     /**
      * 정한 폭으로 칸을 늘어놓는다.
      *
+     * @param dateVisible   첫 번째 칸의 값 앞에 일자를 붙이는지 여부
      * @param contentWidths 칸마다 내용 중 가장 넓은 글자의 폭(여백 제외)
      * @param amountGap     금액 칸 뒤에 띄울 간격
      */
     private static Layout toLayout(ReportTemplateTable table, double width, List<ReportColumn> visible,
-            List<ReportColumn> hidden, String[] headers, double[] widths, double[] contentWidths, double amountGap) {
+            List<ReportColumn> hidden, boolean dateVisible, String[] headers, double[] widths, double[] contentWidths,
+            double amountGap) {
         List<Cell> cells = new ArrayList<>();
         double x = 0;
         double budgetNameWidth = 0;
@@ -365,15 +372,17 @@ final class WeeklyRecordSection {
                 x += amountGap;
             }
         }
-        return new Layout(width, table, cells, hidden, budgetNameWidth, amountRight);
+        return new Layout(width, table, cells, hidden, dateVisible, budgetNameWidth, amountRight);
     }
 
     /**
      * 칸의 내용을 한 줄에 적는 데 필요한 폭(여백 제외). 금액 칸은 가장 큰 금액인 합계를 굵게 적는 폭이다.
      *
-     * @param first 첫 번째 칸인지 여부. 첫 번째 칸은 일자를 붙인 내용과 예산 행의 예산명을 함께 잰다.
+     * @param first       첫 번째 칸인지 여부. 첫 번째 칸은 예산 행의 예산명도 함께 잰다.
+     * @param dateVisible 첫 번째 칸의 값 앞에 일자를 붙이는지 여부. 붙이면 일자를 붙인 내용으로 잰다.
      */
-    private double measureContent(ReportColumn column, boolean first, List<ReportRecordGroupDto> groups, long total) {
+    private double measureContent(ReportColumn column, boolean first, boolean dateVisible,
+            List<ReportRecordGroupDto> groups, long total) {
         if (column == ReportColumn.AMOUNT) {
             return ReportText.width(ReportFormats.amount(total), bold);
         }
@@ -384,7 +393,8 @@ final class WeeklyRecordSection {
                 width = Math.max(width, ReportText.width(group.getBudgetName(), bold));
             }
             for (ReportRecordDto record : group.getRecords()) {
-                String text = first ? withDate(record, valueOf(record, column)) : valueOf(record, column);
+                String text = first && dateVisible ? withDate(record, valueOf(record, column))
+                        : valueOf(record, column);
                 if (text != null) {
                     width = Math.max(width, ReportText.width(text, regular));
                 }
@@ -474,8 +484,8 @@ final class WeeklyRecordSection {
     }
 
     /**
-     * 한 예산의 내역을 일자순으로, 같은 날짜는 정한 순서로 늘어놓는다. 가나다순은 첫 번째 칸의 값으로 견준다. 받은 내역은 입력순이고 안정
-     * 정렬이므로 견준 값이 같은 내역은 입력순으로 남는다.
+     * 한 예산의 내역을 정한 순서로 늘어놓는다. 가나다순은 첫 번째 칸의 값으로 견준다. 받은 내역은 입력순이고 안정 정렬이므로 견준 값이 모두
+     * 같은 내역은 입력순으로 남는다.
      */
     private static List<ReportRecordDto> sortRecords(List<ReportRecordDto> records, Layout layout,
             RecordOrder recordOrder) {
@@ -483,9 +493,8 @@ final class WeeklyRecordSection {
                 .getFirst()
                 .column();
         return records.stream()
-                .sorted(Comparator.comparing(ReportRecordDto::getDate)
-                        .thenComparing(recordOrder.sameDateComparator(
-                                (ReportRecordDto record) -> valueOf(record, firstColumn))))
+                .sorted(recordOrder.comparator(ReportRecordDto::getDate,
+                        (ReportRecordDto record) -> valueOf(record, firstColumn)))
                 .toList();
     }
 
@@ -510,8 +519,8 @@ final class WeeklyRecordSection {
     }
 
     /**
-     * 내역 행. 보이는 칸을 순서대로 한 줄에 적고(첫 번째 칸 앞에 "[10/4]"처럼 일자를 붙인다), 줄어든 칸과 값이 있는 숨긴 칸은 그
-     * 내용을 아랫줄들에 다시 적는다.
+     * 내역 행. 보이는 칸을 순서대로 한 줄에 적고(일자를 표시하면 첫 번째 칸 앞에 "[10/4]"처럼 붙인다), 줄어든 칸과 값이 있는 숨긴
+     * 칸은 그 내용을 아랫줄들에 다시 적는다.
      */
     private List<RowLine> toRecordLines(ReportRecordDto record, Layout layout, Color background) {
         List<RowLine> continuations = new ArrayList<>();
@@ -523,7 +532,7 @@ final class WeeklyRecordSection {
                     .get(i);
             String value = valueOf(record, cell.column());
             // 첫 번째 칸이 넘쳐서 줄어드는 것은 일자 뒤의 값이므로 아랫줄에는 일자 없이 값만 다시 적는다.
-            String text = i == 0 ? withDate(record, value) : value;
+            String text = i == 0 && layout.dateVisible() ? withDate(record, value) : value;
             String fitted = fitCell(text, regular, cell.width(), layout.table()
                     .labelOf(cell.column()), value, layout, background, continuations);
             fragments.add(new Fragment(fitted, regular, cell.align(), cell.anchorX(), UIColors.REPORT_TEXT));

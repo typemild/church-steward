@@ -52,19 +52,26 @@ public class BudgetRecordRow {
 
     /**
      * 첫 번째 컬럼에 표시할 텍스트를 반환한다. 예산 행은 전체 예산명, 내역 행은 "[4/7] 홍길동"이나 "[4/7] 주일헌금"과 같이
-     * 날짜와 첫 번째 칸의 값이다.
+     * 날짜와 첫 번째 칸의 값이다. 일자를 표시하지 않으면 첫 번째 칸의 값만이다.
      *
      * @param firstColumn 첫 번째 칸. 관계자({@link ReportColumn#CONTACT}) 또는
      *                    내용({@link ReportColumn#DESCRIPTION})이다.
+     * @param dateVisible 내역 행에서 첫 번째 칸의 값 앞에 일자를 붙이는지 여부
      */
-    public String getDisplayName(ReportColumn firstColumn) {
+    public String getDisplayName(ReportColumn firstColumn, boolean dateVisible) {
         if (isBudgetRow()) {
             return budgetName;
         }
-        String date = "[" + record.getDate()
-                .format(DATE_FORMAT) + "]";
         String value = firstColumn == ReportColumn.DESCRIPTION ? record.getDescription()
                 : FinancialRecordFormats.joinNames(record.getContactNames());
-        return value == null || value.isEmpty() ? date : date + " " + value;
+        if (value == null) {
+            value = "";
+        }
+        if (!dateVisible) {
+            return value;
+        }
+        String date = "[" + record.getDate()
+                .format(DATE_FORMAT) + "]";
+        return value.isEmpty() ? date : date + " " + value;
     }
 }

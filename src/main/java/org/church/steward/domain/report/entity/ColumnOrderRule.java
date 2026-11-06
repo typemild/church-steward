@@ -52,10 +52,18 @@ public interface ColumnOrderRule {
     }
 
     /**
-     * 같은 날짜의 내역끼리의 순서({@link RecordOrder})를 정할 수 있는 표인지 여부. 내역을 나열하는 표(주간 보고서의 내역,
-     * 예산별 보기)만 정할 수 있다.
+     * 내역의 정렬 순서({@link RecordOrder})를 정할 수 있는 표인지 여부. 내역을 나열하는 표(주간 보고서의 내역, 예산별
+     * 보기)만 정할 수 있다.
      */
     default boolean hasRecordOrderOption() {
+        return false;
+    }
+
+    /**
+     * 첫 번째 칸 앞에 일자를 붙여 표시할지 정할 수 있는 표인지 여부. 내역을 나열하는 표(주간 보고서의 내역, 예산별 보기)만 정할 수
+     * 있다.
+     */
+    default boolean hasDateOption() {
         return false;
     }
 }

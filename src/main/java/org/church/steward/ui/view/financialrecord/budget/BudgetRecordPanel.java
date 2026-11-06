@@ -179,8 +179,8 @@ public class BudgetRecordPanel extends JPanel {
     }
 
     /**
-     * 칸의 순서와 숨김을 정한다. 첫 번째 칸은 따로 두지 않고 트리 칸에 날짜와 함께 적으며, 나머지 칸은 정한 순서대로 트리 칸 뒤에 두고
-     * 숨긴 칸은 뺀다. 설정이 없거나 지금과 같으면 그대로 둔다.
+     * 칸의 순서와 숨김을 정한다. 첫 번째 칸은 따로 두지 않고 트리 칸에 날짜(표시할 때만)와 함께 적으며, 나머지 칸은 정한 순서대로 트리
+     * 칸 뒤에 두고 숨긴 칸은 뺀다. 설정이 없거나 지금과 같으면 그대로 둔다.
      */
     public void setColumns(List<ReportColumnDto> columns) {
         if (columns == null || columns.isEmpty() || columns.equals(appliedColumns)) {
@@ -203,14 +203,35 @@ public class BudgetRecordPanel extends JPanel {
                 columnModel.addColumn(tableColumn);
             }
         }
-        columnModel.getColumn(table.convertColumnIndexToView(BudgetRecordTableModel.COLUMN_NAME))
-                .setHeaderValue("일자 · " + viewTable.labelOf(first));
+        updateTreeHeader();
+    }
+
+    /**
+     * 트리 칸의 내역 행에서 첫 번째 칸의 값 앞에 일자를 붙일지 정한다. 칸 제목도 함께 바꾼다. null이면 그대로 둔다.
+     */
+    public void setDateVisible(Boolean dateVisible) {
+        if (dateVisible != null && dateVisible != tableModel.isDateVisible()) {
+            tableModel.setDateVisible(dateVisible);
+            updateTreeHeader();
+        }
+    }
+
+    /**
+     * 트리 칸의 제목을 "일자 · 봉헌자"처럼 일자(표시할 때만)와 첫 번째 칸의 이름으로 적는다.
+     */
+    private void updateTreeHeader() {
+        ReportColumn first = appliedColumns.getFirst()
+                .getColumn();
+        String header = tableModel.isDateVisible() ? "일자 · " + viewTable.labelOf(first) : viewTable.labelOf(first);
+        table.getColumnModel()
+                .getColumn(table.convertColumnIndexToView(BudgetRecordTableModel.COLUMN_NAME))
+                .setHeaderValue(header);
         table.getTableHeader()
                 .repaint();
     }
 
     /**
-     * 같은 날짜의 내역끼리의 순서를 정한다. 다음에 내역을 넣을 때({@link #setRecords}) 적용된다. null이면 그대로 둔다.
+     * 내역의 정렬 순서를 정한다. 다음에 내역을 넣을 때({@link #setRecords}) 적용된다. null이면 그대로 둔다.
      */
     public void setRecordOrder(RecordOrder recordOrder) {
         if (recordOrder != null) {

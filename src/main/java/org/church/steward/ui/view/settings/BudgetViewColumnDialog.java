@@ -31,9 +31,8 @@ import org.church.steward.ui.util.UIColors;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 수입/지출 관리의 "예산별 보기" 칸 설정 다이얼로그. 수입 표와 지출 표의 칸 순서와 숨김, 같은 날짜의 내역끼리의 순서를 탭으로 나눠
- * 정한다. 프로그램 전체 설정이므로 모든 사용자의 화면에 함께 적용된다. 저장은 다이얼로그가 직접 실행하며, 실패하면 닫지 않고 오류를
- * 보여준다.
+ * 수입/지출 관리의 "예산별 보기" 칸 설정 다이얼로그. 수입 표와 지출 표의 칸 순서와 숨김, 내역의 정렬 순서를 탭으로 나눠 정한다.
+ * 프로그램 전체 설정이므로 모든 사용자의 화면에 함께 적용된다. 저장은 다이얼로그가 직접 실행하며, 실패하면 닫지 않고 오류를 보여준다.
  */
 @Slf4j
 class BudgetViewColumnDialog extends JDialog {
@@ -75,6 +74,8 @@ class BudgetViewColumnDialog extends JDialog {
                     .get(table), false,
                     columns.getRecordOrders()
                             .get(table),
+                    !Boolean.FALSE.equals(columns.getDateVisible()
+                            .get(table)),
                     hints);
             columnPanels.put(table, panel);
             tabbedPane.addTab(table.getLabel(), panel);
@@ -112,15 +113,19 @@ class BudgetViewColumnDialog extends JDialog {
     private BudgetViewColumnsDto currentColumns() {
         Map<BudgetViewTable, List<ReportColumnDto>> tables = new EnumMap<>(BudgetViewTable.class);
         Map<BudgetViewTable, RecordOrder> recordOrders = new EnumMap<>(BudgetViewTable.class);
+        Map<BudgetViewTable, Boolean> dateVisible = new EnumMap<>(BudgetViewTable.class);
         for (Map.Entry<BudgetViewTable, ColumnOrderPanel> entry : columnPanels.entrySet()) {
             tables.put(entry.getKey(), entry.getValue()
                     .getColumns());
             recordOrders.put(entry.getKey(), entry.getValue()
                     .getRecordOrder());
+            dateVisible.put(entry.getKey(), entry.getValue()
+                    .isDateVisible());
         }
         return BudgetViewColumnsDto.builder()
                 .tables(tables)
                 .recordOrders(recordOrders)
+                .dateVisible(dateVisible)
                 .build();
     }
 

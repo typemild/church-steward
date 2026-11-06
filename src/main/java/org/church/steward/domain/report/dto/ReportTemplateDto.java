@@ -34,8 +34,13 @@ public class ReportTemplateDto {
      */
     private Map<ReportTemplateTable, Boolean> rateBarVisible;
     /**
-     * 내역 표마다 같은 날짜의 내역끼리의 순서. 순서를 정할 수 있는
+     * 내역 표마다 내역의 정렬 순서. 순서를 정할 수 있는
      * 표({@link ReportTemplateTable#hasRecordOrderOption()})만 들어 있다.
      */
     private Map<ReportTemplateTable, RecordOrder> recordOrders;
+    /**
+     * 내역 표마다 첫 번째 칸 앞에 일자를 붙여 표시하는지 여부. 일자 표시를 정할 수 있는
+     * 표({@link ReportTemplateTable#hasDateOption()})만 들어 있다.
+     */
+    private Map<ReportTemplateTable, Boolean> dateVisible;
 }

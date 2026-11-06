@@ -163,27 +163,37 @@ class WeeklySettlementReportComposerTest {
      */
     private static ReportTemplateDto createTemplate(ReportApprovalDto approval,
             Map<ReportTemplateTable, List<ReportColumnDto>> overrides, boolean rateBarVisible) {
-        return createTemplate(approval, overrides, rateBarVisible, RecordOrder.FIRST_COLUMN);
+        return createTemplate(approval, overrides, rateBarVisible, RecordOrder.FIRST_COLUMN, true);
     }
 
     /**
      * 기본 양식에서 내역 표의 같은 날짜의 순서만 바꾼다.
      */
     private static ReportTemplateDto createTemplate(RecordOrder recordOrder) {
-        return createTemplate(createApproval(true, null, null, null), Map.of(), true, recordOrder);
+        return createTemplate(createApproval(true, null, null, null), Map.of(), true, recordOrder, true);
+    }
+
+    /**
+     * 기본 양식에서 내역 표의 일자 표시만 바꾼다.
+     */
+    private static ReportTemplateDto createTemplate(boolean dateVisible) {
+        return createTemplate(createApproval(true, null, null, null), Map.of(), true, RecordOrder.FIRST_COLUMN,
+                dateVisible);
     }
 
     /**
      * @param overrides      기본 순서 대신 쓸 표의 칸
      * @param rateBarVisible 모든 현황 표의 비율 칸 왼쪽에 막대를 함께 그리는지 여부
      * @param recordOrder    모든 내역 표의 같은 날짜의 순서
+     * @param dateVisible    모든 내역 표에서 첫 번째 칸 앞에 일자를 붙여 표시하는지 여부
      */
     private static ReportTemplateDto createTemplate(ReportApprovalDto approval,
             Map<ReportTemplateTable, List<ReportColumnDto>> overrides, boolean rateBarVisible,
-            RecordOrder recordOrder) {
+            RecordOrder recordOrder, boolean dateVisible) {
         Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, Boolean> rateBars = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, RecordOrder> recordOrders = new EnumMap<>(ReportTemplateTable.class);
+        Map<ReportTemplateTable, Boolean> dateVisibles = new EnumMap<>(ReportTemplateTable.class);
         for (ReportTemplateTable table : ReportTemplateTable.of(ReportType.WEEKLY_SETTLEMENT)) {
             tables.put(table, overrides.getOrDefault(table, createColumns(table.getDefaultColumns())));
             if (table.hasRateBarOption()) {
@@ -192,6 +202,9 @@ class WeeklySettlementReportComposerTest {
             if (table.hasRecordOrderOption()) {
                 recordOrders.put(table, recordOrder);
             }
+            if (table.hasDateOption()) {
+                dateVisibles.put(table, dateVisible);
+            }
         }
         return ReportTemplateDto.builder()
                 .reportType(ReportType.WEEKLY_SETTLEMENT)
@@ -199,6 +212,7 @@ class WeeklySettlementReportComposerTest {
                 .tables(tables)
                 .rateBarVisible(rateBars)
                 .recordOrders(recordOrders)
+                .dateVisible(dateVisibles)
                 .build();
     }
 
@@ -569,6 +583,22 @@ class WeeklySettlementReportComposerTest {
         }
 
         @Test
+        @DisplayName("일자를 표시하지 않으면 첫 번째 칸의 머리글과 내용에 일자를 붙이지 않는다")
+        void compose_DateHidden_WritesFirstColumnWithoutDate() {
+            // Given
+            WeeklySettlementReportDto report = report(List.of(group("주일헌금", List.of(record("홍길동", "", "")))),
+                    List.of(group("관리비", List.of(record("OO설비", "수리비", "")))));
+
+            // When
+            ReportDocument document = WeeklySettlementReportComposer.compose(report, createTemplate(false),
+                    ReportStyle.DEFAULT);
+
+            // Then
+            assertThat(textsOf(document)).contains("봉헌자", "내용", "홍길동", "수리비")
+                    .noneMatch(text -> text.startsWith("일자 · ") || text.startsWith("[10/4]"));
+        }
+
+        @Test
         @DisplayName("첫 번째 칸이 아닌 관계자는 가장 긴 이름이 머리글과 같은 가운데에 오도록 덩어리로 칸 가운데에 두고 서로 왼쪽 끝을 맞춘다")
         void compose_ContactNotFirst_CentersContactBlockUnderHeader() {
             // Given
@@ -862,6 +892,21 @@ class WeeklySettlementReportComposerTest {
 
             // Then
             assertThat(textsOf(document)).containsSubsequence("[10/4] 홍길동", "[10/5] 김철수");
+        }
+
+        @Test
+        @DisplayName("정렬 순서가 가나다순 + 날짜순이면 일자가 늦어도 첫 번째 칸의 가나다순이 앞선 내역을 먼저 적는다")
+        void compose_FirstColumnDateRecordOrder_SortsByFirstColumnFirst() {
+            // Given
+            WeeklySettlementReportDto report = report(List.of(group("주일헌금", List.of(
+                    record(WEEK_START, "홍길동", ""), record(WEEK_START.plusDays(1), "김철수", "")))), List.of());
+
+            // When
+            ReportDocument document = WeeklySettlementReportComposer.compose(report,
+                    createTemplate(RecordOrder.FIRST_COLUMN_DATE), ReportStyle.DEFAULT);
+
+            // Then
+            assertThat(textsOf(document)).containsSubsequence("[10/5] 김철수", "[10/4] 홍길동");
         }
 
         @Test

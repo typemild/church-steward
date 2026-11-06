@@ -131,6 +131,58 @@ class BudgetRecordTableModelTest {
             // Then
             assertThat(recordIdsOf(model)).containsExactly(1L, 2L);
         }
+
+        @Test
+        @DisplayName("정렬 순서가 가나다순 + 날짜순이면 일자가 늦어도 관계자의 가나다순이 앞선 내역이 먼저다")
+        void setRecords_FirstColumnDateOrder_SortsByContactFirst() {
+            // Given
+            BudgetRecordTableModel model = new BudgetRecordTableModel();
+            model.setRecordOrder(RecordOrder.FIRST_COLUMN_DATE);
+            List<FinancialRecordResponseDto> records = List.of(createRecord(1L, DATE, "홍길동", null),
+                    createRecord(2L, DATE.plusDays(1), "김철수", null));
+
+            // When
+            model.setRecords(records, Map.of(BUDGET_ID, 0));
+
+            // Then
+            assertThat(recordIdsOf(model)).containsExactly(2L, 1L);
+        }
+    }
+
+    @Nested
+    @DisplayName("getValueAt 테스트")
+    class GetValueAtTest {
+
+        @Test
+        @DisplayName("기본으로는 트리 칸의 내역 행에 일자와 첫 번째 칸의 값을 적는다")
+        void getValueAt_Default_PrefixesDate() {
+            // Given
+            BudgetRecordTableModel model = new BudgetRecordTableModel();
+            model.setRecords(List.of(createRecord(1L, DATE, "홍길동", null)), Map.of(BUDGET_ID, 0));
+            model.expandAll();
+
+            // When
+            Object actual = model.getValueAt(1, BudgetRecordTableModel.COLUMN_NAME);
+
+            // Then
+            assertThat(actual).isEqualTo("[10/4] 홍길동");
+        }
+
+        @Test
+        @DisplayName("일자를 표시하지 않으면 트리 칸의 내역 행에 첫 번째 칸의 값만 적는다")
+        void getValueAt_DateHidden_WritesValueOnly() {
+            // Given
+            BudgetRecordTableModel model = new BudgetRecordTableModel();
+            model.setDateVisible(false);
+            model.setRecords(List.of(createRecord(1L, DATE, "홍길동", null)), Map.of(BUDGET_ID, 0));
+            model.expandAll();
+
+            // When
+            Object actual = model.getValueAt(1, BudgetRecordTableModel.COLUMN_NAME);
+
+            // Then
+            assertThat(actual).isEqualTo("홍길동");
+        }
     }
 
     @Nested

@@ -44,6 +44,7 @@ final class ReportTemplateFixtures {
                 .tables(template.getTables())
                 .rateBarVisible(template.getRateBarVisible())
                 .recordOrders(template.getRecordOrders())
+                .dateVisible(template.getDateVisible())
                 .build();
     }
 
@@ -67,7 +68,7 @@ final class ReportTemplateFixtures {
     }
 
     /**
-     * 기본 양식(모든 표가 기본 순서, 현황 표의 막대는 보임, 내역 표의 같은 날짜는 가나다순)
+     * 기본 양식(모든 표가 기본 순서, 현황 표의 막대는 보임, 내역 표의 같은 날짜는 가나다순이고 일자를 표시)
      */
     static ReportTemplateDto createDefaultTemplate(ReportType reportType) {
         return createTemplate(reportType, Map.of(), true);
@@ -82,6 +83,7 @@ final class ReportTemplateFixtures {
         Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, Boolean> rateBars = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, RecordOrder> recordOrders = new EnumMap<>(ReportTemplateTable.class);
+        Map<ReportTemplateTable, Boolean> dateVisible = new EnumMap<>(ReportTemplateTable.class);
         for (ReportTemplateTable table : ReportTemplateTable.of(reportType)) {
             tables.put(table, overrides.getOrDefault(table, createColumns(table.getDefaultColumns())));
             if (table.hasRateBarOption()) {
@@ -90,6 +92,9 @@ final class ReportTemplateFixtures {
             if (table.hasRecordOrderOption()) {
                 recordOrders.put(table, RecordOrder.FIRST_COLUMN);
             }
+            if (table.hasDateOption()) {
+                dateVisible.put(table, true);
+            }
         }
         return ReportTemplateDto.builder()
                 .reportType(reportType)
@@ -97,6 +102,7 @@ final class ReportTemplateFixtures {
                 .tables(tables)
                 .rateBarVisible(rateBars)
                 .recordOrders(recordOrders)
+                .dateVisible(dateVisible)
                 .build();
     }
 }

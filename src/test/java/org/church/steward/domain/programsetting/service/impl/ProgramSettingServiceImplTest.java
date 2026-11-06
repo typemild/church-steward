@@ -85,7 +85,7 @@ class ProgramSettingServiceImplTest {
     }
 
     /**
-     * 예산별 보기의 칸 설정. 주어진 표 말고는 기본 순서이고, 같은 날짜의 순서는 모두 가나다순이다.
+     * 예산별 보기의 칸 설정. 주어진 표 말고는 기본 순서이고, 같은 날짜의 순서는 모두 가나다순이며 일자는 모두 표시한다.
      */
     private static BudgetViewColumnsDto createBudgetViewColumns(BudgetViewTable table,
             List<ReportColumnDto> columns) {
@@ -96,6 +96,34 @@ class ProgramSettingServiceImplTest {
         return BudgetViewColumnsDto.builder()
                 .tables(tables)
                 .recordOrders(createRecordOrders(BudgetViewTable.INCOME, RecordOrder.FIRST_COLUMN))
+                .dateVisible(createDateVisible(BudgetViewTable.INCOME, true))
+                .build();
+    }
+
+    /**
+     * 일자 표시 여부. 주어진 표 말고는 표시한다.
+     */
+    private static Map<BudgetViewTable, Boolean> createDateVisible(BudgetViewTable table, boolean dateVisible) {
+        Map<BudgetViewTable, Boolean> values = new EnumMap<>(BudgetViewTable.class);
+        for (BudgetViewTable each : BudgetViewTable.values()) {
+            values.put(each, each == table ? dateVisible : true);
+        }
+        return values;
+    }
+
+    /**
+     * 칸은 모두 기본 순서이고 같은 날짜의 순서는 모두 가나다순이며, 일자 표시만 주어진 대로인 예산별 보기의 칸 설정
+     */
+    private static BudgetViewColumnsDto createBudgetViewColumnsWithDateVisible(
+            Map<BudgetViewTable, Boolean> dateVisible) {
+        Map<BudgetViewTable, List<ReportColumnDto>> tables = new EnumMap<>(BudgetViewTable.class);
+        for (BudgetViewTable each : BudgetViewTable.values()) {
+            tables.put(each, createColumns(each.getDefaultColumns()));
+        }
+        return BudgetViewColumnsDto.builder()
+                .tables(tables)
+                .recordOrders(createRecordOrders(BudgetViewTable.INCOME, RecordOrder.FIRST_COLUMN))
+                .dateVisible(dateVisible)
                 .build();
     }
 
@@ -112,7 +140,7 @@ class ProgramSettingServiceImplTest {
     }
 
     /**
-     * 칸은 모두 기본 순서이고 같은 날짜의 순서만 주어진 대로인 예산별 보기의 칸 설정
+     * 칸은 모두 기본 순서이고 일자는 모두 표시하며, 같은 날짜의 순서만 주어진 대로인 예산별 보기의 칸 설정
      */
     private static BudgetViewColumnsDto createBudgetViewColumns(Map<BudgetViewTable, RecordOrder> recordOrders) {
         Map<BudgetViewTable, List<ReportColumnDto>> tables = new EnumMap<>(BudgetViewTable.class);
@@ -122,13 +150,20 @@ class ProgramSettingServiceImplTest {
         return BudgetViewColumnsDto.builder()
                 .tables(tables)
                 .recordOrders(recordOrders)
+                .dateVisible(createDateVisible(BudgetViewTable.INCOME, true))
                 .build();
     }
 
     private static BudgetViewOption createSavedOption(BudgetViewTable table, RecordOrder recordOrder) {
+        return createSavedOption(table, recordOrder, true);
+    }
+
+    private static BudgetViewOption createSavedOption(BudgetViewTable table, RecordOrder recordOrder,
+            boolean dateVisible) {
         return BudgetViewOption.builder()
                 .tableType(table)
                 .recordOrder(recordOrder)
+                .dateVisible(dateVisible)
                 .build();
     }
 
@@ -366,6 +401,33 @@ class ProgramSettingServiceImplTest {
             // Then
             verify(budgetViewOptionRepository, never()).save(any());
         }
+
+        @Test
+        @DisplayName("일자 표시를 저장한 적이 없으면 두 표 모두 기본값인 표시다")
+        void getBudgetViewColumns_DateVisibleNotSaved_ReturnsVisible() {
+            // When
+            BudgetViewColumnsDto actual = programSettingService.getBudgetViewColumns();
+
+            // Then
+            assertThat(actual.getDateVisible()).containsOnly(Map.entry(BudgetViewTable.INCOME, true),
+                    Map.entry(BudgetViewTable.EXPENSE, true));
+        }
+
+        @Test
+        @DisplayName("일자 표시를 저장한 표는 저장된 값을 반환한다")
+        void getBudgetViewColumns_DateVisibleSaved_ReturnsSaved() {
+            // Given
+            when(budgetViewOptionRepository.findById(BudgetViewTable.INCOME)).thenReturn(Optional.of(
+                    createSavedOption(BudgetViewTable.INCOME, RecordOrder.FIRST_COLUMN, false)));
+            when(budgetViewOptionRepository.findById(BudgetViewTable.EXPENSE)).thenReturn(Optional.empty());
+
+            // When
+            BudgetViewColumnsDto actual = programSettingService.getBudgetViewColumns();
+
+            // Then
+            assertThat(actual.getDateVisible()).containsOnly(Map.entry(BudgetViewTable.INCOME, false),
+                    Map.entry(BudgetViewTable.EXPENSE, true));
+        }
     }
 
     @Nested
@@ -508,6 +570,38 @@ class ProgramSettingServiceImplTest {
                     BudgetViewOption::getRecordOrder)
                     .containsExactlyInAnyOrder(tuple(BudgetViewTable.INCOME, RecordOrder.ENTRY),
                             tuple(BudgetViewTable.EXPENSE, RecordOrder.FIRST_COLUMN));
+        }
+
+        @Test
+        @DisplayName("일자 표시가 빠진 표가 있으면 예외를 던진다")
+        void updateBudgetViewColumns_MissingDateVisible_ThrowsException() {
+            // Given
+            BudgetViewColumnsDto columns = createBudgetViewColumnsWithDateVisible(
+                    Map.of(BudgetViewTable.INCOME, false));
+
+            // When & Then
+            assertThatThrownBy(() -> programSettingService.updateBudgetViewColumns(columns))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("예산별 보기의 칸 설정에 빠진 항목이 있습니다.");
+        }
+
+        @Test
+        @DisplayName("표마다 일자 표시를 저장한다")
+        void updateBudgetViewColumns_DateVisible_SavesEachTable() {
+            // Given
+            BudgetViewColumnsDto columns = createBudgetViewColumnsWithDateVisible(
+                    createDateVisible(BudgetViewTable.EXPENSE, false));
+            ArgumentCaptor<BudgetViewOption> captor = ArgumentCaptor.forClass(BudgetViewOption.class);
+
+            // When
+            programSettingService.updateBudgetViewColumns(columns);
+
+            // Then
+            verify(budgetViewOptionRepository, times(2)).save(captor.capture());
+            assertThat(captor.getAllValues()).extracting(BudgetViewOption::getTableType,
+                    BudgetViewOption::isDateVisible)
+                    .containsExactlyInAnyOrder(tuple(BudgetViewTable.INCOME, true),
+                            tuple(BudgetViewTable.EXPENSE, false));
         }
 
         @Test

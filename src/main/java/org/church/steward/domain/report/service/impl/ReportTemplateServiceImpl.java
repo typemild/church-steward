@@ -55,17 +55,21 @@ public class ReportTemplateServiceImpl implements ReportTemplateService {
         Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, Boolean> rateBarVisible = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, RecordOrder> recordOrders = new EnumMap<>(ReportTemplateTable.class);
+        Map<ReportTemplateTable, Boolean> dateVisible = new EnumMap<>(ReportTemplateTable.class);
         for (ReportTemplateTable table : ReportTemplateTable.of(reportType)) {
             tables.put(table, findColumns(table).stream()
                     .map(reportTemplateMapper::toColumnDto)
                     .toList());
-            if (table.hasRateBarOption() || table.hasRecordOrderOption()) {
+            if (hasOption(table)) {
                 ReportTableOption option = findOption(table);
                 if (table.hasRateBarOption()) {
                     rateBarVisible.put(table, option.isRateBarVisible());
                 }
                 if (table.hasRecordOrderOption()) {
                     recordOrders.put(table, option.getRecordOrder());
+                }
+                if (table.hasDateOption()) {
+                    dateVisible.put(table, option.isDateVisible());
                 }
             }
         }
@@ -76,7 +80,15 @@ public class ReportTemplateServiceImpl implements ReportTemplateService {
                 .tables(tables)
                 .rateBarVisible(rateBarVisible)
                 .recordOrders(recordOrders)
+                .dateVisible(dateVisible)
                 .build();
+    }
+
+    /**
+     * 표 단위 설정({@link ReportTableOption})을 하나라도 정할 수 있는 표인지 여부
+     */
+    private static boolean hasOption(ReportTemplateTable table) {
+        return table.hasRateBarOption() || table.hasRecordOrderOption() || table.hasDateOption();
     }
 
     /**
@@ -129,6 +141,10 @@ public class ReportTemplateServiceImpl implements ReportTemplateService {
                     .get(table) == null)) {
                 throw new IllegalArgumentException("보고서 양식에 빠진 항목이 있습니다.");
             }
+            if (table.hasDateOption() && (template.getDateVisible() == null || template.getDateVisible()
+                    .get(table) == null)) {
+                throw new IllegalArgumentException("보고서 양식에 빠진 항목이 있습니다.");
+            }
         }
 
         if (titles != null) {
@@ -138,7 +154,7 @@ public class ReportTemplateServiceImpl implements ReportTemplateService {
         for (ReportTemplateTable table : ReportTemplateTable.of(reportType)) {
             saveColumns(table, template.getTables()
                     .get(table));
-            if (table.hasRateBarOption() || table.hasRecordOrderOption()) {
+            if (hasOption(table)) {
                 saveOption(table, template);
             }
         }
@@ -210,7 +226,9 @@ public class ReportTemplateServiceImpl implements ReportTemplateService {
                 .get(table) : option.isRateBarVisible();
         RecordOrder recordOrder = table.hasRecordOrderOption() ? template.getRecordOrders()
                 .get(table) : option.getRecordOrder();
-        option.update(rateBarVisible, recordOrder);
+        boolean dateVisible = table.hasDateOption() ? template.getDateVisible()
+                .get(table) : option.isDateVisible();
+        option.update(rateBarVisible, recordOrder, dateVisible);
         reportTableOptionRepository.save(option);
     }
 

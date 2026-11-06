@@ -108,9 +108,21 @@ class ReportTemplateServiceImplTest {
     private static ReportTemplateDto createTemplate(ReportApprovalDto approval,
             Map<ReportTemplateTable, List<ReportColumnDto>> overrides, boolean rateBarVisible,
             RecordOrder recordOrder) {
+        return createTemplate(approval, overrides, rateBarVisible, recordOrder, true);
+    }
+
+    /**
+     * @param rateBarVisible 모든 현황 표의 비율 칸 왼쪽에 막대를 함께 그리는지 여부
+     * @param recordOrder    모든 내역 표의 같은 날짜의 순서
+     * @param dateVisible    모든 내역 표에서 첫 번째 칸 앞에 일자를 붙여 표시하는지 여부
+     */
+    private static ReportTemplateDto createTemplate(ReportApprovalDto approval,
+            Map<ReportTemplateTable, List<ReportColumnDto>> overrides, boolean rateBarVisible,
+            RecordOrder recordOrder, boolean dateVisible) {
         Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, Boolean> rateBars = new EnumMap<>(ReportTemplateTable.class);
         Map<ReportTemplateTable, RecordOrder> recordOrders = new EnumMap<>(ReportTemplateTable.class);
+        Map<ReportTemplateTable, Boolean> dateVisibles = new EnumMap<>(ReportTemplateTable.class);
         for (ReportTemplateTable table : ReportTemplateTable.of(ReportType.WEEKLY_SETTLEMENT)) {
             tables.put(table, overrides.getOrDefault(table, createColumns(table.getDefaultColumns())));
             if (table.hasRateBarOption()) {
@@ -119,6 +131,9 @@ class ReportTemplateServiceImplTest {
             if (table.hasRecordOrderOption()) {
                 recordOrders.put(table, recordOrder);
             }
+            if (table.hasDateOption()) {
+                dateVisibles.put(table, dateVisible);
+            }
         }
         return ReportTemplateDto.builder()
                 .reportType(ReportType.WEEKLY_SETTLEMENT)
@@ -126,6 +141,7 @@ class ReportTemplateServiceImplTest {
                 .tables(tables)
                 .rateBarVisible(rateBars)
                 .recordOrders(recordOrders)
+                .dateVisible(dateVisibles)
                 .build();
     }
 
@@ -442,6 +458,45 @@ class ReportTemplateServiceImplTest {
         }
 
         @Test
+        @DisplayName("저장한 적이 없으면 내역 표는 일자를 표시하고, 현황 표에는 일자 표시 설정이 없다")
+        void getReportTemplate_NotSaved_ShowsDateOnRecordsTables() {
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.WEEKLY_SETTLEMENT);
+
+            // Then
+            assertThat(actual.getDateVisible()).containsOnly(
+                    entry(ReportTemplateTable.WEEKLY_INCOME_RECORDS, true),
+                    entry(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS, true));
+        }
+
+        @Test
+        @DisplayName("저장된 일자 표시 설정이 있으면 그 값을 반환한다")
+        void getReportTemplate_SavedDateVisible_ReturnsSaved() {
+            // Given
+            when(reportTableOptionRepository.findById(ReportTemplateTable.WEEKLY_INCOME_STATUS))
+                    .thenReturn(Optional.empty());
+            when(reportTableOptionRepository.findById(ReportTemplateTable.WEEKLY_EXPENSE_STATUS))
+                    .thenReturn(Optional.empty());
+            when(reportTableOptionRepository.findById(ReportTemplateTable.WEEKLY_INCOME_RECORDS))
+                    .thenReturn(Optional.empty());
+            when(reportTableOptionRepository.findById(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS))
+                    .thenReturn(Optional.of(ReportTableOption.builder()
+                            .tableType(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS)
+                            .rateBarVisible(true)
+                            .recordOrder(RecordOrder.FIRST_COLUMN)
+                            .dateVisible(false)
+                            .build()));
+
+            // When
+            ReportTemplateDto actual = reportTemplateService.getReportTemplate(ReportType.WEEKLY_SETTLEMENT);
+
+            // Then
+            assertThat(actual.getDateVisible()).containsOnly(
+                    entry(ReportTemplateTable.WEEKLY_INCOME_RECORDS, true),
+                    entry(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS, false));
+        }
+
+        @Test
         @DisplayName("주간 보고서가 아니면 같은 날짜의 순서 설정이 없다")
         void getReportTemplate_BudgetPlan_HasNoRecordOrderOption() {
             // When
@@ -533,6 +588,70 @@ class ReportTemplateServiceImplTest {
                     .hasRateBarOption())
                     .extracting(ReportTableOption::getRecordOrder)
                     .containsOnly(RecordOrder.FIRST_COLUMN);
+        }
+
+        @Test
+        @DisplayName("내역 표마다 일자 표시 설정을 저장한다")
+        void updateReportTemplate_DateVisible_SavesOptionPerRecordsTable() {
+            // Given
+            ReportTemplateDto template = createTemplate(createApproval(true, null, null, null), Map.of(), true,
+                    RecordOrder.FIRST_COLUMN, false);
+            ArgumentCaptor<ReportTableOption> captor = ArgumentCaptor.forClass(ReportTableOption.class);
+
+            // When
+            reportTemplateService.updateReportTemplate(template);
+
+            // Then
+            verify(reportTableOptionRepository, times(4)).save(captor.capture());
+            assertThat(captor.getAllValues()).filteredOn(option -> option.getTableType()
+                    .hasDateOption())
+                    .extracting(ReportTableOption::getTableType, ReportTableOption::isDateVisible)
+                    .containsExactly(tuple(ReportTemplateTable.WEEKLY_INCOME_RECORDS, false),
+                            tuple(ReportTemplateTable.WEEKLY_EXPENSE_RECORDS, false));
+        }
+
+        @Test
+        @DisplayName("현황 표의 설정을 처음 저장하면 일자 표시에는 기본값(표시)을 둔다")
+        void updateReportTemplate_NewStatusOption_KeepsDefaultDateVisible() {
+            // Given
+            ReportTemplateDto template = createTemplate(createApproval(true, null, null, null), Map.of(), false,
+                    RecordOrder.FIRST_COLUMN, false);
+            ArgumentCaptor<ReportTableOption> captor = ArgumentCaptor.forClass(ReportTableOption.class);
+
+            // When
+            reportTemplateService.updateReportTemplate(template);
+
+            // Then
+            verify(reportTableOptionRepository, times(4)).save(captor.capture());
+            assertThat(captor.getAllValues()).filteredOn(option -> option.getTableType()
+                    .hasRateBarOption())
+                    .extracting(ReportTableOption::isDateVisible)
+                    .containsOnly(true);
+        }
+
+        @Test
+        @DisplayName("내역 표의 일자 표시 설정이 빠져 있으면 예외를 던진다")
+        void updateReportTemplate_MissingDateVisible_ThrowsException() {
+            // Given
+            Map<ReportTemplateTable, List<ReportColumnDto>> tables = new EnumMap<>(ReportTemplateTable.class);
+            for (ReportTemplateTable table : ReportTemplateTable.of(ReportType.WEEKLY_SETTLEMENT)) {
+                tables.put(table, createColumns(table.getDefaultColumns()));
+            }
+            ReportTemplateDto template = ReportTemplateDto.builder()
+                    .reportType(ReportType.WEEKLY_SETTLEMENT)
+                    .approval(createApproval(true, null, null, null))
+                    .tables(tables)
+                    .rateBarVisible(Map.of(ReportTemplateTable.WEEKLY_INCOME_STATUS, true,
+                            ReportTemplateTable.WEEKLY_EXPENSE_STATUS, true))
+                    .recordOrders(Map.of(ReportTemplateTable.WEEKLY_INCOME_RECORDS, RecordOrder.FIRST_COLUMN,
+                            ReportTemplateTable.WEEKLY_EXPENSE_RECORDS, RecordOrder.FIRST_COLUMN))
+                    .dateVisible(Map.of(ReportTemplateTable.WEEKLY_INCOME_RECORDS, false))
+                    .build();
+
+            // When & Then
+            assertThatThrownBy(() -> reportTemplateService.updateReportTemplate(template))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("보고서 양식에 빠진 항목이 있습니다.");
         }
 
         @Test
